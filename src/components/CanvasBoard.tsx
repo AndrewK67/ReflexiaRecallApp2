@@ -1,7 +1,11 @@
 // src/components/CanvasBoard.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { X, Undo2, Redo2, Eraser, Pencil, Save, Trash2, Palette } from "lucide-react";
+import {
+  X, Undo2, Redo2, Eraser, Pencil, Save, Trash2, Palette,
+  Paintbrush, Highlighter, Sparkles, Square, Circle,
+  ArrowRight, Minus, PaintBucket, Type
+} from "lucide-react";
 
 interface CanvasBoardProps {
   onSave?: (dataUrl: string) => void;
@@ -13,7 +17,18 @@ interface CanvasBoardProps {
   initialDataUrl?: string;
 }
 
-type Tool = "pen" | "eraser";
+type Tool =
+  | "pen"
+  | "marker"
+  | "highlighter"
+  | "spray"
+  | "eraser"
+  | "rectangle"
+  | "circle"
+  | "line"
+  | "arrow"
+  | "fill"
+  | "text";
 
 export const CanvasBoard: React.FC<CanvasBoardProps> = ({
   onSave,
@@ -26,6 +41,8 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const drawing = useRef(false);
   const lastPoint = useRef<{ x: number; y: number } | null>(null);
+  const shapeStart = useRef<{ x: number; y: number } | null>(null);
+  const tempCanvas = useRef<HTMLCanvasElement | null>(null);
 
   const [tool, setTool] = useState<Tool>("pen");
   const [strokeWidth, setStrokeWidth] = useState<number>(4);
@@ -33,6 +50,9 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
   const [history, setHistory] = useState<ImageData[]>([]);
   const [historyStep, setHistoryStep] = useState<number>(0);
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showTextInput, setShowTextInput] = useState(false);
+  const [textInputPos, setTextInputPos] = useState<{ x: number; y: number } | null>(null);
+  const [textValue, setTextValue] = useState("");
 
   const presetColors = [
     "#e5e7eb", // Light gray (default)
@@ -90,6 +110,183 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
     pushHistory();
   };
 
+  // Flood fill algorithm for bucket tool
+  const floodFill = (startX: number, startY: number, fillColor: string) => {
+    const ctx = getCtx();
+    if (!ctx) return;
+
+    const imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
+    const pixels = imageData.data;
+
+    const startPos = (Math.floor(startY) * imageData.width + Math.floor(startX)) * 4;
+    const startR = pixels[startPos];
+    const startG = pixels[startPos + 1];
+    const startB = pixels[startPos + 2];
+    const startA = pixels[startPos + 3];
+
+    // Convert fill color to RGB
+    const tempCtx = document.createElement("canvas").getContext("2d")!;
+    tempCtx.fillStyle = fillColor;
+    tempCtx.fillRect(0, 0, 1, 1);
+    const fillData = tempCtx.getImageData(0, 0, 1, 1).data;
+    const fillR = fillData[0];
+    const fillG = fillData[1];
+    const fillB = fillData[2];
+    const fillA = 255;
+
+    // Don't fill if clicking on the same color
+    if (startR === fillR && startG === fillG && startB === fillB && startA === fillA) {
+      return;
+    }
+
+    const stack: Array<[number, number]> = [[Math.floor(startX), Math.floor(startY)]];
+    const visited = new Set<string>();
+
+    while (stack.length > 0) {
+      const [x, y] = stack.pop()!;
+      const key = `${x},${y}`;
+
+      if (visited.has(key)) continue;
+      if (x < 0 || x >= imageData.width || y < 0 || y >= imageData.height) continue;
+
+      const pos = (y * imageData.width + x) * 4;
+      const r = pixels[pos];
+      const g = pixels[pos + 1];
+      const b = pixels[pos + 2];
+      const a = pixels[pos + 3];
+
+      if (r !== startR || g !== startG || b !== startB || a !== startA) continue;
+
+      visited.add(key);
+      pixels[pos] = fillR;
+      pixels[pos + 1] = fillG;
+      pixels[pos + 2] = fillB;
+      pixels[pos + 3] = fillA;
+
+      stack.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+  };
+
+  // Draw shapes
+  const drawShape = (ctx: CanvasRenderingContext2D, start: { x: number; y: number }, end: { x: number; y: number }) => {
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = strokeWidth;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    if (tool === "rectangle") {
+      const w = end.x - start.x;
+      const h = end.y - start.y;
+      ctx.strokeRect(start.x, start.y, w, h);
+    } else if (tool === "circle") {
+      const dx = end.x - start.x;
+      const dy = end.y - start.y;
+      const radius = Math.sqrt(dx * dx + dy * dy);
+      ctx.beginPath();
+      ctx.arc(start.x, start.y, radius, 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (tool === "line") {
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.stroke();
+    } else if (tool === "arrow") {
+      // Draw line
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.stroke();
+
+      // Draw arrowhead
+      const angle = Math.atan2(end.y - start.y, end.x - start.x);
+      const headLength = 15;
+      ctx.beginPath();
+      ctx.moveTo(end.x, end.y);
+      ctx.lineTo(
+        end.x - headLength * Math.cos(angle - Math.PI / 6),
+        end.y - headLength * Math.sin(angle - Math.PI / 6)
+      );
+      ctx.moveTo(end.x, end.y);
+      ctx.lineTo(
+        end.x - headLength * Math.cos(angle + Math.PI / 6),
+        end.y - headLength * Math.sin(angle + Math.PI / 6)
+      );
+      ctx.stroke();
+    }
+  };
+
+  // Draw with different brush types
+  const drawBrush = (ctx: CanvasRenderingContext2D, from: { x: number; y: number }, to: { x: number; y: number }) => {
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    if (tool === "pen") {
+      ctx.lineWidth = strokeWidth;
+      ctx.strokeStyle = color;
+      ctx.globalAlpha = 1.0;
+      ctx.beginPath();
+      ctx.moveTo(from.x, from.y);
+      ctx.lineTo(to.x, to.y);
+      ctx.stroke();
+    } else if (tool === "marker") {
+      ctx.lineWidth = strokeWidth * 2;
+      ctx.strokeStyle = color;
+      ctx.globalAlpha = 1.0;
+      ctx.beginPath();
+      ctx.moveTo(from.x, from.y);
+      ctx.lineTo(to.x, to.y);
+      ctx.stroke();
+    } else if (tool === "highlighter") {
+      ctx.lineWidth = strokeWidth * 3;
+      ctx.strokeStyle = color;
+      ctx.globalAlpha = 0.3;
+      ctx.beginPath();
+      ctx.moveTo(from.x, from.y);
+      ctx.lineTo(to.x, to.y);
+      ctx.stroke();
+      ctx.globalAlpha = 1.0;
+    } else if (tool === "spray") {
+      // Spray paint effect
+      const density = 20;
+      const radius = strokeWidth * 2;
+      for (let i = 0; i < density; i++) {
+        const offsetX = (Math.random() - 0.5) * radius;
+        const offsetY = (Math.random() - 0.5) * radius;
+        ctx.fillStyle = color;
+        ctx.globalAlpha = 0.6;
+        ctx.fillRect(to.x + offsetX, to.y + offsetY, 1, 1);
+      }
+      ctx.globalAlpha = 1.0;
+    } else if (tool === "eraser") {
+      ctx.lineWidth = strokeWidth;
+      ctx.strokeStyle = "#0b1220";
+      ctx.globalAlpha = 1.0;
+      ctx.beginPath();
+      ctx.moveTo(from.x, from.y);
+      ctx.lineTo(to.x, to.y);
+      ctx.stroke();
+    }
+  };
+
+  const addText = () => {
+    if (!textInputPos || !textValue.trim()) return;
+    const ctx = getCtx();
+    if (!ctx) return;
+
+    const fontSize = Math.max(16, strokeWidth * 3);
+    ctx.font = `${fontSize}px sans-serif`;
+    ctx.fillStyle = color;
+    ctx.fillText(textValue, textInputPos.x, textInputPos.y);
+
+    setShowTextInput(false);
+    setTextValue("");
+    setTextInputPos(null);
+    pushHistory();
+  };
+
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = getCtx();
@@ -139,10 +336,35 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
     const ctx = getCtx();
     if (!ctx) return;
 
-    drawing.current = true;
-    lastPoint.current = toLocalPoint(e);
+    const point = toLocalPoint(e);
 
-    // snapshot BEFORE stroke so undo works cleanly
+    // Handle fill tool
+    if (tool === "fill") {
+      pushHistory();
+      // Account for DPR when flood filling
+      floodFill(point.x * dpr, point.y * dpr, color);
+      return;
+    }
+
+    // Handle text tool
+    if (tool === "text") {
+      setTextInputPos(point);
+      setShowTextInput(true);
+      return;
+    }
+
+    // Handle shape tools
+    const isShapeTool = ["rectangle", "circle", "line", "arrow"].includes(tool);
+    if (isShapeTool) {
+      drawing.current = true;
+      shapeStart.current = point;
+      pushHistory();
+      return;
+    }
+
+    // Handle brush tools
+    drawing.current = true;
+    lastPoint.current = point;
     pushHistory();
   };
 
@@ -152,26 +374,40 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
     if (!ctx) return;
 
     const p = toLocalPoint(e);
+
+    // Handle shape drawing with preview
+    const isShapeTool = ["rectangle", "circle", "line", "arrow"].includes(tool);
+    if (isShapeTool && shapeStart.current) {
+      // Restore to last history state for preview
+      if (history[historyStep]) {
+        ctx.putImageData(history[historyStep], 0, 0);
+      }
+      drawShape(ctx, shapeStart.current, p);
+      return;
+    }
+
+    // Handle brush tools
     const last = lastPoint.current;
     if (!last) {
       lastPoint.current = p;
       return;
     }
 
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.lineWidth = strokeWidth;
-    ctx.strokeStyle = tool === "pen" ? color : "#0b1220";
-
-    ctx.beginPath();
-    ctx.moveTo(last.x, last.y);
-    ctx.lineTo(p.x, p.y);
-    ctx.stroke();
-
+    drawBrush(ctx, last, p);
     lastPoint.current = p;
   };
 
   const end = () => {
+    const ctx = getCtx();
+
+    // Finalize shape drawing
+    const isShapeTool = ["rectangle", "circle", "line", "arrow"].includes(tool);
+    if (isShapeTool && shapeStart.current && drawing.current && ctx) {
+      // Shape is already drawn from move event, just push history
+      pushHistory();
+      shapeStart.current = null;
+    }
+
     drawing.current = false;
     lastPoint.current = null;
   };
@@ -200,61 +436,180 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
         </div>
 
         <div className="p-4 space-y-3">
-          {/* Top row - Tools and Color */}
-          <div className="flex flex-wrap items-center gap-2">
+          {/* Tools Grid */}
+          <div className="grid grid-cols-6 gap-1.5">
+            {/* Brush tools */}
             <button
               onClick={() => setTool("pen")}
               className={[
-                "px-3 py-2 rounded-lg border flex items-center gap-2",
+                "p-2 rounded-lg border flex flex-col items-center gap-0.5",
                 tool === "pen"
                   ? "border-slate-500 bg-slate-900/60 text-slate-100"
                   : "border-slate-800 text-slate-200 hover:bg-slate-900/40",
               ].join(" ")}
-              title="Pen tool"
+              title="Pen"
             >
               <Pencil className="w-4 h-4" />
-              Pen
+              <span className="text-[9px]">Pen</span>
             </button>
-
+            <button
+              onClick={() => setTool("marker")}
+              className={[
+                "p-2 rounded-lg border flex flex-col items-center gap-0.5",
+                tool === "marker"
+                  ? "border-slate-500 bg-slate-900/60 text-slate-100"
+                  : "border-slate-800 text-slate-200 hover:bg-slate-900/40",
+              ].join(" ")}
+              title="Marker"
+            >
+              <Paintbrush className="w-4 h-4" />
+              <span className="text-[9px]">Marker</span>
+            </button>
+            <button
+              onClick={() => setTool("highlighter")}
+              className={[
+                "p-2 rounded-lg border flex flex-col items-center gap-0.5",
+                tool === "highlighter"
+                  ? "border-slate-500 bg-slate-900/60 text-slate-100"
+                  : "border-slate-800 text-slate-200 hover:bg-slate-900/40",
+              ].join(" ")}
+              title="Highlighter"
+            >
+              <Highlighter className="w-4 h-4" />
+              <span className="text-[9px]">Highlight</span>
+            </button>
+            <button
+              onClick={() => setTool("spray")}
+              className={[
+                "p-2 rounded-lg border flex flex-col items-center gap-0.5",
+                tool === "spray"
+                  ? "border-slate-500 bg-slate-900/60 text-slate-100"
+                  : "border-slate-800 text-slate-200 hover:bg-slate-900/40",
+              ].join(" ")}
+              title="Spray"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span className="text-[9px]">Spray</span>
+            </button>
             <button
               onClick={() => setTool("eraser")}
               className={[
-                "px-3 py-2 rounded-lg border flex items-center gap-2",
+                "p-2 rounded-lg border flex flex-col items-center gap-0.5",
                 tool === "eraser"
                   ? "border-slate-500 bg-slate-900/60 text-slate-100"
                   : "border-slate-800 text-slate-200 hover:bg-slate-900/40",
               ].join(" ")}
-              title="Eraser tool"
+              title="Eraser"
             >
               <Eraser className="w-4 h-4" />
-              Eraser
+              <span className="text-[9px]">Eraser</span>
+            </button>
+            <button
+              onClick={() => setTool("fill")}
+              className={[
+                "p-2 rounded-lg border flex flex-col items-center gap-0.5",
+                tool === "fill"
+                  ? "border-slate-500 bg-slate-900/60 text-slate-100"
+                  : "border-slate-800 text-slate-200 hover:bg-slate-900/40",
+              ].join(" ")}
+              title="Fill"
+            >
+              <PaintBucket className="w-4 h-4" />
+              <span className="text-[9px]">Fill</span>
             </button>
 
+            {/* Shape tools */}
+            <button
+              onClick={() => setTool("rectangle")}
+              className={[
+                "p-2 rounded-lg border flex flex-col items-center gap-0.5",
+                tool === "rectangle"
+                  ? "border-slate-500 bg-slate-900/60 text-slate-100"
+                  : "border-slate-800 text-slate-200 hover:bg-slate-900/40",
+              ].join(" ")}
+              title="Rectangle"
+            >
+              <Square className="w-4 h-4" />
+              <span className="text-[9px]">Rect</span>
+            </button>
+            <button
+              onClick={() => setTool("circle")}
+              className={[
+                "p-2 rounded-lg border flex flex-col items-center gap-0.5",
+                tool === "circle"
+                  ? "border-slate-500 bg-slate-900/60 text-slate-100"
+                  : "border-slate-800 text-slate-200 hover:bg-slate-900/40",
+              ].join(" ")}
+              title="Circle"
+            >
+              <Circle className="w-4 h-4" />
+              <span className="text-[9px]">Circle</span>
+            </button>
+            <button
+              onClick={() => setTool("line")}
+              className={[
+                "p-2 rounded-lg border flex flex-col items-center gap-0.5",
+                tool === "line"
+                  ? "border-slate-500 bg-slate-900/60 text-slate-100"
+                  : "border-slate-800 text-slate-200 hover:bg-slate-900/40",
+              ].join(" ")}
+              title="Line"
+            >
+              <Minus className="w-4 h-4" />
+              <span className="text-[9px]">Line</span>
+            </button>
+            <button
+              onClick={() => setTool("arrow")}
+              className={[
+                "p-2 rounded-lg border flex flex-col items-center gap-0.5",
+                tool === "arrow"
+                  ? "border-slate-500 bg-slate-900/60 text-slate-100"
+                  : "border-slate-800 text-slate-200 hover:bg-slate-900/40",
+              ].join(" ")}
+              title="Arrow"
+            >
+              <ArrowRight className="w-4 h-4" />
+              <span className="text-[9px]">Arrow</span>
+            </button>
+            <button
+              onClick={() => setTool("text")}
+              className={[
+                "p-2 rounded-lg border flex flex-col items-center gap-0.5",
+                tool === "text"
+                  ? "border-slate-500 bg-slate-900/60 text-slate-100"
+                  : "border-slate-800 text-slate-200 hover:bg-slate-900/40",
+              ].join(" ")}
+              title="Text"
+            >
+              <Type className="w-4 h-4" />
+              <span className="text-[9px]">Text</span>
+            </button>
             <button
               onClick={() => setShowColorPicker(!showColorPicker)}
-              className="px-3 py-2 rounded-lg border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-2"
-              title="Choose color"
+              className="p-2 rounded-lg border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex flex-col items-center gap-0.5"
+              title="Color"
             >
-              <Palette className="w-4 h-4" />
               <div
-                className="w-5 h-5 rounded border border-slate-600"
+                className="w-4 h-4 rounded border border-slate-600"
                 style={{ backgroundColor: color }}
               />
+              <span className="text-[9px]">Color</span>
             </button>
+          </div>
 
-            <div className="flex items-center gap-2">
-              <label className="text-slate-400 text-sm">Width</label>
-              <input
-                type="range"
-                min={1}
-                max={24}
-                value={strokeWidth}
-                onChange={(e) => setStrokeWidth(Number(e.target.value))}
-                className="w-20"
-                title={`Stroke width: ${strokeWidth}px`}
-              />
-              <span className="text-slate-400 text-xs w-6">{strokeWidth}</span>
-            </div>
+          {/* Width Control */}
+          <div className="flex items-center gap-2 px-2">
+            <label className="text-slate-400 text-sm">Width</label>
+            <input
+              type="range"
+              min={1}
+              max={24}
+              value={strokeWidth}
+              onChange={(e) => setStrokeWidth(Number(e.target.value))}
+              className="flex-1"
+              title={`Stroke width: ${strokeWidth}px`}
+            />
+            <span className="text-slate-400 text-xs w-6">{strokeWidth}</span>
           </div>
 
           {/* Color Picker */}
@@ -331,8 +686,49 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
             />
           </div>
 
+          {/* Text Input Dialog */}
+          {showTextInput && (
+            <div className="p-3 bg-slate-900/60 rounded-lg border border-slate-800">
+              <div className="text-slate-300 text-sm mb-2">Enter text:</div>
+              <input
+                type="text"
+                value={textValue}
+                onChange={(e) => setTextValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") addText();
+                  if (e.key === "Escape") {
+                    setShowTextInput(false);
+                    setTextValue("");
+                    setTextInputPos(null);
+                  }
+                }}
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-slate-100 text-sm focus:outline-none focus:border-slate-500"
+                placeholder="Type your text..."
+                autoFocus
+              />
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={addText}
+                  className="flex-1 px-3 py-1.5 bg-slate-100 text-slate-950 rounded-lg text-sm font-semibold hover:bg-white"
+                >
+                  Add
+                </button>
+                <button
+                  onClick={() => {
+                    setShowTextInput(false);
+                    setTextValue("");
+                    setTextInputPos(null);
+                  }}
+                  className="flex-1 px-3 py-1.5 border border-slate-700 text-slate-300 rounded-lg text-sm hover:bg-slate-900/40"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="text-slate-500 text-xs">
-            Tip: Choose colors, adjust brush size (1-24px), use undo/redo, or clear to start fresh. Save attaches your sketch to the reflection.
+            Tip: Use brush tools (pen, marker, highlighter, spray), shapes (rectangle, circle, line, arrow), fill, and text. Adjust size (1-24px) and colors. Undo/redo or clear to start fresh.
           </div>
         </div>
       </div>
