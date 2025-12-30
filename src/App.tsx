@@ -274,7 +274,7 @@ export default function App() {
 
       case "REFLECTION":
         return (
-          <div className="h-full nav-safe">
+          <div className="nav-safe">
             <Suspense fallback={<ComponentLoader />}>
               <ReflectionFlow
                 profession={userProfile.profession}
@@ -288,7 +288,7 @@ export default function App() {
 
       case "CALENDAR":
         return (
-          <div className="h-full nav-safe">
+          <div className="nav-safe">
             <Suspense fallback={<ComponentLoader />}>
               <CalendarView entries={entries} onOpenEntry={(e) => setOpenEntry(e)} />
             </Suspense>
@@ -297,7 +297,7 @@ export default function App() {
 
       case "QUICK_CAPTURE":
         return (
-          <div className="h-full nav-safe">
+          <div className="nav-safe">
             <Suspense fallback={<ComponentLoader />}>
               <QuickCapture
                 aiEnabled={userProfile.aiEnabled === true}
@@ -310,7 +310,7 @@ export default function App() {
 
       case "DRIVE_MODE":
         return (
-          <div className="h-full nav-safe">
+          <div className="nav-safe">
             <Suspense fallback={<ComponentLoader />}>
               <DriveMode onComplete={handleEntryComplete} onClose={() => setView("DASHBOARD")} />
             </Suspense>
@@ -319,7 +319,7 @@ export default function App() {
 
       case "NEURAL_LINK":
         return (
-          <div className="h-full nav-safe">
+          <div className="nav-safe">
             <Suspense fallback={<ComponentLoader />}>
               <NeuralLink
                 entries={entries}
@@ -333,7 +333,7 @@ export default function App() {
 
       case "HOLODECK":
         return (
-          <div className="h-full nav-safe">
+          <div className="nav-safe">
             <Suspense fallback={<ComponentLoader />}>
               <Holodeck onClose={() => setView("DASHBOARD")} />
             </Suspense>
@@ -342,7 +342,7 @@ export default function App() {
 
       case "BIO_RHYTHM":
         return (
-          <div className="h-full nav-safe">
+          <div className="nav-safe">
             <Suspense fallback={<ComponentLoader />}>
               <BioRhythm onClose={() => setView("DASHBOARD")} />
             </Suspense>
@@ -351,7 +351,7 @@ export default function App() {
 
       case "GROUNDING":
         return (
-          <div className="h-full nav-safe">
+          <div className="nav-safe">
             <Suspense fallback={<ComponentLoader />}>
               <Grounding onClose={() => setView("DASHBOARD")} />
             </Suspense>
@@ -360,7 +360,7 @@ export default function App() {
 
       case "ORACLE":
         return (
-          <div className="h-full nav-safe">
+          <div className="nav-safe">
             <Suspense fallback={<ComponentLoader />}>
               <Oracle entries={entries} onClose={() => setView("DASHBOARD")} />
             </Suspense>
@@ -369,7 +369,7 @@ export default function App() {
 
       case "CRISIS_PROTOCOLS":
         return (
-          <div className="h-full nav-safe">
+          <div className="nav-safe">
             <Suspense fallback={<ComponentLoader />}>
               <CrisisProtocols onClose={() => setView("DASHBOARD")} />
             </Suspense>
@@ -378,7 +378,7 @@ export default function App() {
 
       case "ARCHIVE":
         return (
-          <div className="h-full nav-safe">
+          <div className="nav-safe">
             <Suspense fallback={<ComponentLoader />}>
               <Archive entries={entries} onOpenEntry={(e) => setOpenEntry(e)} />
             </Suspense>
@@ -387,7 +387,7 @@ export default function App() {
 
       case "GAMIFICATION":
         return (
-          <div className="h-full nav-safe">
+          <div className="nav-safe">
             <Suspense fallback={<ComponentLoader />}>
               <GamificationHub entries={entries} onClose={() => setView("DASHBOARD")} />
             </Suspense>
@@ -396,7 +396,7 @@ export default function App() {
 
       case "CPD":
         return (
-          <div className="h-full nav-safe">
+          <div className="nav-safe">
             <Suspense fallback={<ComponentLoader />}>
               <CPD entries={entries} onClose={() => setView("DASHBOARD")} />
             </Suspense>
