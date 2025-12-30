@@ -200,7 +200,7 @@ export default function App() {
   };
 
   const renderDashboard = () => (
-    <div className="h-full flex flex-col items-center justify-center p-6 nav-safe">
+    <div className="h-full overflow-y-auto flex flex-col items-center justify-center p-6 nav-safe">
       <div className="text-center mb-8 max-w-xs mx-auto">
         <h1 className="text-3xl font-light text-white tracking-tight mb-2">
           {getGreeting()}, {getFirstName()}.
