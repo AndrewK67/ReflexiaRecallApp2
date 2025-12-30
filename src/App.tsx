@@ -274,133 +274,107 @@ export default function App() {
 
       case "REFLECTION":
         return (
-          <div className="nav-safe">
-            <Suspense fallback={<ComponentLoader />}>
-              <ReflectionFlow
+          <Suspense fallback={<ComponentLoader />}>
+            <ReflectionFlow
                 profession={userProfile.profession}
                 aiEnabled={userProfile.aiEnabled === true}
                 onComplete={handleEntryComplete}
                 onCancel={() => setView("DASHBOARD")}
               />
-            </Suspense>
-          </div>
+          </Suspense>
         );
 
       case "CALENDAR":
         return (
-          <div className="nav-safe">
-            <Suspense fallback={<ComponentLoader />}>
+          <Suspense fallback={<ComponentLoader />}>
               <CalendarView entries={entries} onOpenEntry={(e) => setOpenEntry(e)} />
-            </Suspense>
-          </div>
+          </Suspense>
         );
 
       case "QUICK_CAPTURE":
         return (
-          <div className="nav-safe">
-            <Suspense fallback={<ComponentLoader />}>
+          <Suspense fallback={<ComponentLoader />}>
               <QuickCapture
                 aiEnabled={userProfile.aiEnabled === true}
                 onComplete={handleEntryComplete}
                 onCancel={() => setView("DASHBOARD")}
               />
-            </Suspense>
-          </div>
+          </Suspense>
         );
 
       case "DRIVE_MODE":
         return (
-          <div className="nav-safe">
-            <Suspense fallback={<ComponentLoader />}>
+          <Suspense fallback={<ComponentLoader />}>
               <DriveMode onComplete={handleEntryComplete} onClose={() => setView("DASHBOARD")} />
-            </Suspense>
-          </div>
+          </Suspense>
         );
 
       case "NEURAL_LINK":
         return (
-          <div className="nav-safe">
-            <Suspense fallback={<ComponentLoader />}>
+          <Suspense fallback={<ComponentLoader />}>
               <NeuralLink
                 entries={entries}
                 profile={userProfile}
                 onUpdateProfile={handleUpdateProfile}
                 onNavigateToWelcome={() => setView("ONBOARDING")}
               />
-            </Suspense>
-          </div>
+          </Suspense>
         );
 
       case "HOLODECK":
         return (
-          <div className="nav-safe">
-            <Suspense fallback={<ComponentLoader />}>
+          <Suspense fallback={<ComponentLoader />}>
               <Holodeck onClose={() => setView("DASHBOARD")} />
-            </Suspense>
-          </div>
+          </Suspense>
         );
 
       case "BIO_RHYTHM":
         return (
-          <div className="nav-safe">
-            <Suspense fallback={<ComponentLoader />}>
+          <Suspense fallback={<ComponentLoader />}>
               <BioRhythm onClose={() => setView("DASHBOARD")} />
-            </Suspense>
-          </div>
+          </Suspense>
         );
 
       case "GROUNDING":
         return (
-          <div className="nav-safe">
-            <Suspense fallback={<ComponentLoader />}>
+          <Suspense fallback={<ComponentLoader />}>
               <Grounding onClose={() => setView("DASHBOARD")} />
-            </Suspense>
-          </div>
+          </Suspense>
         );
 
       case "ORACLE":
         return (
-          <div className="nav-safe">
-            <Suspense fallback={<ComponentLoader />}>
+          <Suspense fallback={<ComponentLoader />}>
               <Oracle entries={entries} onClose={() => setView("DASHBOARD")} />
-            </Suspense>
-          </div>
+          </Suspense>
         );
 
       case "CRISIS_PROTOCOLS":
         return (
-          <div className="nav-safe">
-            <Suspense fallback={<ComponentLoader />}>
+          <Suspense fallback={<ComponentLoader />}>
               <CrisisProtocols onClose={() => setView("DASHBOARD")} />
-            </Suspense>
-          </div>
+          </Suspense>
         );
 
       case "ARCHIVE":
         return (
-          <div className="nav-safe">
-            <Suspense fallback={<ComponentLoader />}>
+          <Suspense fallback={<ComponentLoader />}>
               <Archive entries={entries} onOpenEntry={(e) => setOpenEntry(e)} />
-            </Suspense>
-          </div>
+          </Suspense>
         );
 
       case "GAMIFICATION":
         return (
-          <div className="nav-safe">
-            <Suspense fallback={<ComponentLoader />}>
+          <Suspense fallback={<ComponentLoader />}>
               <GamificationHub entries={entries} onClose={() => setView("DASHBOARD")} />
-            </Suspense>
-          </div>
+          </Suspense>
         );
 
       case "CPD":
         return (
-          <div className="nav-safe">
-            <Suspense fallback={<ComponentLoader />}>
+          <Suspense fallback={<ComponentLoader />}>
               <CPD entries={entries} onClose={() => setView("DASHBOARD")} />
-            </Suspense>
-          </div>
+          </Suspense>
         );
 
       case "DASHBOARD":
@@ -426,13 +400,17 @@ export default function App() {
           )}
 
           {isLoaded && !isLocked && (
-            <div className="fade-in">
-              {renderScreen()}
-              {renderEntryModal()}
+            <div className="fade-in h-full flex flex-col">
+              {/* Top Section - Scrollable Content */}
+              <div className="flex-1 overflow-y-auto custom-scrollbar">
+                {renderScreen()}
+                {renderEntryModal()}
+              </div>
+
+              {/* Bottom Section - Fixed Navigation */}
+              {showNav && <Navigation current={view} onChange={(v) => setView(v)} />}
             </div>
           )}
-
-          {showNav && <Navigation current={view} onChange={(v) => setView(v)} />}
         </div>
       </div>
     </>

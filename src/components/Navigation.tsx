@@ -61,8 +61,8 @@ export default function Navigation({ current, onChange }: NavigationProps) {
 
   return (
     <>
-      <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none">
-        <div className="pointer-events-auto w-full max-w-md px-4 pb-4">
+      <div className="flex-shrink-0 flex justify-center p-4 bg-transparent">
+        <div className="w-full">
           <div className="bg-white/90 backdrop-blur-xl border border-slate-200 shadow-xl rounded-3xl px-4 py-3 flex items-center justify-between">
             <button
               onClick={() => onChange("ARCHIVE")}
