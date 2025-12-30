@@ -1,0 +1,180 @@
+You are a **Staff+ Full-Stack Engineer** specializing in **Vite + React + TypeScript build recovery**.
+
+I’m giving you:
+
+* `PROJECT_ROOT.zip` (entire repo)
+* `Errors.txt` (current errors)
+
+Your mission: **Make the app compile, run, and be clickable** while preserving the existing feature set.
+You must not do “patch roulette.” You must produce a coherent fix set.
+
+---
+
+### Non-negotiables
+
+1. **Full file replacements only.**
+   If you change a file, output the **entire file content** (no snippets, no diffs).
+
+2. **No feature deletions.**
+   If logic is missing/incomplete, **stub it** (offline fallbacks, placeholder outputs), but keep the UI routes/screens.
+
+3. **Single source of truth for schema.**
+   `src/types.ts` becomes the canonical schema.
+   Update it to match existing UI usage **and** align components to it.
+
+4. **Stable AI layer (offline first).**
+   Components must not import Gemini service directly. Create:
+
+   * `src/services/aiProvider.ts` (interface/types)
+   * `src/services/providers/offlineProvider.ts` (always works)
+   * `src/services/providers/geminiProvider.ts` (optional; only if configured; safe fallback)
+   * `src/services/aiService.ts` (provider selection + exported functions used by UI)
+
+5. **Fix the “mouse clicks don’t work” issue.**
+   Find the overlay element intercepting pointer events.
+   Fix with `pointer-events`, z-index, layout constraints.
+   The Guide SVG/background must never block the form.
+
+6. **No new dependencies unless truly necessary.**
+   If you add one, justify in one sentence and keep it minimal.
+
+---
+
+### Required workflow (do in this order)
+
+#### Phase 0 — Read & Summarize
+
+* Open the zip mentally (treat it as present).
+* Identify:
+
+  * where types live (`src/types.ts` etc.)
+  * how navigation/view state is done
+  * where AI calls occur
+  * any UI overlay layers
+    Return a short “map” of the architecture.
+
+#### Phase 1 — Make it compile (TypeScript)
+
+* Fix all TS errors so `npm run build` passes.
+* Prefer:
+
+  * optional fields
+  * compatibility unions (e.g., `"reflection" | "REFLECTION"`)
+  * adapters/mappers
+  * stubs for missing exports
+* Avoid large refactors.
+
+#### Phase 2 — Make it run (runtime)
+
+* Ensure `npm run dev` loads without runtime crashes.
+* Ensure key screens render without hard failures:
+
+  * Onboarding
+  * Dashboard/Welcome
+  * ReflectionFlow
+  * QuickCapture
+  * Oracle
+  * Calendar
+  * Tools screens (BioRhythm, CrisisProtocols, etc.)
+
+#### Phase 3 — Minimal UI coherence
+
+* Fix major layout breaks (overlaps, unreadable spacing).
+* Ensure clickable navigation and forms.
+
+---
+
+### Output requirements
+
+You must output **exactly three sections**:
+
+## A) Root Causes + Fix Strategy (max 20 lines)
+
+* Bullet list: the top causes of instability
+* Bullet list: your strategy
+
+## B) File Replacement Pack (ONLY changed files)
+
+For each changed file:
+
+* `### FILE: <path>`
+* then the full file content (complete)
+
+Rules:
+
+* Do not include unchanged files.
+* Do not include commentary inside the code beyond normal code comments.
+* If you create new files, include them here too.
+
+## C) Verification Checklist
+
+* Exact commands:
+
+  * `npm install`
+  * `npm run dev`
+  * `npm run build`
+* Then a click-through checklist verifying the critical screens and the sign-in/onboarding click bug is fixed.
+
+---
+
+### Technical requirements you must satisfy
+
+#### 1) AI exports expected by UI
+
+If the UI currently expects functions like:
+
+* `generateDailyPrompt`
+* `analyzeReflection`
+* `askOracle`
+* `getStageCoaching`
+  You must ensure **these exports exist** (via `aiService.ts`) and that they **work offline**.
+
+#### 2) Types currently inconsistent
+
+Errors mention missing fields like:
+
+* `mood` on `ReflectionEntry`
+* `notes`, `media` on `IncidentEntry`
+* stats fields like `level`, `currentXP`, `nextLevelXP`, `streak`, `achievements`
+* view states like `"ONBOARDING"` etc.
+* stage ids mismatching `StageId` constants
+
+You must adjust `src/types.ts` + align components accordingly.
+
+#### 3) Tailwind must be production-safe
+
+Ensure Tailwind is installed/configured via PostCSS (no CDN script tag).
+Confirm `index.css` contains `@tailwind base; @tailwind components; @tailwind utilities;`
+
+#### 4) Stop “key warning spam”
+
+Fix duplicate keys or unstable keys where errors reference repeated `key` warnings (like in CalendarView).
+
+---
+
+### “Done” definition
+
+* `npm run build` passes with **0 TypeScript errors**
+* `npm run dev` runs with no blocking runtime errors
+* Onboarding page works with **mouse clicks**, not just tabbing
+* Navigation works and screens render (even if some content is stubbed)
+
+---
+
+### Start now
+
+Use the zip + Errors.txt. Do the work in one pass and output the three required sections.
+
+---
+
+### If you hit token limits (Claude Pro safety)
+
+If output is too large, you must:
+
+* still keep “Full file replacements only”
+* split **Section B** into multiple consecutive messages, each labelled:
+
+  * “B1”, “B2”, “B3”… until complete
+    But never omit a changed file.
+
+
