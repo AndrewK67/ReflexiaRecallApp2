@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 import {
   X, Undo2, Redo2, Eraser, Pencil, Save, Trash2, Palette,
   Paintbrush, Highlighter, Sparkles, Square, Circle,
-  ArrowRight, Minus, PaintBucket, Type
+  ArrowRight, Minus, PaintBucket, Type, ChevronDown
 } from "lucide-react";
 
 interface CanvasBoardProps {
@@ -35,7 +35,7 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
   onExport,
   onCancel,
   width = 360,
-  height = 520,
+  height = 640,
   initialDataUrl,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -53,6 +53,24 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
   const [showTextInput, setShowTextInput] = useState(false);
   const [textInputPos, setTextInputPos] = useState<{ x: number; y: number } | null>(null);
   const [textValue, setTextValue] = useState("");
+  const [showToolMenu, setShowToolMenu] = useState(false);
+
+  // Tool definitions with icons and labels
+  const toolDefs = useMemo(() => ({
+    pen: { label: "Pen", icon: Pencil, category: "brush" },
+    marker: { label: "Marker", icon: Paintbrush, category: "brush" },
+    highlighter: { label: "Highlighter", icon: Highlighter, category: "brush" },
+    spray: { label: "Spray", icon: Sparkles, category: "brush" },
+    eraser: { label: "Eraser", icon: Eraser, category: "brush" },
+    rectangle: { label: "Rectangle", icon: Square, category: "shape" },
+    circle: { label: "Circle", icon: Circle, category: "shape" },
+    line: { label: "Line", icon: Minus, category: "shape" },
+    arrow: { label: "Arrow", icon: ArrowRight, category: "shape" },
+    fill: { label: "Fill", icon: PaintBucket, category: "other" },
+    text: { label: "Text", icon: Type, category: "other" },
+  }), []);
+
+  const currentToolDef = toolDefs[tool];
 
   const presetColors = [
     "#e5e7eb", // Light gray (default)
@@ -436,180 +454,137 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
         </div>
 
         <div className="p-4 space-y-3">
-          {/* Tools Grid */}
-          <div className="grid grid-cols-6 gap-1.5">
-            {/* Brush tools */}
-            <button
-              onClick={() => setTool("pen")}
-              className={[
-                "p-2 rounded-lg border flex flex-col items-center gap-0.5",
-                tool === "pen"
-                  ? "border-slate-500 bg-slate-900/60 text-slate-100"
-                  : "border-slate-800 text-slate-200 hover:bg-slate-900/40",
-              ].join(" ")}
-              title="Pen"
-            >
-              <Pencil className="w-4 h-4" />
-              <span className="text-[9px]">Pen</span>
-            </button>
-            <button
-              onClick={() => setTool("marker")}
-              className={[
-                "p-2 rounded-lg border flex flex-col items-center gap-0.5",
-                tool === "marker"
-                  ? "border-slate-500 bg-slate-900/60 text-slate-100"
-                  : "border-slate-800 text-slate-200 hover:bg-slate-900/40",
-              ].join(" ")}
-              title="Marker"
-            >
-              <Paintbrush className="w-4 h-4" />
-              <span className="text-[9px]">Marker</span>
-            </button>
-            <button
-              onClick={() => setTool("highlighter")}
-              className={[
-                "p-2 rounded-lg border flex flex-col items-center gap-0.5",
-                tool === "highlighter"
-                  ? "border-slate-500 bg-slate-900/60 text-slate-100"
-                  : "border-slate-800 text-slate-200 hover:bg-slate-900/40",
-              ].join(" ")}
-              title="Highlighter"
-            >
-              <Highlighter className="w-4 h-4" />
-              <span className="text-[9px]">Highlight</span>
-            </button>
-            <button
-              onClick={() => setTool("spray")}
-              className={[
-                "p-2 rounded-lg border flex flex-col items-center gap-0.5",
-                tool === "spray"
-                  ? "border-slate-500 bg-slate-900/60 text-slate-100"
-                  : "border-slate-800 text-slate-200 hover:bg-slate-900/40",
-              ].join(" ")}
-              title="Spray"
-            >
-              <Sparkles className="w-4 h-4" />
-              <span className="text-[9px]">Spray</span>
-            </button>
-            <button
-              onClick={() => setTool("eraser")}
-              className={[
-                "p-2 rounded-lg border flex flex-col items-center gap-0.5",
-                tool === "eraser"
-                  ? "border-slate-500 bg-slate-900/60 text-slate-100"
-                  : "border-slate-800 text-slate-200 hover:bg-slate-900/40",
-              ].join(" ")}
-              title="Eraser"
-            >
-              <Eraser className="w-4 h-4" />
-              <span className="text-[9px]">Eraser</span>
-            </button>
-            <button
-              onClick={() => setTool("fill")}
-              className={[
-                "p-2 rounded-lg border flex flex-col items-center gap-0.5",
-                tool === "fill"
-                  ? "border-slate-500 bg-slate-900/60 text-slate-100"
-                  : "border-slate-800 text-slate-200 hover:bg-slate-900/40",
-              ].join(" ")}
-              title="Fill"
-            >
-              <PaintBucket className="w-4 h-4" />
-              <span className="text-[9px]">Fill</span>
-            </button>
+          {/* Compact Controls Row */}
+          <div className="flex items-center gap-2">
+            {/* Tool Selector */}
+            <div className="relative flex-1">
+              <button
+                onClick={() => setShowToolMenu(!showToolMenu)}
+                className="w-full px-3 py-2 rounded-lg border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center justify-between gap-2"
+                title="Select tool"
+              >
+                <div className="flex items-center gap-2">
+                  {React.createElement(currentToolDef.icon, { className: "w-4 h-4" })}
+                  <span className="text-sm">{currentToolDef.label}</span>
+                </div>
+                <ChevronDown className="w-4 h-4" />
+              </button>
 
-            {/* Shape tools */}
-            <button
-              onClick={() => setTool("rectangle")}
-              className={[
-                "p-2 rounded-lg border flex flex-col items-center gap-0.5",
-                tool === "rectangle"
-                  ? "border-slate-500 bg-slate-900/60 text-slate-100"
-                  : "border-slate-800 text-slate-200 hover:bg-slate-900/40",
-              ].join(" ")}
-              title="Rectangle"
-            >
-              <Square className="w-4 h-4" />
-              <span className="text-[9px]">Rect</span>
-            </button>
-            <button
-              onClick={() => setTool("circle")}
-              className={[
-                "p-2 rounded-lg border flex flex-col items-center gap-0.5",
-                tool === "circle"
-                  ? "border-slate-500 bg-slate-900/60 text-slate-100"
-                  : "border-slate-800 text-slate-200 hover:bg-slate-900/40",
-              ].join(" ")}
-              title="Circle"
-            >
-              <Circle className="w-4 h-4" />
-              <span className="text-[9px]">Circle</span>
-            </button>
-            <button
-              onClick={() => setTool("line")}
-              className={[
-                "p-2 rounded-lg border flex flex-col items-center gap-0.5",
-                tool === "line"
-                  ? "border-slate-500 bg-slate-900/60 text-slate-100"
-                  : "border-slate-800 text-slate-200 hover:bg-slate-900/40",
-              ].join(" ")}
-              title="Line"
-            >
-              <Minus className="w-4 h-4" />
-              <span className="text-[9px]">Line</span>
-            </button>
-            <button
-              onClick={() => setTool("arrow")}
-              className={[
-                "p-2 rounded-lg border flex flex-col items-center gap-0.5",
-                tool === "arrow"
-                  ? "border-slate-500 bg-slate-900/60 text-slate-100"
-                  : "border-slate-800 text-slate-200 hover:bg-slate-900/40",
-              ].join(" ")}
-              title="Arrow"
-            >
-              <ArrowRight className="w-4 h-4" />
-              <span className="text-[9px]">Arrow</span>
-            </button>
-            <button
-              onClick={() => setTool("text")}
-              className={[
-                "p-2 rounded-lg border flex flex-col items-center gap-0.5",
-                tool === "text"
-                  ? "border-slate-500 bg-slate-900/60 text-slate-100"
-                  : "border-slate-800 text-slate-200 hover:bg-slate-900/40",
-              ].join(" ")}
-              title="Text"
-            >
-              <Type className="w-4 h-4" />
-              <span className="text-[9px]">Text</span>
-            </button>
+              {/* Dropdown Menu */}
+              {showToolMenu && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-lg shadow-xl z-10 max-h-80 overflow-y-auto">
+                  {/* Brush Tools */}
+                  <div className="p-2 border-b border-slate-800">
+                    <div className="text-xs text-slate-500 font-bold px-2 py-1">Brushes</div>
+                    {(Object.keys(toolDefs) as Tool[])
+                      .filter((t) => toolDefs[t].category === "brush")
+                      .map((t) => {
+                        const Icon = toolDefs[t].icon;
+                        return (
+                          <button
+                            key={t}
+                            onClick={() => {
+                              setTool(t);
+                              setShowToolMenu(false);
+                            }}
+                            className={[
+                              "w-full px-3 py-2 rounded-lg flex items-center gap-2 text-sm",
+                              t === tool
+                                ? "bg-slate-800 text-slate-100"
+                                : "text-slate-300 hover:bg-slate-800/50",
+                            ].join(" ")}
+                          >
+                            <Icon className="w-4 h-4" />
+                            {toolDefs[t].label}
+                          </button>
+                        );
+                      })}
+                  </div>
+
+                  {/* Shape Tools */}
+                  <div className="p-2 border-b border-slate-800">
+                    <div className="text-xs text-slate-500 font-bold px-2 py-1">Shapes</div>
+                    {(Object.keys(toolDefs) as Tool[])
+                      .filter((t) => toolDefs[t].category === "shape")
+                      .map((t) => {
+                        const Icon = toolDefs[t].icon;
+                        return (
+                          <button
+                            key={t}
+                            onClick={() => {
+                              setTool(t);
+                              setShowToolMenu(false);
+                            }}
+                            className={[
+                              "w-full px-3 py-2 rounded-lg flex items-center gap-2 text-sm",
+                              t === tool
+                                ? "bg-slate-800 text-slate-100"
+                                : "text-slate-300 hover:bg-slate-800/50",
+                            ].join(" ")}
+                          >
+                            <Icon className="w-4 h-4" />
+                            {toolDefs[t].label}
+                          </button>
+                        );
+                      })}
+                  </div>
+
+                  {/* Other Tools */}
+                  <div className="p-2">
+                    <div className="text-xs text-slate-500 font-bold px-2 py-1">Other</div>
+                    {(Object.keys(toolDefs) as Tool[])
+                      .filter((t) => toolDefs[t].category === "other")
+                      .map((t) => {
+                        const Icon = toolDefs[t].icon;
+                        return (
+                          <button
+                            key={t}
+                            onClick={() => {
+                              setTool(t);
+                              setShowToolMenu(false);
+                            }}
+                            className={[
+                              "w-full px-3 py-2 rounded-lg flex items-center gap-2 text-sm",
+                              t === tool
+                                ? "bg-slate-800 text-slate-100"
+                                : "text-slate-300 hover:bg-slate-800/50",
+                            ].join(" ")}
+                          >
+                            <Icon className="w-4 h-4" />
+                            {toolDefs[t].label}
+                          </button>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Color Picker Button */}
             <button
               onClick={() => setShowColorPicker(!showColorPicker)}
-              className="p-2 rounded-lg border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex flex-col items-center gap-0.5"
+              className="px-3 py-2 rounded-lg border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-2"
               title="Color"
             >
               <div
-                className="w-4 h-4 rounded border border-slate-600"
+                className="w-5 h-5 rounded border border-slate-600"
                 style={{ backgroundColor: color }}
               />
-              <span className="text-[9px]">Color</span>
             </button>
-          </div>
 
-          {/* Width Control */}
-          <div className="flex items-center gap-2 px-2">
-            <label className="text-slate-400 text-sm">Width</label>
-            <input
-              type="range"
-              min={1}
-              max={24}
-              value={strokeWidth}
-              onChange={(e) => setStrokeWidth(Number(e.target.value))}
-              className="flex-1"
-              title={`Stroke width: ${strokeWidth}px`}
-            />
-            <span className="text-slate-400 text-xs w-6">{strokeWidth}</span>
+            {/* Width Control */}
+            <div className="flex items-center gap-2">
+              <input
+                type="range"
+                min={1}
+                max={24}
+                value={strokeWidth}
+                onChange={(e) => setStrokeWidth(Number(e.target.value))}
+                className="w-20"
+                title={`Stroke width: ${strokeWidth}px`}
+              />
+              <span className="text-slate-400 text-xs w-6">{strokeWidth}</span>
+            </div>
           </div>
 
           {/* Color Picker */}
