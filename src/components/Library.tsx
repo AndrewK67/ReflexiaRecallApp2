@@ -238,7 +238,7 @@ export default function Library() {
   };
 
   return (
-    <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col">
+    <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col overflow-y-auto custom-scrollbar">
       {/* Header */}
       <div className="flex-shrink-0 p-6 border-b border-white/10">
         <h1 className="text-2xl font-bold mb-1">Learning Library</h1>

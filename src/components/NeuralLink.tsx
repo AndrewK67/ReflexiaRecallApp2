@@ -68,7 +68,7 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
   };
 
   return (
-    <div className="h-full text-white flex flex-col">
+    <div className="h-full text-white flex flex-col overflow-y-auto custom-scrollbar">
       <div className="p-6 pb-2 pt-10 flex items-center gap-3">
         <div className="w-12 h-12 bg-indigo-600/90 rounded-2xl flex items-center justify-center shadow-lg">
           <Network size={22} />

@@ -115,7 +115,7 @@ export default function CalendarView({ entries, onOpenEntry }: CalendarViewProps
   const selectedEntries = selectedDay ? byDay.get(selectedDay) ?? [] : [];
 
   return (
-    <div className="h-full bg-slate-50 flex flex-col animate-in fade-in duration-300 nav-safe">
+    <div className="h-full bg-slate-50 flex flex-col overflow-y-auto custom-scrollbar animate-in fade-in duration-300 nav-safe">
       <div className="p-4 pt-12 bg-white border-b border-slate-200">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-slate-800">Calendar</h1>

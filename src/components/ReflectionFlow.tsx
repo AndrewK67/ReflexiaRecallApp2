@@ -305,7 +305,7 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
 
   if (!selectedModel) {
     return (
-      <div className="h-full bg-slate-50 flex flex-col animate-in fade-in duration-300 nav-safe">
+      <div className="h-full bg-slate-50 flex flex-col overflow-y-auto custom-scrollbar animate-in fade-in duration-300 nav-safe">
         <div className="p-6 pt-10 bg-white border-b border-slate-200">
           <div className="flex items-center justify-between">
             <button
@@ -473,7 +473,7 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
   }
 
   return (
-    <div className="h-full bg-slate-50 flex flex-col nav-safe">
+    <div className="h-full bg-slate-50 flex flex-col overflow-y-auto custom-scrollbar nav-safe">
       <div className="p-5 bg-white border-b border-slate-200">
         <div className="flex items-center justify-between">
           <button

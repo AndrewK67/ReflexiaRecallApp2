@@ -368,7 +368,7 @@ export default function CrisisProtocols({ onClose }: { onClose: () => void }) {
   }, [q, cat]);
 
   return (
-    <div className="h-full bg-slate-50 flex flex-col nav-safe">
+    <div className="h-full bg-slate-50 flex flex-col overflow-y-auto custom-scrollbar nav-safe">
       <div className="p-4 pt-12 bg-white border-b border-slate-200 sticky top-0 z-10">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-extrabold text-slate-800">Crisis Protocols</h1>

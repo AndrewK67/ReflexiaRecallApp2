@@ -140,7 +140,7 @@ export default function QuickCapture({ aiEnabled, onComplete, onCancel }: QuickC
   };
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-b from-slate-950 to-slate-900 text-white">
+    <div className="h-full flex flex-col overflow-y-auto custom-scrollbar bg-gradient-to-b from-slate-950 to-slate-900 text-white">
       <div className="flex-shrink-0 p-6 flex items-center justify-between border-b border-white/10">
         <h1 className="text-2xl font-bold">Quick Capture</h1>
         <button

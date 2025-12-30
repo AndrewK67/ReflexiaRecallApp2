@@ -75,7 +75,7 @@ export default function GamificationHub({ entries, onClose }: GamificationHubPro
     : 100;
 
   return (
-    <div className="h-full bg-gradient-to-b from-slate-900 to-slate-800 text-white flex flex-col overflow-hidden">
+    <div className="h-full bg-gradient-to-b from-slate-900 to-slate-800 text-white flex flex-col overflow-y-auto custom-scrollbar">
       {/* Header */}
       <div className="p-6 border-b border-white/10">
         <div className="flex items-center justify-between mb-4">

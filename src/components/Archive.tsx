@@ -90,7 +90,7 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
   }, [filters]);
 
   return (
-    <div className="h-full bg-gradient-to-b from-slate-50 to-white flex flex-col nav-safe">
+    <div className="h-full bg-gradient-to-b from-slate-50 to-white flex flex-col overflow-y-auto custom-scrollbar nav-safe">
       {/* Header */}
       <div className="bg-white border-b border-slate-200 px-4 pt-12 pb-4 shadow-sm">
         <div className="flex items-center justify-between mb-4">
