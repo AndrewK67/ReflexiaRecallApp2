@@ -400,16 +400,18 @@ export default function App() {
           )}
 
           {isLoaded && !isLocked && (
-            <div className="fade-in h-full flex flex-col">
-              {/* Top Section - Scrollable Content */}
-              <div className="flex-1 overflow-y-auto custom-scrollbar">
-                {renderScreen()}
-                {renderEntryModal()}
-              </div>
+            <>
+              <div className="fade-in h-full flex flex-col">
+                {/* Top Section - Scrollable Content */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar">
+                  {renderScreen()}
+                  {renderEntryModal()}
+                </div>
 
-              {/* Bottom Section - Fixed Navigation */}
-              {showNav && <Navigation current={view} onChange={(v) => setView(v)} />}
-            </div>
+                {/* Bottom Section - Fixed Navigation */}
+                {showNav && <Navigation current={view} onChange={(v) => setView(v)} />}
+              </div>
+            </>
           )}
         </div>
       </div>

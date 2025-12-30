@@ -1,5 +1,6 @@
 // src/components/CanvasBoard.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { X, Undo2, Eraser, Pencil, Save } from "lucide-react";
 
 interface CanvasBoardProps {
@@ -151,8 +152,8 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
     onExport?.(dataUrl);
   };
 
-  return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+  const content = (
+    <div className="absolute inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="w-full max-w-4xl rounded-2xl bg-slate-950 border border-slate-800 shadow-xl overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
           <div className="text-slate-100 font-semibold">Sketch</div>
@@ -240,6 +241,12 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
       </div>
     </div>
   );
+
+  // Render at phone level using portal to escape overflow constraints
+  const phone = document.querySelector('.phone');
+  if (!phone) return content; // Fallback to normal rendering
+
+  return createPortal(content, phone);
 };
 
 export default CanvasBoard;
