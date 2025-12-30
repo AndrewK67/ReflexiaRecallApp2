@@ -24,4 +24,13 @@ dist-ssr
 *.sw?
 
 .vercel
+
+# Environment variables (NEVER commit API keys!)
+.env
 .env*.local
+.env.local
+.env.production
+.env.development
+
+# Local Netlify folder
+.netlify
