@@ -1,7 +1,7 @@
 // src/components/CanvasBoard.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { X, Undo2, Eraser, Pencil, Save } from "lucide-react";
+import { X, Undo2, Redo2, Eraser, Pencil, Save, Trash2, Palette } from "lucide-react";
 
 interface CanvasBoardProps {
   onSave?: (dataUrl: string) => void;
@@ -19,8 +19,8 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
   onSave,
   onExport,
   onCancel,
-  width = 720,
-  height = 420,
+  width = 360,
+  height = 520,
   initialDataUrl,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -29,7 +29,23 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
 
   const [tool, setTool] = useState<Tool>("pen");
   const [strokeWidth, setStrokeWidth] = useState<number>(4);
+  const [color, setColor] = useState<string>("#e5e7eb");
   const [history, setHistory] = useState<ImageData[]>([]);
+  const [historyStep, setHistoryStep] = useState<number>(0);
+  const [showColorPicker, setShowColorPicker] = useState(false);
+
+  const presetColors = [
+    "#e5e7eb", // Light gray (default)
+    "#ffffff", // White
+    "#ef4444", // Red
+    "#f97316", // Orange
+    "#eab308", // Yellow
+    "#22c55e", // Green
+    "#06b6d4", // Cyan
+    "#3b82f6", // Blue
+    "#8b5cf6", // Purple
+    "#ec4899", // Pink
+  ];
 
   const dpr = useMemo(() => window.devicePixelRatio || 1, []);
 
@@ -43,18 +59,35 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
     const ctx = getCtx();
     if (!ctx) return;
     const img = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
-    setHistory((h) => [...h.slice(-30), img]); // cap history
+    setHistory((h) => {
+      const newHistory = [...h.slice(0, historyStep + 1), img].slice(-30);
+      setHistoryStep(newHistory.length - 1);
+      return newHistory;
+    });
   };
 
   const undo = () => {
     const ctx = getCtx();
+    if (!ctx || historyStep <= 0) return;
+    const newStep = historyStep - 1;
+    setHistoryStep(newStep);
+    ctx.putImageData(history[newStep], 0, 0);
+  };
+
+  const redo = () => {
+    const ctx = getCtx();
+    if (!ctx || historyStep >= history.length - 1) return;
+    const newStep = historyStep + 1;
+    setHistoryStep(newStep);
+    ctx.putImageData(history[newStep], 0, 0);
+  };
+
+  const clear = () => {
+    const ctx = getCtx();
     if (!ctx) return;
-    setHistory((h) => {
-      if (h.length <= 1) return h;
-      const next = h.slice(0, -1);
-      ctx.putImageData(next[next.length - 1], 0, 0);
-      return next;
-    });
+    ctx.fillStyle = "#0b1220";
+    ctx.fillRect(0, 0, width, height);
+    pushHistory();
   };
 
   useEffect(() => {
@@ -128,7 +161,7 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.lineWidth = strokeWidth;
-    ctx.strokeStyle = tool === "pen" ? "#e5e7eb" : "#0b1220";
+    ctx.strokeStyle = tool === "pen" ? color : "#0b1220";
 
     ctx.beginPath();
     ctx.moveTo(last.x, last.y);
@@ -167,6 +200,7 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
         </div>
 
         <div className="p-4 space-y-3">
+          {/* Top row - Tools and Color */}
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setTool("pen")}
@@ -176,6 +210,7 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
                   ? "border-slate-500 bg-slate-900/60 text-slate-100"
                   : "border-slate-800 text-slate-200 hover:bg-slate-900/40",
               ].join(" ")}
+              title="Pen tool"
             >
               <Pencil className="w-4 h-4" />
               Pen
@@ -189,33 +224,95 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
                   ? "border-slate-500 bg-slate-900/60 text-slate-100"
                   : "border-slate-800 text-slate-200 hover:bg-slate-900/40",
               ].join(" ")}
+              title="Eraser tool"
             >
               <Eraser className="w-4 h-4" />
               Eraser
             </button>
 
-            <div className="flex items-center gap-2 ml-auto">
+            <button
+              onClick={() => setShowColorPicker(!showColorPicker)}
+              className="px-3 py-2 rounded-lg border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-2"
+              title="Choose color"
+            >
+              <Palette className="w-4 h-4" />
+              <div
+                className="w-5 h-5 rounded border border-slate-600"
+                style={{ backgroundColor: color }}
+              />
+            </button>
+
+            <div className="flex items-center gap-2">
               <label className="text-slate-400 text-sm">Width</label>
               <input
                 type="range"
-                min={2}
-                max={16}
+                min={1}
+                max={24}
                 value={strokeWidth}
                 onChange={(e) => setStrokeWidth(Number(e.target.value))}
+                className="w-20"
+                title={`Stroke width: ${strokeWidth}px`}
               />
+              <span className="text-slate-400 text-xs w-6">{strokeWidth}</span>
             </div>
+          </div>
 
+          {/* Color Picker */}
+          {showColorPicker && (
+            <div className="flex flex-wrap gap-2 p-3 bg-slate-900/60 rounded-lg border border-slate-800">
+              {presetColors.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => {
+                    setColor(c);
+                    setShowColorPicker(false);
+                  }}
+                  className={[
+                    "w-8 h-8 rounded-lg border-2 hover:scale-110 transition-transform",
+                    c === color ? "border-slate-100" : "border-slate-700",
+                  ].join(" ")}
+                  style={{ backgroundColor: c }}
+                  title={c}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Bottom row - Actions */}
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={undo}
-              className="px-3 py-2 rounded-lg border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-2"
+              disabled={historyStep <= 0}
+              className="px-3 py-2 rounded-lg border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Undo"
             >
               <Undo2 className="w-4 h-4" />
               Undo
             </button>
 
             <button
+              onClick={redo}
+              disabled={historyStep >= history.length - 1}
+              className="px-3 py-2 rounded-lg border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Redo"
+            >
+              <Redo2 className="w-4 h-4" />
+              Redo
+            </button>
+
+            <button
+              onClick={clear}
+              className="px-3 py-2 rounded-lg border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-2"
+              title="Clear canvas"
+            >
+              <Trash2 className="w-4 h-4" />
+              Clear
+            </button>
+
+            <button
               onClick={save}
-              className="px-3 py-2 rounded-lg bg-slate-100 text-slate-950 font-semibold hover:bg-white flex items-center gap-2"
+              className="px-3 py-2 rounded-lg bg-slate-100 text-slate-950 font-semibold hover:bg-white flex items-center gap-2 ml-auto"
+              title="Save drawing"
             >
               <Save className="w-4 h-4" />
               Save
@@ -235,7 +332,7 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
           </div>
 
           <div className="text-slate-500 text-xs">
-            Tip: Draw quickly. Save will attach a PNG data URL to the current reflection.
+            Tip: Choose colors, adjust brush size (1-24px), use undo/redo, or clear to start fresh. Save attaches your sketch to the reflection.
           </div>
         </div>
       </div>
