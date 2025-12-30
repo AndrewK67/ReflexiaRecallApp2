@@ -58,10 +58,10 @@ export default function FiveFourThreeTwoOne({ onComplete, onCancel }: FiveFourTh
   const isComplete = step >= steps.length;
 
   return (
-    <div className="h-full flex flex-col relative overflow-hidden text-white">
+    <div className="h-full flex flex-col relative overflow-y-auto custom-scrollbar text-white">
       {/* Background Decor */}
       <div
-        className="absolute inset-0 opacity-10 pointer-events-none"
+        className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden"
         style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, #1e293b 10%, transparent 50%)' }}
       />
 

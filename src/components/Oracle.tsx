@@ -51,28 +51,30 @@ const Oracle: React.FC<OracleProps> = ({ entries, onClose }) => {
 
   return (
     <div className="absolute inset-0 z-50 flex items-end justify-center bg-black/30 backdrop-blur-sm">
-      <div className="w-full max-w-md mx-auto bg-white/90 backdrop-blur-xl rounded-t-[2rem] border border-white/40 shadow-2xl p-6 pb-7 animate-in slide-in-from-bottom-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center">
-              <Sparkles size={18} />
+      <div className="w-full max-w-md mx-auto bg-white/90 backdrop-blur-xl rounded-t-[2rem] border border-white/40 shadow-2xl flex flex-col max-h-[85vh] animate-in slide-in-from-bottom-6">
+        <div className="flex-shrink-0 p-6 pb-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                <Sparkles size={18} />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">Oracle</h2>
+                <p className="text-xs text-slate-500">Ask about themes in your recent entries</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-lg font-bold text-slate-900">Oracle</h2>
-              <p className="text-xs text-slate-500">Ask about themes in your recent entries</p>
-            </div>
-          </div>
 
-          <button
-            onClick={onClose}
-            className="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"
-            title="Close"
-          >
-            <X size={18} className="text-slate-600" />
-          </button>
+            <button
+              onClick={onClose}
+              className="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"
+              title="Close"
+            >
+              <X size={18} className="text-slate-600" />
+            </button>
+          </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="flex-1 overflow-y-auto px-6 pb-7 space-y-3 custom-scrollbar nav-safe">
           <textarea
             value={question}
             onChange={(e) => setQuestion(e.target.value)}

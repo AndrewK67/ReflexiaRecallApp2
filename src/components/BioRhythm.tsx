@@ -135,9 +135,9 @@ export default function BioRhythm({ onClose }: BioRhythmProps) {
     "#c084fc";
 
   return (
-    <div className="h-full bg-slate-950 text-white relative overflow-hidden">
+    <div className="h-full bg-slate-950 text-white relative overflow-y-auto custom-scrollbar">
       <div
-        className="absolute inset-0 opacity-30 pointer-events-none"
+        className="absolute inset-0 opacity-30 pointer-events-none overflow-hidden"
         style={{ background: `radial-gradient(circle at center, ${phaseColor}40, transparent 70%)` }}
       />
 

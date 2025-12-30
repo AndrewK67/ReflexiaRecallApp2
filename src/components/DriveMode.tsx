@@ -240,9 +240,9 @@ const DriveMode: React.FC<DriveModeProps> = ({ onComplete, onClose }) => {
   const tint = pickHighContrastColor(step);
 
   return (
-    <div className="h-full bg-black text-white flex flex-col relative overflow-hidden">
+    <div className="h-full bg-black text-white flex flex-col relative overflow-y-auto custom-scrollbar">
       <div
-        className="absolute inset-0 opacity-25 pointer-events-none"
+        className="absolute inset-0 opacity-25 pointer-events-none overflow-hidden"
         style={{ background: `radial-gradient(circle at 30% 20%, ${tint}55, transparent 55%)` }}
       />
 

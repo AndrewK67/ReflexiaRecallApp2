@@ -40,9 +40,9 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   const disabled = step === 1 && !name.trim();
 
   return (
-    <div className="h-full bg-slate-950 flex flex-col relative overflow-hidden text-white">
+    <div className="h-full bg-slate-950 flex flex-col relative overflow-y-auto custom-scrollbar text-white">
       {/* ✅ BG animation (very visible) */}
-      <div className="animated-backdrop-dark">
+      <div className="animated-backdrop-dark overflow-hidden">
         <div className="orb one" />
         <div className="orb two" />
         <div className="orb three" />
