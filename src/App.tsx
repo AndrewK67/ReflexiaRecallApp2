@@ -24,6 +24,7 @@ const CalendarView = lazy(() => import("./components/CalendarView"));
 const CrisisProtocols = lazy(() => import("./components/CrisisProtocols"));
 const Archive = lazy(() => import("./components/Archive"));
 const GamificationHub = lazy(() => import("./components/GamificationHub"));
+const CPD = lazy(() => import("./components/CPD"));
 
 function formatReflection(entry: ReflectionEntry) {
   const lines: string[] = [];
@@ -389,6 +390,15 @@ export default function App() {
           <div className="h-full nav-safe">
             <Suspense fallback={<ComponentLoader />}>
               <GamificationHub entries={entries} onClose={() => setView("DASHBOARD")} />
+            </Suspense>
+          </div>
+        );
+
+      case "CPD":
+        return (
+          <div className="h-full nav-safe">
+            <Suspense fallback={<ComponentLoader />}>
+              <CPD entries={entries} onClose={() => setView("DASHBOARD")} />
             </Suspense>
           </div>
         );

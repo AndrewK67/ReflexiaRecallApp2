@@ -10,6 +10,7 @@ import {
   TrendingUp,
   X,
   Save,
+  ArrowLeft,
 } from 'lucide-react';
 import type { Entry } from '../types';
 import type { HolodeckEntry } from './holodeck/types';
@@ -27,9 +28,10 @@ import {
 
 interface CPDProps {
   entries: Entry[];
+  onClose: () => void;
 }
 
-export default function CPD({ entries }: CPDProps) {
+export default function CPD({ entries, onClose }: CPDProps) {
   const [selectedCountry, setSelectedCountry] = useState<CPDCountry>('UK');
   const [showAddRecord, setShowAddRecord] = useState(false);
   const [manualRecords, setManualRecords] = useState<CPDRecord[]>([]);
@@ -80,13 +82,24 @@ export default function CPD({ entries }: CPDProps) {
   );
 
   return (
-    <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col">
+    <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col overflow-y-auto custom-scrollbar">
       {/* Header */}
       <div className="flex-shrink-0 p-6 border-b border-white/10">
-        <h1 className="text-2xl font-bold mb-1">CPD Portfolio</h1>
-        <p className="text-white/60 text-sm">
-          Professional development tracking and evidence
-        </p>
+        <div className="flex items-center gap-3 mb-3">
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 transition"
+            aria-label="Go back to dashboard"
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold">CPD Portfolio</h1>
+            <p className="text-white/60 text-sm">
+              Professional development tracking and evidence
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Country Selection */}
