@@ -82,7 +82,7 @@ export default function HolodeckSpace({
       </div>
 
       {/* Content area */}
-      <div className="flex-1 overflow-y-auto p-6 flex flex-col">
+      <div className="flex-1 overflow-y-auto p-6 pb-32 custom-scrollbar">
         {/* Guide */}
         <div className="flex justify-center mb-6">
           <div className="scale-125">
@@ -102,12 +102,12 @@ export default function HolodeckSpace({
         </div>
 
         {/* Answer textarea */}
-        <div className="flex-1 min-h-[200px]">
+        <div className="min-h-[300px]">
           <textarea
             value={answer}
             onChange={(e) => onAnswer(e.target.value)}
             placeholder="Take your time. Write what comes up..."
-            className="w-full h-full min-h-[200px] p-4 rounded-2xl border border-white/15 bg-white/5 text-white placeholder:text-white/40 resize-none focus:outline-none focus:ring-2 transition"
+            className="w-full h-[300px] p-4 rounded-2xl border border-white/15 bg-white/5 text-white placeholder:text-white/40 resize-none focus:outline-none focus:ring-2 focus:ring-cyan-400/50 transition custom-scrollbar"
           />
         </div>
       </div>
