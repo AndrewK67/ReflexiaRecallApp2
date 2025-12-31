@@ -2,9 +2,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  X, Undo2, Redo2, Eraser, Pencil, Save, Trash2, Palette,
+  X, Undo2, Redo2, Eraser, Pencil, Save, Trash2,
   Paintbrush, Highlighter, Sparkles, Square, Circle,
-  ArrowRight, Minus, PaintBucket, Type, ChevronDown
+  ArrowRight, Minus, PaintBucket, Type, ChevronDown,
+  Hand, ZoomIn, ZoomOut, Droplet
 } from "lucide-react";
 
 interface CanvasBoardProps {
@@ -28,7 +29,8 @@ type Tool =
   | "line"
   | "arrow"
   | "fill"
-  | "text";
+  | "text"
+  | "hand";
 
 export const CanvasBoard: React.FC<CanvasBoardProps> = ({
   onSave,
@@ -54,6 +56,8 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
   const [textInputPos, setTextInputPos] = useState<{ x: number; y: number } | null>(null);
   const [textValue, setTextValue] = useState("");
   const [showToolMenu, setShowToolMenu] = useState(false);
+  const [zoom, setZoom] = useState<number>(1);
+  const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   // Tool definitions with icons and labels
   const toolDefs = useMemo(() => ({
@@ -68,21 +72,18 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
     arrow: { label: "Arrow", icon: ArrowRight, category: "shape" },
     fill: { label: "Fill", icon: PaintBucket, category: "other" },
     text: { label: "Text", icon: Type, category: "other" },
+    hand: { label: "Pan", icon: Hand, category: "other" },
   }), []);
 
   const currentToolDef = toolDefs[tool];
 
-  const presetColors = [
-    "#e5e7eb", // Light gray (default)
+  // Quick color presets including black and greys
+  const quickColors = [
+    "#000000", // Black
+    "#333333", // Dark grey
+    "#666666", // Medium grey
+    "#999999", // Light grey
     "#ffffff", // White
-    "#ef4444", // Red
-    "#f97316", // Orange
-    "#eab308", // Yellow
-    "#22c55e", // Green
-    "#06b6d4", // Cyan
-    "#3b82f6", // Blue
-    "#8b5cf6", // Purple
-    "#ec4899", // Pink
   ];
 
   const dpr = useMemo(() => window.devicePixelRatio || 1, []);
@@ -344,22 +345,54 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
   const toLocalPoint = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current!;
     const rect = canvas.getBoundingClientRect();
-    return {
-      x: (e.clientX - rect.left),
-      y: (e.clientY - rect.top),
-    };
+    // Account for zoom and pan
+    const x = ((e.clientX - rect.left) - panOffset.x) / zoom;
+    const y = ((e.clientY - rect.top) - panOffset.y) / zoom;
+    return { x, y };
+  };
+
+  const handleZoom = (delta: number, centerX?: number, centerY?: number) => {
+    const newZoom = Math.max(0.5, Math.min(4, zoom + delta));
+
+    // If center point provided, adjust pan to zoom towards that point
+    if (centerX !== undefined && centerY !== undefined) {
+      const zoomRatio = newZoom / zoom;
+      setPanOffset({
+        x: centerX - (centerX - panOffset.x) * zoomRatio,
+        y: centerY - (centerY - panOffset.y) * zoomRatio,
+      });
+    }
+
+    setZoom(newZoom);
+  };
+
+  const resetView = () => {
+    setZoom(1);
+    setPanOffset({ x: 0, y: 0 });
   };
 
   const start = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const ctx = getCtx();
     if (!ctx) return;
 
+    // Handle pan/hand tool
+    if (tool === "hand") {
+      drawing.current = true;
+      const canvas = canvasRef.current!;
+      const rect = canvas.getBoundingClientRect();
+      lastPoint.current = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      };
+      return;
+    }
+
     const point = toLocalPoint(e);
 
     // Handle fill tool
     if (tool === "fill") {
       pushHistory();
-      // Account for DPR when flood filling
+      // Account for DPR and zoom when flood filling
       floodFill(point.x * dpr, point.y * dpr, color);
       return;
     }
@@ -388,6 +421,29 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
 
   const move = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!drawing.current) return;
+
+    // Handle panning with hand tool
+    if (tool === "hand") {
+      const canvas = canvasRef.current!;
+      const rect = canvas.getBoundingClientRect();
+      const current = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      };
+      const last = lastPoint.current;
+      if (!last) {
+        lastPoint.current = current;
+        return;
+      }
+
+      setPanOffset({
+        x: panOffset.x + (current.x - last.x),
+        y: panOffset.y + (current.y - last.y),
+      });
+      lastPoint.current = current;
+      return;
+    }
+
     const ctx = getCtx();
     if (!ctx) return;
 
@@ -442,14 +498,15 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
   const content = (
     <div className="absolute inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="w-full max-w-4xl rounded-2xl bg-slate-950 border border-slate-800 shadow-xl overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
-          <div className="text-slate-100 font-semibold">Sketch</div>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900/50">
+          <div className="text-slate-100 font-semibold text-lg">Sketch Canvas</div>
           <button
             onClick={onCancel}
-            className="p-2 rounded-lg hover:bg-slate-900 text-slate-200"
-            aria-label="Close"
+            className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold flex items-center gap-2 transition-colors"
+            aria-label="Close and exit canvas"
           >
             <X className="w-5 h-5" />
+            Exit
           </button>
         </div>
 
@@ -589,24 +646,66 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
 
           {/* Color Picker */}
           {showColorPicker && (
-            <div className="flex flex-wrap gap-2 p-3 bg-slate-900/60 rounded-lg border border-slate-800">
-              {presetColors.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => {
-                    setColor(c);
-                    setShowColorPicker(false);
-                  }}
-                  className={[
-                    "w-8 h-8 rounded-lg border-2 hover:scale-110 transition-transform",
-                    c === color ? "border-slate-100" : "border-slate-700",
-                  ].join(" ")}
-                  style={{ backgroundColor: c }}
-                  title={c}
+            <div className="p-3 bg-slate-900/60 rounded-lg border border-slate-800 space-y-3">
+              {/* Color Wheel */}
+              <div className="flex items-center gap-3">
+                <Droplet className="w-4 h-4 text-slate-400" />
+                <input
+                  type="color"
+                  value={color}
+                  onChange={(e) => setColor(e.target.value)}
+                  className="w-full h-10 rounded border border-slate-700 bg-slate-950 cursor-pointer"
+                  title="Pick any color"
                 />
-              ))}
+              </div>
+
+              {/* Quick Colors */}
+              <div className="flex gap-2">
+                {quickColors.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => setColor(c)}
+                    className={[
+                      "w-8 h-8 rounded border-2 hover:scale-110 transition-transform",
+                      c === color ? "border-slate-100" : "border-slate-700",
+                    ].join(" ")}
+                    style={{ backgroundColor: c }}
+                    title={c}
+                  />
+                ))}
+              </div>
             </div>
           )}
+
+          {/* Zoom Controls */}
+          <div className="flex items-center gap-2 px-2 py-2 bg-slate-900/40 rounded-lg border border-slate-800">
+            <button
+              onClick={() => handleZoom(-0.25)}
+              disabled={zoom <= 0.5}
+              className="px-2 py-1 rounded border border-slate-700 text-slate-300 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Zoom out"
+            >
+              <ZoomOut className="w-4 h-4" />
+            </button>
+            <span className="text-slate-400 text-xs min-w-[3rem] text-center">
+              {Math.round(zoom * 100)}%
+            </span>
+            <button
+              onClick={() => handleZoom(0.25)}
+              disabled={zoom >= 4}
+              className="px-2 py-1 rounded border border-slate-700 text-slate-300 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Zoom in"
+            >
+              <ZoomIn className="w-4 h-4" />
+            </button>
+            <button
+              onClick={resetView}
+              className="px-2 py-1 rounded border border-slate-700 text-slate-300 hover:bg-slate-800 text-xs"
+              title="Reset zoom and pan"
+            >
+              Reset
+            </button>
+          </div>
 
           {/* Bottom row - Actions */}
           <div className="flex flex-wrap items-center gap-2">
@@ -649,16 +748,24 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
             </button>
           </div>
 
-          <div className="rounded-xl border border-slate-800 bg-slate-950 p-3 overflow-auto">
-            <canvas
-              ref={canvasRef}
-              className="rounded-lg border border-slate-800 touch-none"
-              onPointerDown={start}
-              onPointerMove={move}
-              onPointerUp={end}
-              onPointerCancel={end}
-              onPointerLeave={end}
-            />
+          <div className="rounded-xl border border-slate-800 bg-slate-950 p-3 overflow-hidden relative">
+            <div
+              style={{
+                transform: `scale(${zoom}) translate(${panOffset.x / zoom}px, ${panOffset.y / zoom}px)`,
+                transformOrigin: "0 0",
+                cursor: tool === "hand" ? "grab" : "crosshair",
+              }}
+            >
+              <canvas
+                ref={canvasRef}
+                className="rounded-lg border border-slate-800 touch-none"
+                onPointerDown={start}
+                onPointerMove={move}
+                onPointerUp={end}
+                onPointerCancel={end}
+                onPointerLeave={end}
+              />
+            </div>
           </div>
 
           {/* Text Input Dialog */}
@@ -703,7 +810,7 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
           )}
 
           <div className="text-slate-500 text-xs">
-            Tip: Use brush tools (pen, marker, highlighter, spray), shapes (rectangle, circle, line, arrow), fill, and text. Adjust size (1-24px) and colors. Undo/redo or clear to start fresh.
+            Tip: Use Pan tool to move around. Zoom in/out with controls. Pick colors with the color wheel or quick presets (black, greys, white). Draw with brushes, shapes, fill, and text tools.
           </div>
         </div>
       </div>
