@@ -172,46 +172,93 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
   };
 
   const pushHistory = () => {
-    const ctx = getCtx();
-    if (!ctx) return;
-    const img = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
+    // Save the entire layers state
+    const layerSnapshots = layers.map(layer => {
+      const ctx = layer.canvas.getContext("2d", { willReadFrequently: true });
+      if (!ctx) return null;
+      return {
+        id: layer.id,
+        imageData: ctx.getImageData(0, 0, layer.canvas.width, layer.canvas.height),
+        visible: layer.visible,
+        opacity: layer.opacity,
+        name: layer.name,
+      };
+    }).filter(Boolean);
+
     setHistory((h) => {
-      const newHistory = [...h.slice(0, historyStep + 1), img].slice(-30);
+      const newHistory = [...h.slice(0, historyStep + 1), layerSnapshots as any].slice(-30);
       setHistoryStep(newHistory.length - 1);
       return newHistory;
     });
   };
 
   const undo = () => {
-    const ctx = getCtx();
-    if (!ctx || historyStep <= 0) return;
+    if (historyStep <= 0 || history.length === 0) return;
     const newStep = historyStep - 1;
+    const layerSnapshots = history[newStep] as any;
+
+    // Restore all layers from snapshot
+    const restoredLayers = layers.map(layer => {
+      const snapshot = layerSnapshots.find((s: any) => s.id === layer.id);
+      if (!snapshot) return layer;
+
+      const ctx = layer.canvas.getContext("2d")!;
+      ctx.putImageData(snapshot.imageData, 0, 0);
+
+      return {
+        ...layer,
+        visible: snapshot.visible,
+        opacity: snapshot.opacity,
+        name: snapshot.name,
+      };
+    });
+
+    setLayers(restoredLayers);
     setHistoryStep(newStep);
-    ctx.putImageData(history[newStep], 0, 0);
+    compositeAllLayers();
   };
 
   const redo = () => {
-    const ctx = getCtx();
-    if (!ctx || historyStep >= history.length - 1) return;
+    if (historyStep >= history.length - 1) return;
     const newStep = historyStep + 1;
+    const layerSnapshots = history[newStep] as any;
+
+    // Restore all layers from snapshot
+    const restoredLayers = layers.map(layer => {
+      const snapshot = layerSnapshots.find((s: any) => s.id === layer.id);
+      if (!snapshot) return layer;
+
+      const ctx = layer.canvas.getContext("2d")!;
+      ctx.putImageData(snapshot.imageData, 0, 0);
+
+      return {
+        ...layer,
+        visible: snapshot.visible,
+        opacity: snapshot.opacity,
+        name: snapshot.name,
+      };
+    });
+
+    setLayers(restoredLayers);
     setHistoryStep(newStep);
-    ctx.putImageData(history[newStep], 0, 0);
+    compositeAllLayers();
   };
 
   const clear = () => {
-    const ctx = getCtx();
-    if (!ctx) return;
-    ctx.fillStyle = "#0b1220";
-    ctx.fillRect(0, 0, width, height);
+    const layerCtx = getActiveLayerCtx();
+    if (!layerCtx) return;
     pushHistory();
+    // Clear active layer to transparent
+    layerCtx.clearRect(0, 0, width, height);
+    compositeAllLayers();
   };
 
   // Flood fill algorithm for bucket tool
   const floodFill = (startX: number, startY: number, fillColor: string) => {
-    const ctx = getCtx();
-    if (!ctx) return;
+    const layerCtx = getActiveLayerCtx();
+    if (!layerCtx) return;
 
-    const imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
+    const imageData = layerCtx.getImageData(0, 0, layerCtx.canvas.width, layerCtx.canvas.height);
     const pixels = imageData.data;
 
     const startPos = (Math.floor(startY) * imageData.width + Math.floor(startX)) * 4;
@@ -262,7 +309,8 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
       stack.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
     }
 
-    ctx.putImageData(imageData, 0, 0);
+    layerCtx.putImageData(imageData, 0, 0);
+    compositeAllLayers();
   };
 
   // Draw shapes
@@ -369,18 +417,19 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
 
   const addText = () => {
     if (!textInputPos || !textValue.trim()) return;
-    const ctx = getCtx();
-    if (!ctx) return;
+    const layerCtx = getActiveLayerCtx();
+    if (!layerCtx) return;
 
+    pushHistory();
     const fontSize = Math.max(16, strokeWidth * 3);
-    ctx.font = `${fontSize}px sans-serif`;
-    ctx.fillStyle = color;
-    ctx.fillText(textValue, textInputPos.x, textInputPos.y);
+    layerCtx.font = `${fontSize}px sans-serif`;
+    layerCtx.fillStyle = color;
+    layerCtx.fillText(textValue, textInputPos.x, textInputPos.y);
 
     setShowTextInput(false);
     setTextValue("");
     setTextInputPos(null);
-    pushHistory();
+    compositeAllLayers();
   };
 
   useEffect(() => {
@@ -515,9 +564,6 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
   };
 
   const start = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    const ctx = getCtx();
-    if (!ctx) return;
-
     // Handle pan/hand tool
     if (tool === "hand") {
       drawing.current = true;
@@ -622,9 +668,6 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
       return;
     }
 
-    const ctx = getCtx();
-    if (!ctx) return;
-
     // Handle selection preview (no drawing, just UI update)
     if (tool === "select" && shapeStart.current) {
       const x = Math.min(shapeStart.current.x, p.x);
@@ -635,14 +678,21 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
       return;
     }
 
+    const layerCtx = getActiveLayerCtx();
+    if (!layerCtx) return;
+
     // Handle shape drawing with preview
     const isShapeTool = ["rectangle", "circle", "line", "arrow"].includes(tool);
     if (isShapeTool && shapeStart.current) {
       // Restore to last history state for preview
       if (history[historyStep]) {
-        ctx.putImageData(history[historyStep], 0, 0);
+        const layerSnapshot = (history[historyStep] as any).find((s: any) => s.id === activeLayerId);
+        if (layerSnapshot) {
+          layerCtx.putImageData(layerSnapshot.imageData, 0, 0);
+        }
       }
-      drawShape(ctx, shapeStart.current, p);
+      drawShape(layerCtx, shapeStart.current, p);
+      compositeAllLayers();
       return;
     }
 
@@ -653,28 +703,26 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
       return;
     }
 
-    drawBrush(ctx, last, p);
+    drawBrush(layerCtx, last, p);
     lastPoint.current = p;
+    compositeAllLayers();
   };
 
   const end = (e?: React.PointerEvent<HTMLCanvasElement>) => {
     const ctx = getCtx();
+    const layerCtx = getActiveLayerCtx();
 
     // Finalize dragging selection
     if (isDraggingSelection && selection && selectionImage) {
       pushHistory();
-      // Clear old position
-      const activeCtx = getActiveLayerCtx() || ctx;
-      if (activeCtx) {
-        // Re-composite to show the moved selection
-        compositeAllLayers();
-      }
+      // Re-composite to show the moved selection
+      compositeAllLayers();
       setIsDraggingSelection(false);
       setDragStartPoint(null);
       return;
     }
 
-    // Finalize selection
+    // Finalize selection - capture from composite canvas to get all visible layers
     if (tool === "select" && shapeStart.current && drawing.current && e) {
       const point = toLocalPoint(e);
       const x = Math.min(shapeStart.current.x, point.x);
@@ -683,7 +731,7 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
       const height = Math.abs(point.y - shapeStart.current.y);
 
       if (width > 5 && height > 5 && ctx) {
-        // Capture selected area
+        // Capture selected area from composite canvas
         const imageData = ctx.getImageData(
           x * dpr,
           y * dpr,
@@ -699,10 +747,15 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
 
     // Finalize shape drawing
     const isShapeTool = ["rectangle", "circle", "line", "arrow"].includes(tool);
-    if (isShapeTool && shapeStart.current && drawing.current && ctx) {
+    if (isShapeTool && shapeStart.current && drawing.current) {
       // Shape is already drawn from move event, just push history
       pushHistory();
       shapeStart.current = null;
+    }
+
+    // Finalize brush drawing
+    if (["pen", "marker", "highlighter", "spray", "eraser"].includes(tool) && drawing.current) {
+      pushHistory();
     }
 
     drawing.current = false;
@@ -721,13 +774,13 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
   // Selection operations
   const deleteSelection = () => {
     if (!selection) return;
-    const ctx = getCtx();
-    if (!ctx) return;
+    const layerCtx = getActiveLayerCtx();
+    if (!layerCtx) return;
 
     pushHistory();
-    // Clear the selected area
-    ctx.fillStyle = "#0b1220";
-    ctx.fillRect(selection.x, selection.y, selection.width, selection.height);
+    // Clear the selected area on active layer (make it transparent)
+    layerCtx.clearRect(selection.x, selection.y, selection.width, selection.height);
+    compositeAllLayers();
     setSelection(null);
     setSelectionImage(null);
   };
@@ -745,11 +798,12 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
 
   const pasteSelection = (point: { x: number; y: number }) => {
     if (!copiedSelection) return;
-    const ctx = getCtx();
-    if (!ctx) return;
+    const layerCtx = getActiveLayerCtx();
+    if (!layerCtx) return;
 
     pushHistory();
-    ctx.putImageData(copiedSelection, point.x * dpr, point.y * dpr);
+    layerCtx.putImageData(copiedSelection, point.x * dpr, point.y * dpr);
+    compositeAllLayers();
 
     // Set as new selection
     setSelection({
@@ -763,18 +817,18 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
 
   const moveSelection = (dx: number, dy: number) => {
     if (!selection || !selectionImage) return;
-    const ctx = getCtx();
-    if (!ctx) return;
+    const layerCtx = getActiveLayerCtx();
+    if (!layerCtx) return;
 
     pushHistory();
-    // Clear old position
-    ctx.fillStyle = "#0b1220";
-    ctx.fillRect(selection.x, selection.y, selection.width, selection.height);
+    // Clear old position on active layer
+    layerCtx.clearRect(selection.x, selection.y, selection.width, selection.height);
 
     // Draw at new position
     const newX = selection.x + dx;
     const newY = selection.y + dy;
-    ctx.putImageData(selectionImage, newX * dpr, newY * dpr);
+    layerCtx.putImageData(selectionImage, newX * dpr, newY * dpr);
+    compositeAllLayers();
 
     setSelection({ x: newX, y: newY, width: selection.width, height: selection.height });
   };
