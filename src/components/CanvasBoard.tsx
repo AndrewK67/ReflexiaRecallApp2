@@ -5,8 +5,18 @@ import {
   X, Undo2, Redo2, Eraser, Pencil, Save, Trash2,
   Paintbrush, Highlighter, Sparkles, Square, Circle,
   ArrowRight, Minus, PaintBucket, Type, ChevronDown,
-  Hand, ZoomIn, ZoomOut, Droplet
+  Hand, ZoomIn, ZoomOut, Droplet, MousePointer2, Copy, Move, Scissors,
+  ArrowUp, ArrowDown, ArrowLeft, ArrowRight as ArrowRightIcon,
+  Layers, Plus, Eye, EyeOff, ChevronUp, ChevronDown as ChevronDownIcon
 } from "lucide-react";
+
+interface Layer {
+  id: string;
+  name: string;
+  visible: boolean;
+  opacity: number;
+  canvas: HTMLCanvasElement;
+}
 
 interface CanvasBoardProps {
   onSave?: (dataUrl: string) => void;
@@ -30,7 +40,8 @@ type Tool =
   | "arrow"
   | "fill"
   | "text"
-  | "hand";
+  | "hand"
+  | "select";
 
 export const CanvasBoard: React.FC<CanvasBoardProps> = ({
   onSave,
@@ -45,6 +56,8 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
   const lastPoint = useRef<{ x: number; y: number } | null>(null);
   const shapeStart = useRef<{ x: number; y: number } | null>(null);
   const tempCanvas = useRef<HTMLCanvasElement | null>(null);
+  const lastTouchDistance = useRef<number>(0);
+  const lastTouchMidpoint = useRef<{ x: number; y: number } | null>(null);
 
   const [tool, setTool] = useState<Tool>("pen");
   const [strokeWidth, setStrokeWidth] = useState<number>(4);
@@ -58,6 +71,22 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
   const [showToolMenu, setShowToolMenu] = useState(false);
   const [zoom, setZoom] = useState<number>(1);
   const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [selection, setSelection] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
+  const [selectionImage, setSelectionImage] = useState<ImageData | null>(null);
+  const [selectionPreview, setSelectionPreview] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
+  const [layers, setLayers] = useState<Layer[]>([]);
+  const [activeLayerId, setActiveLayerId] = useState<string>("");
+  const [showLayersPanel, setShowLayersPanel] = useState(false);
 
   // Tool definitions with icons and labels
   const toolDefs = useMemo(() => ({
@@ -73,6 +102,7 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
     fill: { label: "Fill", icon: PaintBucket, category: "other" },
     text: { label: "Text", icon: Type, category: "other" },
     hand: { label: "Pan", icon: Hand, category: "other" },
+    select: { label: "Select", icon: MousePointer2, category: "other" },
   }), []);
 
   const currentToolDef = toolDefs[tool];
@@ -88,10 +118,54 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
 
   const dpr = useMemo(() => window.devicePixelRatio || 1, []);
 
+  // Create a new layer
+  const createLayer = (name: string): Layer => {
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.floor(width * dpr);
+    canvas.height = Math.floor(height * dpr);
+    const ctx = canvas.getContext("2d")!;
+    ctx.scale(dpr, dpr);
+    // Transparent background for layers
+    ctx.clearRect(0, 0, width, height);
+
+    return {
+      id: `layer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      name,
+      visible: true,
+      opacity: 1.0,
+      canvas,
+    };
+  };
+
   const getCtx = () => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
     return canvas.getContext("2d", { willReadFrequently: true });
+  };
+
+  const getActiveLayerCtx = () => {
+    const layer = layers.find((l) => l.id === activeLayerId);
+    if (!layer) return null;
+    return layer.canvas.getContext("2d", { willReadFrequently: true });
+  };
+
+  // Composite all visible layers onto the main canvas
+  const compositeAllLayers = () => {
+    const ctx = getCtx();
+    if (!ctx) return;
+
+    // Clear main canvas
+    ctx.fillStyle = "#0b1220";
+    ctx.fillRect(0, 0, width, height);
+
+    // Draw each visible layer
+    for (const layer of layers) {
+      if (!layer.visible) continue;
+
+      ctx.globalAlpha = layer.opacity;
+      ctx.drawImage(layer.canvas, 0, 0, width, height);
+    }
+    ctx.globalAlpha = 1.0;
   };
 
   const pushHistory = () => {
@@ -323,24 +397,41 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
     ctx.fillStyle = "#0b1220";
     ctx.fillRect(0, 0, width, height);
 
-    // If we have an initial drawing, render it.
-    if (initialDataUrl) {
-      const img = new Image();
-      img.onload = () => {
-        try {
-          ctx.drawImage(img, 0, 0, width, height);
-          pushHistory();
-        } catch {
-          // ignore
-        }
-      };
-      img.src = initialDataUrl;
-    }
+    // Initialize first layer if no layers exist
+    if (layers.length === 0) {
+      const initialLayer = createLayer("Layer 1");
 
-    // initial history snapshot
-    pushHistory();
+      // If we have an initial drawing, render it on the first layer
+      if (initialDataUrl) {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const layerCtx = initialLayer.canvas.getContext("2d")!;
+            layerCtx.drawImage(img, 0, 0, width, height);
+            setLayers([initialLayer]);
+            setActiveLayerId(initialLayer.id);
+            pushHistory();
+          } catch {
+            // ignore
+          }
+        };
+        img.src = initialDataUrl;
+      } else {
+        setLayers([initialLayer]);
+        setActiveLayerId(initialLayer.id);
+        pushHistory();
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [width, height, dpr]);
+
+  // Composite layers whenever they change
+  useEffect(() => {
+    if (layers.length > 0) {
+      compositeAllLayers();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layers]);
 
   const toLocalPoint = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current!;
@@ -404,6 +495,13 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
       return;
     }
 
+    // Handle select tool
+    if (tool === "select") {
+      drawing.current = true;
+      shapeStart.current = point;
+      return;
+    }
+
     // Handle shape tools
     const isShapeTool = ["rectangle", "circle", "line", "arrow"].includes(tool);
     if (isShapeTool) {
@@ -449,6 +547,16 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
 
     const p = toLocalPoint(e);
 
+    // Handle selection preview (no drawing, just UI update)
+    if (tool === "select" && shapeStart.current) {
+      const x = Math.min(shapeStart.current.x, p.x);
+      const y = Math.min(shapeStart.current.y, p.y);
+      const width = Math.abs(p.x - shapeStart.current.x);
+      const height = Math.abs(p.y - shapeStart.current.y);
+      setSelectionPreview({ x, y, width, height });
+      return;
+    }
+
     // Handle shape drawing with preview
     const isShapeTool = ["rectangle", "circle", "line", "arrow"].includes(tool);
     if (isShapeTool && shapeStart.current) {
@@ -471,8 +579,31 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
     lastPoint.current = p;
   };
 
-  const end = () => {
+  const end = (e?: React.PointerEvent<HTMLCanvasElement>) => {
     const ctx = getCtx();
+
+    // Finalize selection
+    if (tool === "select" && shapeStart.current && drawing.current && e) {
+      const point = toLocalPoint(e);
+      const x = Math.min(shapeStart.current.x, point.x);
+      const y = Math.min(shapeStart.current.y, point.y);
+      const width = Math.abs(point.x - shapeStart.current.x);
+      const height = Math.abs(point.y - shapeStart.current.y);
+
+      if (width > 5 && height > 5 && ctx) {
+        // Capture selected area
+        const imageData = ctx.getImageData(
+          x * dpr,
+          y * dpr,
+          width * dpr,
+          height * dpr
+        );
+        setSelectionImage(imageData);
+        setSelection({ x, y, width, height });
+      }
+      setSelectionPreview(null);
+      shapeStart.current = null;
+    }
 
     // Finalize shape drawing
     const isShapeTool = ["rectangle", "circle", "line", "arrow"].includes(tool);
@@ -493,6 +624,182 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
     const dataUrl = canvas.toDataURL("image/png");
     onSave?.(dataUrl);
     onExport?.(dataUrl);
+  };
+
+  // Selection operations
+  const deleteSelection = () => {
+    if (!selection) return;
+    const ctx = getCtx();
+    if (!ctx) return;
+
+    pushHistory();
+    // Clear the selected area
+    ctx.fillStyle = "#0b1220";
+    ctx.fillRect(selection.x, selection.y, selection.width, selection.height);
+    setSelection(null);
+    setSelectionImage(null);
+  };
+
+  const copySelection = () => {
+    if (!selectionImage) return;
+    // Store in a ref for pasting later
+    // In a real app, this would copy to clipboard
+    alert("Selection copied! Switch to any drawing tool to paste at cursor location.");
+  };
+
+  const moveSelection = (dx: number, dy: number) => {
+    if (!selection || !selectionImage) return;
+    const ctx = getCtx();
+    if (!ctx) return;
+
+    pushHistory();
+    // Clear old position
+    ctx.fillStyle = "#0b1220";
+    ctx.fillRect(selection.x, selection.y, selection.width, selection.height);
+
+    // Draw at new position
+    const newX = selection.x + dx;
+    const newY = selection.y + dy;
+    ctx.putImageData(selectionImage, newX * dpr, newY * dpr);
+
+    setSelection({ x: newX, y: newY, width: selection.width, height: selection.height });
+  };
+
+  const cutSelection = () => {
+    if (!selection || !selectionImage) return;
+    copySelection();
+    deleteSelection();
+  };
+
+  // Layer management functions
+  const addLayer = () => {
+    const newLayer = createLayer(`Layer ${layers.length + 1}`);
+    setLayers([...layers, newLayer]);
+    setActiveLayerId(newLayer.id);
+  };
+
+  const deleteLayer = (layerId: string) => {
+    if (layers.length <= 1) return; // Keep at least one layer
+    const newLayers = layers.filter((l) => l.id !== layerId);
+    setLayers(newLayers);
+    if (activeLayerId === layerId) {
+      setActiveLayerId(newLayers[0].id);
+    }
+  };
+
+  const toggleLayerVisibility = (layerId: string) => {
+    setLayers(
+      layers.map((l) => (l.id === layerId ? { ...l, visible: !l.visible } : l))
+    );
+  };
+
+  const setLayerOpacity = (layerId: string, opacity: number) => {
+    setLayers(
+      layers.map((l) => (l.id === layerId ? { ...l, opacity } : l))
+    );
+  };
+
+  const moveLayerUp = (layerId: string) => {
+    const index = layers.findIndex((l) => l.id === layerId);
+    if (index >= layers.length - 1) return;
+    const newLayers = [...layers];
+    [newLayers[index], newLayers[index + 1]] = [newLayers[index + 1], newLayers[index]];
+    setLayers(newLayers);
+  };
+
+  const moveLayerDown = (layerId: string) => {
+    const index = layers.findIndex((l) => l.id === layerId);
+    if (index <= 0) return;
+    const newLayers = [...layers];
+    [newLayers[index], newLayers[index - 1]] = [newLayers[index - 1], newLayers[index]];
+    setLayers(newLayers);
+  };
+
+  const mergeLayers = () => {
+    if (layers.length <= 1) return;
+
+    // Create a new merged layer
+    const mergedLayer = createLayer("Merged");
+    const mergedCtx = mergedLayer.canvas.getContext("2d")!;
+
+    // Draw all visible layers onto the merged layer
+    for (const layer of layers) {
+      if (!layer.visible) continue;
+      mergedCtx.globalAlpha = layer.opacity;
+      mergedCtx.drawImage(layer.canvas, 0, 0);
+    }
+    mergedCtx.globalAlpha = 1.0;
+
+    setLayers([mergedLayer]);
+    setActiveLayerId(mergedLayer.id);
+  };
+
+  // Touch gesture handlers for pinch-to-zoom and two-finger pan
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 2) {
+      // Two-finger gesture - prevent default drawing behavior
+      e.preventDefault();
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+
+      // Calculate initial distance for pinch-to-zoom
+      const dx = touch2.clientX - touch1.clientX;
+      const dy = touch2.clientY - touch1.clientY;
+      lastTouchDistance.current = Math.sqrt(dx * dx + dy * dy);
+
+      // Calculate midpoint for panning
+      lastTouchMidpoint.current = {
+        x: (touch1.clientX + touch2.clientX) / 2,
+        y: (touch1.clientY + touch2.clientY) / 2,
+      };
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+
+      // Calculate current distance
+      const dx = touch2.clientX - touch1.clientX;
+      const dy = touch2.clientY - touch1.clientY;
+      const currentDistance = Math.sqrt(dx * dx + dy * dy);
+
+      // Calculate current midpoint
+      const currentMidpoint = {
+        x: (touch1.clientX + touch2.clientX) / 2,
+        y: (touch1.clientY + touch2.clientY) / 2,
+      };
+
+      if (lastTouchDistance.current > 0 && lastTouchMidpoint.current) {
+        // Pinch-to-zoom
+        const distanceDelta = currentDistance - lastTouchDistance.current;
+        const zoomDelta = distanceDelta * 0.01; // Scale factor
+        const newZoom = Math.max(0.5, Math.min(4, zoom + zoomDelta));
+
+        // Pan based on midpoint movement
+        const panDeltaX = currentMidpoint.x - lastTouchMidpoint.current.x;
+        const panDeltaY = currentMidpoint.y - lastTouchMidpoint.current.y;
+
+        setPanOffset({
+          x: panOffset.x + panDeltaX,
+          y: panOffset.y + panDeltaY,
+        });
+
+        setZoom(newZoom);
+      }
+
+      lastTouchDistance.current = currentDistance;
+      lastTouchMidpoint.current = currentMidpoint;
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length < 2) {
+      lastTouchDistance.current = 0;
+      lastTouchMidpoint.current = null;
+    }
   };
 
   const content = (
@@ -739,6 +1046,15 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
             </button>
 
             <button
+              onClick={() => setShowLayersPanel(!showLayersPanel)}
+              className={`px-2 py-1 rounded border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-1 text-xs ${showLayersPanel ? 'bg-slate-800' : ''}`}
+              title="Layers"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              Layers
+            </button>
+
+            <button
               onClick={save}
               className="px-2 py-1 rounded bg-slate-100 text-slate-950 font-semibold hover:bg-white flex items-center gap-1 ml-auto text-xs"
               title="Save drawing"
@@ -758,15 +1074,116 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
             >
               <canvas
                 ref={canvasRef}
-                className="rounded border border-slate-800 touch-none"
+                className="rounded border border-slate-800"
                 onPointerDown={start}
                 onPointerMove={move}
                 onPointerUp={end}
                 onPointerCancel={end}
                 onPointerLeave={end}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
               />
+
+              {/* Selection Preview (while dragging) */}
+              {selectionPreview && (
+                <div
+                  className="absolute pointer-events-none"
+                  style={{
+                    left: selectionPreview.x,
+                    top: selectionPreview.y,
+                    width: selectionPreview.width,
+                    height: selectionPreview.height,
+                    border: "2px dashed #94a3b8",
+                    backgroundColor: "rgba(148, 163, 184, 0.1)",
+                  }}
+                />
+              )}
+
+              {/* Selection Overlay (finalized) */}
+              {selection && (
+                <div
+                  className="absolute pointer-events-none"
+                  style={{
+                    left: selection.x,
+                    top: selection.y,
+                    width: selection.width,
+                    height: selection.height,
+                    border: "2px dashed #60a5fa",
+                    backgroundColor: "rgba(96, 165, 250, 0.1)",
+                    animation: "marching-ants 0.5s linear infinite",
+                  }}
+                />
+              )}
             </div>
           </div>
+
+          {/* Selection Toolbar */}
+          {selection && (
+            <div className="flex items-center gap-1.5 p-2 bg-blue-900/40 rounded border border-blue-700 flex-shrink-0">
+              <div className="text-blue-200 text-xs font-semibold mr-2">Selection:</div>
+
+              <button
+                onClick={copySelection}
+                className="px-2 py-1 rounded border border-blue-700 text-blue-200 hover:bg-blue-800/40 flex items-center gap-1 text-xs"
+                title="Copy selection"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                Copy
+              </button>
+
+              <button
+                onClick={cutSelection}
+                className="px-2 py-1 rounded border border-blue-700 text-blue-200 hover:bg-blue-800/40 flex items-center gap-1 text-xs"
+                title="Cut selection"
+              >
+                <Scissors className="w-3.5 h-3.5" />
+                Cut
+              </button>
+
+              <button
+                onClick={deleteSelection}
+                className="px-2 py-1 rounded border border-red-700 text-red-200 hover:bg-red-800/40 flex items-center gap-1 text-xs"
+                title="Delete selection"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Delete
+              </button>
+
+              <div className="w-px h-4 bg-blue-700 mx-1" />
+
+              <div className="flex items-center gap-0.5">
+                <button
+                  onClick={() => moveSelection(0, -10)}
+                  className="p-1 rounded border border-blue-700 text-blue-200 hover:bg-blue-800/40"
+                  title="Move up"
+                >
+                  <ArrowUp className="w-3 h-3" />
+                </button>
+                <button
+                  onClick={() => moveSelection(0, 10)}
+                  className="p-1 rounded border border-blue-700 text-blue-200 hover:bg-blue-800/40"
+                  title="Move down"
+                >
+                  <ArrowDown className="w-3 h-3" />
+                </button>
+                <button
+                  onClick={() => moveSelection(-10, 0)}
+                  className="p-1 rounded border border-blue-700 text-blue-200 hover:bg-blue-800/40"
+                  title="Move left"
+                >
+                  <ArrowLeft className="w-3 h-3" />
+                </button>
+                <button
+                  onClick={() => moveSelection(10, 0)}
+                  className="p-1 rounded border border-blue-700 text-blue-200 hover:bg-blue-800/40"
+                  title="Move right"
+                >
+                  <ArrowRightIcon className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Text Input Dialog */}
           {showTextInput && (
@@ -805,6 +1222,106 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
                 >
                   Cancel
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* Layers Panel */}
+          {showLayersPanel && (
+            <div className="p-3 bg-slate-900/80 rounded-lg border border-slate-700 max-h-64 overflow-y-auto flex-shrink-0">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-slate-200 text-sm font-semibold">Layers</div>
+                <div className="flex gap-1">
+                  <button
+                    onClick={addLayer}
+                    className="p-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-200"
+                    title="Add layer"
+                  >
+                    <Plus className="w-3 h-3" />
+                  </button>
+                  <button
+                    onClick={mergeLayers}
+                    disabled={layers.length <= 1}
+                    className="px-2 py-1 rounded text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                    title="Merge all layers"
+                  >
+                    Merge
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                {[...layers].reverse().map((layer, idx) => (
+                  <div
+                    key={layer.id}
+                    className={`p-2 rounded border ${
+                      layer.id === activeLayerId
+                        ? "border-blue-500 bg-blue-900/20"
+                        : "border-slate-700 bg-slate-800/40"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => toggleLayerVisibility(layer.id)}
+                        className="p-0.5 text-slate-400 hover:text-slate-200"
+                        title={layer.visible ? "Hide layer" : "Show layer"}
+                      >
+                        {layer.visible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                      </button>
+
+                      <div
+                        onClick={() => setActiveLayerId(layer.id)}
+                        className="flex-1 text-xs text-slate-200 cursor-pointer"
+                      >
+                        {layer.name}
+                      </div>
+
+                      <div className="flex gap-0.5">
+                        <button
+                          onClick={() => moveLayerUp(layer.id)}
+                          disabled={idx === 0}
+                          className="p-0.5 text-slate-400 hover:text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                          title="Move up"
+                        >
+                          <ChevronUp className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => moveLayerDown(layer.id)}
+                          disabled={idx === layers.length - 1}
+                          className="p-0.5 text-slate-400 hover:text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                          title="Move down"
+                        >
+                          <ChevronDownIcon className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => deleteLayer(layer.id)}
+                          disabled={layers.length <= 1}
+                          className="p-0.5 text-red-400 hover:text-red-300 disabled:opacity-40 disabled:cursor-not-allowed"
+                          title="Delete layer"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Opacity slider */}
+                    <div className="mt-1.5 flex items-center gap-2">
+                      <span className="text-[10px] text-slate-500">Opacity:</span>
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={layer.opacity * 100}
+                        onChange={(e) => setLayerOpacity(layer.id, Number(e.target.value) / 100)}
+                        className="flex-1 h-1"
+                        title={`${Math.round(layer.opacity * 100)}%`}
+                      />
+                      <span className="text-[10px] text-slate-400 w-8">
+                        {Math.round(layer.opacity * 100)}%
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}

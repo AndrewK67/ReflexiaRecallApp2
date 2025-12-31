@@ -266,6 +266,16 @@ body {
   animation-duration: 0.3s;
 }
 
+/* Canvas selection marching ants animation */
+@keyframes marching-ants {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: 12;
+  }
+}
+
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .animated-backdrop-dark::before,
