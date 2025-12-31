@@ -87,6 +87,7 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
   const [isDraggingSelection, setIsDraggingSelection] = useState(false);
   const [dragStartPoint, setDragStartPoint] = useState<{ x: number; y: number } | null>(null);
   const [copiedSelection, setCopiedSelection] = useState<ImageData | null>(null);
+  const [originalSelectionPos, setOriginalSelectionPos] = useState<{ x: number; y: number } | null>(null);
   const [layers, setLayers] = useState<Layer[]>([]);
   const [activeLayerId, setActiveLayerId] = useState<string>("");
   const [showLayersPanel, setShowLayersPanel] = useState(false);
@@ -582,6 +583,7 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
     if (selection && isPointInSelection(point)) {
       setIsDraggingSelection(true);
       setDragStartPoint(point);
+      setOriginalSelectionPos({ x: selection.x, y: selection.y });
       return;
     }
 
@@ -602,9 +604,12 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
 
     // Handle select tool
     if (tool === "select") {
-      // Clear existing selection if starting a new one
-      setSelection(null);
-      setSelectionImage(null);
+      // If clicking outside existing selection, clear it
+      if (selection && !isPointInSelection(point)) {
+        setSelection(null);
+        setSelectionImage(null);
+      }
+      // Start new selection
       drawing.current = true;
       shapeStart.current = point;
       return;
@@ -629,14 +634,33 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
     const p = toLocalPoint(e);
 
     // Handle dragging selection
-    if (isDraggingSelection && dragStartPoint && selection && selectionImage) {
+    if (isDraggingSelection && dragStartPoint && selection && selectionImage && originalSelectionPos) {
+      const layerCtx = getActiveLayerCtx();
+      if (!layerCtx) return;
+
       const dx = p.x - dragStartPoint.x;
       const dy = p.y - dragStartPoint.y;
 
+      // Calculate new position
+      const newX = selection.x + dx;
+      const newY = selection.y + dy;
+
+      // Restore layer to state before any dragging
+      if (history[historyStep]) {
+        const layerSnapshot = (history[historyStep] as any).find((s: any) => s.id === activeLayerId);
+        if (layerSnapshot) {
+          layerCtx.putImageData(layerSnapshot.imageData, 0, 0);
+        }
+      }
+
+      // Draw selection at new position
+      layerCtx.putImageData(selectionImage, newX * dpr, newY * dpr);
+      compositeAllLayers();
+
       // Update selection position
       setSelection({
-        x: selection.x + dx,
-        y: selection.y + dy,
+        x: newX,
+        y: newY,
         width: selection.width,
         height: selection.height,
       });
@@ -715,14 +739,14 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
     // Finalize dragging selection
     if (isDraggingSelection && selection && selectionImage) {
       pushHistory();
-      // Re-composite to show the moved selection
-      compositeAllLayers();
       setIsDraggingSelection(false);
       setDragStartPoint(null);
+      setOriginalSelectionPos(null);
+      // Selection is already moved and composited, just push history
       return;
     }
 
-    // Finalize selection - capture from composite canvas to get all visible layers
+    // Finalize selection - capture from ACTIVE LAYER for consistency
     if (tool === "select" && shapeStart.current && drawing.current && e) {
       const point = toLocalPoint(e);
       const x = Math.min(shapeStart.current.x, point.x);
@@ -730,9 +754,10 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
       const width = Math.abs(point.x - shapeStart.current.x);
       const height = Math.abs(point.y - shapeStart.current.y);
 
-      if (width > 5 && height > 5 && ctx) {
-        // Capture selected area from composite canvas
-        const imageData = ctx.getImageData(
+      if (width > 5 && height > 5 && layerCtx) {
+        // Capture selected area from ACTIVE LAYER (not composite)
+        // This ensures consistency: select from layer, work on layer
+        const imageData = layerCtx.getImageData(
           x * dpr,
           y * dpr,
           width * dpr,
