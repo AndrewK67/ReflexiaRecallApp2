@@ -36,8 +36,8 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
   onSave,
   onExport,
   onCancel,
-  width = 360,
-  height = 640,
+  width = 400,
+  height = 780,
   initialDataUrl,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -496,35 +496,35 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
   };
 
   const content = (
-    <div className="absolute inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl rounded-2xl bg-slate-950 border border-slate-800 shadow-xl overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900/50">
-          <div className="text-slate-100 font-semibold text-lg">Sketch Canvas</div>
+    <div className="absolute inset-0 z-[100] bg-slate-950 flex flex-col">
+      <div className="w-full h-full flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between px-3 py-2 border-b border-slate-800 bg-slate-900/80 flex-shrink-0">
+          <div className="text-slate-100 font-semibold">Canvas</div>
           <button
             onClick={onCancel}
-            className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold flex items-center gap-2 transition-colors"
+            className="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold flex items-center gap-1.5 transition-colors"
             aria-label="Close and exit canvas"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
             Exit
           </button>
         </div>
 
-        <div className="p-4 space-y-3">
+        <div className="flex-1 flex flex-col p-2 space-y-2 overflow-hidden">
           {/* Compact Controls Row */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 flex-shrink-0">
             {/* Tool Selector */}
             <div className="relative flex-1">
               <button
                 onClick={() => setShowToolMenu(!showToolMenu)}
-                className="w-full px-3 py-2 rounded-lg border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center justify-between gap-2"
+                className="w-full px-2 py-1.5 rounded border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center justify-between gap-1.5 text-xs"
                 title="Select tool"
               >
-                <div className="flex items-center gap-2">
-                  {React.createElement(currentToolDef.icon, { className: "w-4 h-4" })}
-                  <span className="text-sm">{currentToolDef.label}</span>
+                <div className="flex items-center gap-1.5">
+                  {React.createElement(currentToolDef.icon, { className: "w-3.5 h-3.5" })}
+                  <span className="text-xs">{currentToolDef.label}</span>
                 </div>
-                <ChevronDown className="w-4 h-4" />
+                <ChevronDown className="w-3.5 h-3.5" />
               </button>
 
               {/* Dropdown Menu */}
@@ -620,54 +620,54 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
             {/* Color Picker Button */}
             <button
               onClick={() => setShowColorPicker(!showColorPicker)}
-              className="px-3 py-2 rounded-lg border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-2"
+              className="px-1.5 py-1.5 rounded border border-slate-800 text-slate-200 hover:bg-slate-900/40"
               title="Color"
             >
               <div
-                className="w-5 h-5 rounded border border-slate-600"
+                className="w-4 h-4 rounded border border-slate-600"
                 style={{ backgroundColor: color }}
               />
             </button>
 
             {/* Width Control */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <input
                 type="range"
                 min={1}
                 max={24}
                 value={strokeWidth}
                 onChange={(e) => setStrokeWidth(Number(e.target.value))}
-                className="w-20"
+                className="w-16"
                 title={`Stroke width: ${strokeWidth}px`}
               />
-              <span className="text-slate-400 text-xs w-6">{strokeWidth}</span>
+              <span className="text-slate-400 text-xs w-5">{strokeWidth}</span>
             </div>
           </div>
 
           {/* Color Picker */}
           {showColorPicker && (
-            <div className="p-3 bg-slate-900/60 rounded-lg border border-slate-800 space-y-3">
+            <div className="p-2 bg-slate-900/60 rounded border border-slate-800 space-y-2 flex-shrink-0">
               {/* Color Wheel */}
-              <div className="flex items-center gap-3">
-                <Droplet className="w-4 h-4 text-slate-400" />
+              <div className="flex items-center gap-2">
+                <Droplet className="w-3.5 h-3.5 text-slate-400" />
                 <input
                   type="color"
                   value={color}
                   onChange={(e) => setColor(e.target.value)}
-                  className="w-full h-10 rounded border border-slate-700 bg-slate-950 cursor-pointer"
+                  className="w-full h-7 rounded border border-slate-700 bg-slate-950 cursor-pointer"
                   title="Pick any color"
                 />
               </div>
 
               {/* Quick Colors */}
-              <div className="flex gap-2">
+              <div className="flex gap-1.5">
                 {quickColors.map((c) => (
                   <button
                     key={c}
                     onClick={() => setColor(c)}
                     className={[
-                      "w-8 h-8 rounded border-2 hover:scale-110 transition-transform",
-                      c === color ? "border-slate-100" : "border-slate-700",
+                      "w-6 h-6 rounded border hover:scale-110 transition-transform",
+                      c === color ? "border-slate-100 border-2" : "border-slate-700",
                     ].join(" ")}
                     style={{ backgroundColor: c }}
                     title={c}
@@ -678,29 +678,29 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
           )}
 
           {/* Zoom Controls */}
-          <div className="flex items-center gap-2 px-2 py-2 bg-slate-900/40 rounded-lg border border-slate-800">
+          <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-900/40 rounded border border-slate-800 flex-shrink-0">
             <button
               onClick={() => handleZoom(-0.25)}
               disabled={zoom <= 0.5}
-              className="px-2 py-1 rounded border border-slate-700 text-slate-300 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="p-1 rounded border border-slate-700 text-slate-300 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed"
               title="Zoom out"
             >
-              <ZoomOut className="w-4 h-4" />
+              <ZoomOut className="w-3.5 h-3.5" />
             </button>
-            <span className="text-slate-400 text-xs min-w-[3rem] text-center">
+            <span className="text-slate-400 text-[10px] min-w-[2.5rem] text-center">
               {Math.round(zoom * 100)}%
             </span>
             <button
               onClick={() => handleZoom(0.25)}
               disabled={zoom >= 4}
-              className="px-2 py-1 rounded border border-slate-700 text-slate-300 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="p-1 rounded border border-slate-700 text-slate-300 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed"
               title="Zoom in"
             >
-              <ZoomIn className="w-4 h-4" />
+              <ZoomIn className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={resetView}
-              className="px-2 py-1 rounded border border-slate-700 text-slate-300 hover:bg-slate-800 text-xs"
+              className="px-1.5 py-1 rounded border border-slate-700 text-slate-300 hover:bg-slate-800 text-[10px]"
               title="Reset zoom and pan"
             >
               Reset
@@ -708,47 +708,47 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
           </div>
 
           {/* Bottom row - Actions */}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5 flex-shrink-0">
             <button
               onClick={undo}
               disabled={historyStep <= 0}
-              className="px-3 py-2 rounded-lg border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-2 py-1 rounded border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed text-xs"
               title="Undo"
             >
-              <Undo2 className="w-4 h-4" />
+              <Undo2 className="w-3.5 h-3.5" />
               Undo
             </button>
 
             <button
               onClick={redo}
               disabled={historyStep >= history.length - 1}
-              className="px-3 py-2 rounded-lg border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-2 py-1 rounded border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed text-xs"
               title="Redo"
             >
-              <Redo2 className="w-4 h-4" />
+              <Redo2 className="w-3.5 h-3.5" />
               Redo
             </button>
 
             <button
               onClick={clear}
-              className="px-3 py-2 rounded-lg border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-2"
+              className="px-2 py-1 rounded border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-1 text-xs"
               title="Clear canvas"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3.5 h-3.5" />
               Clear
             </button>
 
             <button
               onClick={save}
-              className="px-3 py-2 rounded-lg bg-slate-100 text-slate-950 font-semibold hover:bg-white flex items-center gap-2 ml-auto"
+              className="px-2 py-1 rounded bg-slate-100 text-slate-950 font-semibold hover:bg-white flex items-center gap-1 ml-auto text-xs"
               title="Save drawing"
             >
-              <Save className="w-4 h-4" />
+              <Save className="w-3.5 h-3.5" />
               Save
             </button>
           </div>
 
-          <div className="rounded-xl border border-slate-800 bg-slate-950 p-3 overflow-hidden relative">
+          <div className="flex-1 rounded-lg border border-slate-800 bg-slate-950 p-1 overflow-hidden relative">
             <div
               style={{
                 transform: `scale(${zoom}) translate(${panOffset.x / zoom}px, ${panOffset.y / zoom}px)`,
@@ -758,7 +758,7 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
             >
               <canvas
                 ref={canvasRef}
-                className="rounded-lg border border-slate-800 touch-none"
+                className="rounded border border-slate-800 touch-none"
                 onPointerDown={start}
                 onPointerMove={move}
                 onPointerUp={end}
@@ -808,10 +808,6 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
               </div>
             </div>
           )}
-
-          <div className="text-slate-500 text-xs">
-            Tip: Use Pan tool to move around. Zoom in/out with controls. Pick colors with the color wheel or quick presets (black, greys, white). Draw with brushes, shapes, fill, and text tools.
-          </div>
         </div>
       </div>
     </div>
