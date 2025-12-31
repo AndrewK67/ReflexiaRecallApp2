@@ -25,6 +25,7 @@ const CrisisProtocols = lazy(() => import("./components/CrisisProtocols"));
 const Archive = lazy(() => import("./components/Archive"));
 const GamificationHub = lazy(() => import("./components/GamificationHub"));
 const CPD = lazy(() => import("./components/CPD"));
+const CanvasBoard = lazy(() => import("./components/CanvasBoard"));
 
 function formatReflection(entry: ReflectionEntry) {
   const lines: string[] = [];
@@ -374,6 +375,13 @@ export default function App() {
         return (
           <Suspense fallback={<ComponentLoader />}>
               <CPD entries={entries} onClose={() => setView("DASHBOARD")} />
+          </Suspense>
+        );
+
+      case "CANVAS":
+        return (
+          <Suspense fallback={<ComponentLoader />}>
+              <CanvasBoard onCancel={() => setView("DASHBOARD")} />
           </Suspense>
         );
 

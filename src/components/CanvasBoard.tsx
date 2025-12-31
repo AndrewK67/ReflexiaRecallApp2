@@ -84,6 +84,9 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
     width: number;
     height: number;
   } | null>(null);
+  const [isDraggingSelection, setIsDraggingSelection] = useState(false);
+  const [dragStartPoint, setDragStartPoint] = useState<{ x: number; y: number } | null>(null);
+  const [copiedSelection, setCopiedSelection] = useState<ImageData | null>(null);
   const [layers, setLayers] = useState<Layer[]>([]);
   const [activeLayerId, setActiveLayerId] = useState<string>("");
   const [showLayersPanel, setShowLayersPanel] = useState(false);
@@ -433,6 +436,44 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [layers]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyboard = (e: KeyboardEvent) => {
+      // Copy: Ctrl+C or Cmd+C
+      if ((e.ctrlKey || e.metaKey) && e.key === "c" && selection) {
+        e.preventDefault();
+        copySelection();
+      }
+      // Paste: Ctrl+V or Cmd+V
+      else if ((e.ctrlKey || e.metaKey) && e.key === "v" && copiedSelection) {
+        e.preventDefault();
+        // Paste at center of canvas
+        const centerX = width / 2 - (copiedSelection.width / dpr) / 2;
+        const centerY = height / 2 - (copiedSelection.height / dpr) / 2;
+        pasteSelection({ x: centerX, y: centerY });
+      }
+      // Cut: Ctrl+X or Cmd+X
+      else if ((e.ctrlKey || e.metaKey) && e.key === "x" && selection) {
+        e.preventDefault();
+        cutSelection();
+      }
+      // Delete: Delete or Backspace
+      else if ((e.key === "Delete" || e.key === "Backspace") && selection) {
+        e.preventDefault();
+        deleteSelection();
+      }
+      // Deselect: Escape
+      else if (e.key === "Escape" && selection) {
+        e.preventDefault();
+        setSelection(null);
+        setSelectionImage(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyboard);
+    return () => window.removeEventListener("keydown", handleKeyboard);
+  }, [selection, copiedSelection, width, height]);
+
   const toLocalPoint = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current!;
     const rect = canvas.getBoundingClientRect();
@@ -462,6 +503,17 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
     setPanOffset({ x: 0, y: 0 });
   };
 
+  // Check if a point is inside the selection
+  const isPointInSelection = (point: { x: number; y: number }): boolean => {
+    if (!selection) return false;
+    return (
+      point.x >= selection.x &&
+      point.x <= selection.x + selection.width &&
+      point.y >= selection.y &&
+      point.y <= selection.y + selection.height
+    );
+  };
+
   const start = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const ctx = getCtx();
     if (!ctx) return;
@@ -480,6 +532,13 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
 
     const point = toLocalPoint(e);
 
+    // Check if clicking inside an existing selection to drag it
+    if (selection && isPointInSelection(point)) {
+      setIsDraggingSelection(true);
+      setDragStartPoint(point);
+      return;
+    }
+
     // Handle fill tool
     if (tool === "fill") {
       pushHistory();
@@ -497,6 +556,9 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
 
     // Handle select tool
     if (tool === "select") {
+      // Clear existing selection if starting a new one
+      setSelection(null);
+      setSelectionImage(null);
       drawing.current = true;
       shapeStart.current = point;
       return;
@@ -518,6 +580,24 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
   };
 
   const move = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const p = toLocalPoint(e);
+
+    // Handle dragging selection
+    if (isDraggingSelection && dragStartPoint && selection && selectionImage) {
+      const dx = p.x - dragStartPoint.x;
+      const dy = p.y - dragStartPoint.y;
+
+      // Update selection position
+      setSelection({
+        x: selection.x + dx,
+        y: selection.y + dy,
+        width: selection.width,
+        height: selection.height,
+      });
+      setDragStartPoint(p);
+      return;
+    }
+
     if (!drawing.current) return;
 
     // Handle panning with hand tool
@@ -544,8 +624,6 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
 
     const ctx = getCtx();
     if (!ctx) return;
-
-    const p = toLocalPoint(e);
 
     // Handle selection preview (no drawing, just UI update)
     if (tool === "select" && shapeStart.current) {
@@ -581,6 +659,20 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
 
   const end = (e?: React.PointerEvent<HTMLCanvasElement>) => {
     const ctx = getCtx();
+
+    // Finalize dragging selection
+    if (isDraggingSelection && selection && selectionImage) {
+      pushHistory();
+      // Clear old position
+      const activeCtx = getActiveLayerCtx() || ctx;
+      if (activeCtx) {
+        // Re-composite to show the moved selection
+        compositeAllLayers();
+      }
+      setIsDraggingSelection(false);
+      setDragStartPoint(null);
+      return;
+    }
 
     // Finalize selection
     if (tool === "select" && shapeStart.current && drawing.current && e) {
@@ -641,10 +733,32 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
   };
 
   const copySelection = () => {
-    if (!selectionImage) return;
-    // Store in a ref for pasting later
-    // In a real app, this would copy to clipboard
-    alert("Selection copied! Switch to any drawing tool to paste at cursor location.");
+    if (!selectionImage || !selection) return;
+    setCopiedSelection(selectionImage);
+    // Create a temporary message
+    const message = document.createElement("div");
+    message.textContent = "Selection copied! Press Ctrl+V to paste";
+    message.style.cssText = "position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.8);color:white;padding:12px 24px;border-radius:8px;z-index:1000;font-size:14px;";
+    document.body.appendChild(message);
+    setTimeout(() => message.remove(), 2000);
+  };
+
+  const pasteSelection = (point: { x: number; y: number }) => {
+    if (!copiedSelection) return;
+    const ctx = getCtx();
+    if (!ctx) return;
+
+    pushHistory();
+    ctx.putImageData(copiedSelection, point.x * dpr, point.y * dpr);
+
+    // Set as new selection
+    setSelection({
+      x: point.x,
+      y: point.y,
+      width: copiedSelection.width / dpr,
+      height: copiedSelection.height / dpr,
+    });
+    setSelectionImage(copiedSelection);
   };
 
   const moveSelection = (dx: number, dy: number) => {
@@ -1069,7 +1183,7 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
               style={{
                 transform: `scale(${zoom}) translate(${panOffset.x / zoom}px, ${panOffset.y / zoom}px)`,
                 transformOrigin: "0 0",
-                cursor: tool === "hand" ? "grab" : "crosshair",
+                cursor: isDraggingSelection ? "grabbing" : tool === "hand" ? "grab" : selection ? "move" : "crosshair",
               }}
             >
               <canvas

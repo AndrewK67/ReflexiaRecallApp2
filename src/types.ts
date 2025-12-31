@@ -307,6 +307,7 @@ export type ViewState =
   | "COMPETENCY_MATRIX"
   | "BIO_RHYTHM"
   | "CANVAS_BOARD"
+  | "CANVAS"
   | "PRIVACY_LOCK";
 
 export interface UserProfile {

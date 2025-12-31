@@ -46,6 +46,7 @@ export default function Navigation({ current, onChange }: NavigationProps) {
     () => [
       { id: "QUICK_CAPTURE" as ViewState, label: "Quick Capture", icon: Camera },
       { id: "DRIVE_MODE" as ViewState, label: "Drive Mode", icon: Car },
+      { id: "CANVAS" as ViewState, label: "Canvas", icon: Box },
       { id: "HOLODECK" as ViewState, label: "Holodeck", icon: Box },
       { id: "ORACLE" as ViewState, label: "Oracle", icon: MessagesSquare },
       { id: "BIO_RHYTHM" as ViewState, label: "BioRhythm", icon: Activity },
