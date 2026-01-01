@@ -130,7 +130,7 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 pb-40 custom-scrollbar relative z-10">
+      <div className="flex-1 overflow-y-auto p-6 space-y-6 pb-20 custom-scrollbar relative z-10">
         {/* Identity */}
         <div className="bg-white/10 backdrop-blur-xl p-6 rounded-2xl border border-white/15">
           <div className="flex justify-between items-start mb-4">

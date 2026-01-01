@@ -352,7 +352,7 @@ export default function Library() {
       </div>
 
       {/* Resources Grid */}
-      <div className="flex-1 overflow-y-auto p-4 pb-32 relative z-10">
+      <div className="flex-1 overflow-y-auto p-4 pb-20 relative z-10">
         {filteredResources.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-center">
             <BookOpen size={48} className="text-white/20 mb-4" />

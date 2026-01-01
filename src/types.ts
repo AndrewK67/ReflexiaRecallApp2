@@ -308,6 +308,7 @@ export type ViewState =
   | "BIO_RHYTHM"
   | "CANVAS_BOARD"
   | "CANVAS"
+  | "REPORTS"
   | "PRIVACY_LOCK";
 
 export interface UserProfile {

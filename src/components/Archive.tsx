@@ -309,7 +309,7 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
       </div>
 
       {/* Entry List */}
-      <div className="flex-1 overflow-y-auto px-6 py-4 pb-32 custom-scrollbar relative z-10">
+      <div className="flex-1 overflow-y-auto px-6 py-4 pb-20 custom-scrollbar relative z-10">
         {searchResult.entries.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-white/40">
             <FileText size={48} className="mb-3 opacity-50" />

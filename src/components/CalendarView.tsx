@@ -198,7 +198,7 @@ export default function CalendarView({ entries, onOpenEntry }: CalendarViewProps
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 py-6 pb-40 custom-scrollbar relative z-10">
+      <div className="flex-1 overflow-y-auto px-6 py-6 pb-20 custom-scrollbar relative z-10">
         {/* MONTH */}
         {viewMode === "MONTH" && (
           <div>

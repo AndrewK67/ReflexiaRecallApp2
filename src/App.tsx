@@ -28,6 +28,7 @@ const CPD = lazy(() => import("./components/CPD"));
 const Library = lazy(() => import("./components/Library"));
 const CanvasBoard = lazy(() => import("./components/CanvasBoard"));
 const MentalAtlas = lazy(() => import("./components/MentalAtlas"));
+const Reports = lazy(() => import("./components/Reports"));
 
 function formatReflection(entry: ReflectionEntry) {
   const lines: string[] = [];
@@ -318,6 +319,10 @@ export default function App() {
               <span className="text-xl">📋</span>
               <span className="text-[9px] font-semibold text-white/80">CPD</span>
             </button>
+            <button onClick={() => setView("REPORTS")} className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-2 transition flex flex-col items-center gap-1">
+              <span className="text-xl">📊</span>
+              <span className="text-[9px] font-semibold text-white/80">Reports</span>
+            </button>
             <button onClick={() => setView("GAMIFICATION")} className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-2 transition flex flex-col items-center gap-1">
               <span className="text-xl">🏆</span>
               <span className="text-[9px] font-semibold text-white/80">Achievements</span>
@@ -501,6 +506,13 @@ export default function App() {
         return (
           <Suspense fallback={<ComponentLoader />}>
               <MentalAtlas entries={entries} onClose={() => setView("DASHBOARD")} privacyLockEnabled={userProfile.privacyLockEnabled} />
+          </Suspense>
+        );
+
+      case "REPORTS":
+        return (
+          <Suspense fallback={<ComponentLoader />}>
+              <Reports entries={entries} onClose={() => setView("DASHBOARD")} />
           </Suspense>
         );
 

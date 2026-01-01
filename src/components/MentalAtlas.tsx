@@ -385,7 +385,7 @@ const MentalAtlas: React.FC<MentalAtlasProps> = ({ entries, onClose, privacyLock
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6 pb-32 relative z-10">
+      <div className="flex-1 overflow-y-auto p-6 pb-20 relative z-10">
         {viewMode === 'map' && renderMapView()}
         {viewMode === 'timeline' && renderTimelineView()}
         {viewMode === 'patterns' && renderPatternsView()}
