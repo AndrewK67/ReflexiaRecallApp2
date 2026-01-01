@@ -32,7 +32,7 @@ interface CPDProps {
 }
 
 export default function CPD({ entries, onClose }: CPDProps) {
-  const [selectedCountry, setSelectedCountry] = useState<CPDCountry>('UK');
+  const [selectedCountry, setSelectedCountry] = useState<CPDCountry>('UK_GMC');
   const [showAddRecord, setShowAddRecord] = useState(false);
   const [manualRecords, setManualRecords] = useState<CPDRecord[]>([]);
 
@@ -123,7 +123,7 @@ export default function CPD({ entries, onClose }: CPDProps) {
             const standard = CPD_STANDARDS[country as CPDCountry];
             return (
               <option key={country} value={country}>
-                {country} - {standard.regulatoryBody}
+                {standard.regulatoryBody}
               </option>
             );
           })}

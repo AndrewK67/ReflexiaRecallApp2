@@ -4,7 +4,18 @@
  * Maps reflections and activities to professional requirements
  */
 
-export type CPDCountry = 'UK' | 'US' | 'Australia' | 'Canada';
+export type CPDCountry =
+  | 'UK_GMC'           // General Medical Council (Doctors)
+  | 'UK_NMC'           // Nursing and Midwifery Council
+  | 'UK_HCPC'          // Health and Care Professions Council
+  | 'UK_GPhC'          // General Pharmaceutical Council
+  | 'UK_GDC'           // General Dental Council
+  | 'UK_NHS'           // NHS Trust Requirements
+  | 'US'               // Various State Medical Boards
+  | 'Australia'        // AHPRA
+  | 'Canada'           // RCPSC
+  | 'Ireland_NMBI'     // Nursing and Midwifery Board of Ireland
+  | 'Ireland_CORU';    // Health & Social Care Professionals Council
 
 export type CPDCategoryType =
   | 'clinical-practice'
@@ -199,8 +210,8 @@ export const CPD_CATEGORIES: Record<CPDCategoryType, CPDCategory> = {
 
 // CPD Standards by Country
 export const CPD_STANDARDS: Record<CPDCountry, CPDStandard> = {
-  UK: {
-    country: 'UK',
+  UK_GMC: {
+    country: 'UK_GMC',
     regulatoryBody: 'General Medical Council (GMC)',
     annualRequirement: {
       totalHours: 50,
@@ -219,6 +230,103 @@ export const CPD_STANDARDS: Record<CPDCountry, CPDStandard> = {
     ],
     notes:
       '50 hours annually, with at least 12 hours of reflective practice. Evidence must cover a range of CPD activities.',
+  },
+  UK_NMC: {
+    country: 'UK_NMC',
+    regulatoryBody: 'Nursing and Midwifery Council (NMC)',
+    annualRequirement: {
+      totalHours: 35,
+      minimumReflection: 5,
+      categories: [
+        { category: 'reflection', minimumHours: 5 },
+        { category: 'clinical-practice', minimumHours: 20 },
+      ],
+    },
+    cycleYears: 3,
+    evidenceRequired: [
+      'Practice-related feedback (minimum 5 pieces)',
+      'Written reflective accounts (minimum 5)',
+      'CPD activity records',
+      'Confirmation of 450 practice hours per year',
+    ],
+    notes:
+      '35 hours over 3 years (minimum 20 participatory hours). Must include 5 written reflections and 5 pieces of practice-related feedback.',
+  },
+  UK_HCPC: {
+    country: 'UK_HCPC',
+    regulatoryBody: 'Health and Care Professions Council (HCPC)',
+    annualRequirement: {
+      totalHours: 30,
+      minimumReflection: 0,
+      categories: [],
+    },
+    cycleYears: 2,
+    evidenceRequired: [
+      'CPD profile summary',
+      'Written reflective notes',
+      'Evidence of activities undertaken',
+      'Demonstration of learning benefit',
+    ],
+    notes:
+      'Continuous professional development required. Must maintain a CPD record and be able to demonstrate how CPD benefits service users.',
+  },
+  UK_GPhC: {
+    country: 'UK_GPhC',
+    regulatoryBody: 'General Pharmaceutical Council (GPhC)',
+    annualRequirement: {
+      totalHours: 9,
+      minimumReflection: 9,
+      categories: [
+        { category: 'reflection', minimumHours: 9 },
+      ],
+    },
+    cycleYears: 1,
+    evidenceRequired: [
+      'CPD records (minimum 9 entries annually)',
+      'Reflective accounts for each entry',
+      'Evidence of learning and impact',
+      'Records must relate to scope of practice',
+    ],
+    notes:
+      'Minimum 9 CPD entries per year. Each must include: What did you learn? How did you learn it? How did you apply it? Four entries must be planned in advance.',
+  },
+  UK_GDC: {
+    country: 'UK_GDC',
+    regulatoryBody: 'General Dental Council (GDC)',
+    annualRequirement: {
+      totalHours: 250,
+      minimumReflection: 0,
+      categories: [],
+    },
+    cycleYears: 5,
+    evidenceRequired: [
+      'Personal Development Plan (PDP)',
+      'CPD certificates and records',
+      'Reflective logs',
+      'Evidence covering all GDC development outcomes',
+    ],
+    notes:
+      '250 hours over 5-year cycle. Must include verifiable and non-verifiable CPD. Must cover all four GDC development outcomes (A-D).',
+  },
+  UK_NHS: {
+    country: 'UK_NHS',
+    regulatoryBody: 'NHS Trust / Knowledge and Skills Framework',
+    annualRequirement: {
+      totalHours: 35,
+      minimumReflection: 0,
+      categories: [
+        { category: 'learning-development', minimumHours: 20 },
+      ],
+    },
+    cycleYears: 1,
+    evidenceRequired: [
+      'KSF Personal Development Plan',
+      'Appraisal documentation',
+      'Training certificates',
+      'Evidence of competency maintenance',
+    ],
+    notes:
+      'Requirements vary by trust and role. Typically aligned with KSF competencies and annual appraisal process.',
   },
   US: {
     country: 'US',
@@ -276,6 +384,46 @@ export const CPD_STANDARDS: Record<CPDCountry, CPDStandard> = {
     ],
     notes:
       'Minimum 25 credits per year (125 over 5 years). Must include Section 1 (Group Learning), Section 2 (Self-Learning), and Section 3 (Assessment).',
+  },
+  Ireland_NMBI: {
+    country: 'Ireland_NMBI',
+    regulatoryBody: 'Nursing and Midwifery Board of Ireland (NMBI)',
+    annualRequirement: {
+      totalHours: 30,
+      minimumReflection: 0,
+      categories: [
+        { category: 'clinical-practice', minimumHours: 20 },
+      ],
+    },
+    cycleYears: 1,
+    evidenceRequired: [
+      'Professional Development Plan',
+      'CPD Portfolio',
+      'Evidence of learning activities',
+      'Reflective practice records',
+    ],
+    notes:
+      'Minimum 30 hours annually. Must maintain a CPD portfolio aligned with scope of practice and NMBI Code.',
+  },
+  Ireland_CORU: {
+    country: 'Ireland_CORU',
+    regulatoryBody: 'Health & Social Care Professionals Council (CORU)',
+    annualRequirement: {
+      totalHours: 20,
+      minimumReflection: 0,
+      categories: [
+        { category: 'learning-development', minimumHours: 10 },
+      ],
+    },
+    cycleYears: 2,
+    evidenceRequired: [
+      'CPD plan',
+      'CPD log/diary',
+      'Evidence of completed activities',
+      'Reflection on learning outcomes',
+    ],
+    notes:
+      'Requirements vary by profession. Must engage in CPD relevant to scope of practice and maintain comprehensive records.',
   },
 };
 
