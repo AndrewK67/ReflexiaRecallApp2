@@ -305,8 +305,15 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
 
   if (!selectedModel) {
     return (
-      <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 flex flex-col overflow-y-auto custom-scrollbar animate-in fade-in duration-300 nav-safe">
-        <div className="p-6 pt-10 border-b border-white/10">
+      <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 flex flex-col overflow-y-auto custom-scrollbar animate-in fade-in duration-300 nav-safe relative">
+        <div className="animated-backdrop-dark overflow-hidden">
+          <div className="orb one" />
+          <div className="orb two" />
+          <div className="orb three" />
+          <div className="grain" />
+        </div>
+
+        <div className="p-6 pt-10 border-b border-white/10 relative z-10">
           <div className="flex items-center justify-between">
             <button
               onClick={onCancel}
@@ -337,7 +344,7 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
         </div>
 
         {/* INSTRUCTIONS AT TOP - CLEANER UI */}
-        <div className="px-6 pt-4">
+        <div className="px-6 pt-4 relative z-10">
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex items-start gap-3">
             <Info className="text-indigo-400 flex-shrink-0 mt-0.5" size={18} />
             <div className="text-sm text-white/90">
@@ -346,7 +353,7 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 pb-40 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-6 pb-40 custom-scrollbar relative z-10">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {models.map((m) => (
               <button
@@ -394,8 +401,15 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
 
   if (isFinished) {
     return (
-      <div className="flex flex-col h-full bg-gradient-to-b from-slate-950 to-slate-900 animate-in fade-in duration-300 nav-safe">
-        <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center justify-center custom-scrollbar pb-28">
+      <div className="flex flex-col h-full bg-gradient-to-b from-slate-950 to-slate-900 animate-in fade-in duration-300 nav-safe relative">
+        <div className="animated-backdrop-dark overflow-hidden">
+          <div className="orb one" />
+          <div className="orb two" />
+          <div className="orb three" />
+          <div className="grain" />
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center justify-center custom-scrollbar pb-28 relative z-10">
           <div className="mb-8 scale-110">
             <Guide stageId={null} state={guideState} />
           </div>
@@ -479,8 +493,15 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
   }
 
   return (
-    <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 flex flex-col overflow-y-auto custom-scrollbar nav-safe">
-      <div className="p-5 border-b border-white/10">
+    <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 flex flex-col overflow-y-auto custom-scrollbar nav-safe relative">
+      <div className="animated-backdrop-dark overflow-hidden">
+        <div className="orb one" />
+        <div className="orb two" />
+        <div className="orb three" />
+        <div className="grain" />
+      </div>
+
+      <div className="p-5 border-b border-white/10 relative z-10">
         <div className="flex items-center justify-between">
           <button
             onClick={currentStageIndex === 0 ? () => setSelectedModel(null) : handleStagePrev}
@@ -511,7 +532,7 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-5 pb-40 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto p-5 pb-40 custom-scrollbar relative z-10">
         <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-5 mb-4">
           <div className="text-xs font-bold text-indigo-400 mb-2">Prompt</div>
           <div className="text-sm text-white/90 leading-relaxed">
@@ -590,26 +611,28 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
         )}
       </div>
 
-      <div className="p-5 border-t border-white/10">
-        <button
-          onClick={handleStageNext}
-          disabled={!currentAnswer.trim()}
-          className={`w-full py-4 rounded-2xl font-bold text-lg shadow-xl transition-all flex items-center justify-center gap-2 ${
-            !currentAnswer.trim()
-              ? "bg-white/10 text-white/50"
-              : "bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white active:scale-95"
-          }`}
-        >
-          {currentStageIndex < stages.length - 1 ? (
-            <>
-              Next Stage <ArrowRight size={20} />
-            </>
-          ) : (
-            <>
-              Complete <CheckCircle size={20} />
-            </>
-          )}
-        </button>
+      <div className="fixed bottom-[4.75rem] left-0 right-0 p-4 pointer-events-none z-10">
+        <div className="max-w-md mx-auto pointer-events-auto">
+          <button
+            onClick={handleStageNext}
+            disabled={!currentAnswer.trim()}
+            className={`w-full py-3 rounded-2xl font-bold text-sm shadow-xl transition-all flex items-center justify-center gap-2 ${
+              !currentAnswer.trim()
+                ? "bg-white/10 text-white/50"
+                : "bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white active:scale-95"
+            }`}
+          >
+            {currentStageIndex < stages.length - 1 ? (
+              <>
+                Next Stage <ArrowRight size={16} />
+              </>
+            ) : (
+              <>
+                Complete <CheckCircle size={16} />
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

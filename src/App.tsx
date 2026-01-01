@@ -27,6 +27,7 @@ const GamificationHub = lazy(() => import("./components/GamificationHub"));
 const CPD = lazy(() => import("./components/CPD"));
 const Library = lazy(() => import("./components/Library"));
 const CanvasBoard = lazy(() => import("./components/CanvasBoard"));
+const MentalAtlas = lazy(() => import("./components/MentalAtlas"));
 
 function formatReflection(entry: ReflectionEntry) {
   const lines: string[] = [];
@@ -203,42 +204,49 @@ export default function App() {
   };
 
   const renderDashboard = () => (
-    <div className="h-full overflow-y-auto flex flex-col items-center justify-center p-6 nav-safe">
-      <div className="text-center mb-8 max-w-xs mx-auto">
-        <h1 className="text-3xl font-light text-white tracking-tight mb-2">
-          {getGreeting()}, {getFirstName()}.
-        </h1>
-        <p className="text-white/70 font-medium text-lg leading-relaxed">{dailyPrompt ? `"${dailyPrompt}"` : ""}</p>
+    <div className="h-full overflow-y-auto flex flex-col items-center p-6 pt-8 nav-safe relative">
+      <div className="animated-backdrop-dark overflow-hidden">
+        <div className="orb one" />
+        <div className="orb two" />
+        <div className="orb three" />
+        <div className="grain" />
       </div>
 
-      <div className="mb-8 transform scale-125 transition-transform duration-1000 hover:scale-[1.3]">
+      <div className="text-center mb-4 max-w-xs mx-auto relative z-10">
+        <h1 className="text-2xl font-light text-white tracking-tight mb-1">
+          {getGreeting()}, {getFirstName()}.
+        </h1>
+        <p className="text-white/70 font-medium text-sm leading-relaxed">{dailyPrompt ? `"${dailyPrompt}"` : ""}</p>
+      </div>
+
+      <div className="mb-6 transform scale-100 transition-transform duration-1000 hover:scale-105 relative z-10">
         <Guide stageId={null} state="idle" />
       </div>
 
-      <div className="w-full max-w-xs space-y-3">
+      <div className="w-full max-w-xs space-y-2.5 relative z-10">
         <button
           onClick={() => setView("QUICK_CAPTURE")}
-          className="w-full bg-gradient-to-r from-cyan-600 to-indigo-600 text-white h-16 rounded-full font-bold text-lg shadow-xl hover:shadow-2xl hover:from-cyan-500 hover:to-indigo-500 active:scale-95 transition-all"
+          className="w-full bg-gradient-to-r from-cyan-600 to-indigo-600 text-white h-14 rounded-full font-bold text-base shadow-xl hover:shadow-2xl hover:from-cyan-500 hover:to-indigo-500 active:scale-95 transition-all"
         >
           Quick Capture
         </button>
 
         <button
           onClick={() => setView("REFLECTION")}
-          className="w-full bg-white/10 text-white h-14 rounded-full font-semibold text-base border border-white/20 shadow-lg hover:bg-white/15 active:scale-95 transition-all"
+          className="w-full bg-white/10 text-white h-12 rounded-full font-semibold text-sm border border-white/20 shadow-lg hover:bg-white/15 active:scale-95 transition-all"
         >
           Full Reflection
         </button>
 
         {/* Feature Toggles */}
-        <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-4 space-y-2">
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-3 space-y-1.5">
           <button
             onClick={() => handleUpdateProfile({ ...userProfile, aiEnabled: !userProfile.aiEnabled })}
-            className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition"
+            className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition"
           >
-            <span className="text-white text-sm font-semibold">AI Features</span>
+            <span className="text-white text-xs font-semibold">AI Features</span>
             <span
-              className={`text-xs font-mono px-2.5 py-1 rounded-full ${
+              className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
                 userProfile.aiEnabled ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-white/10 text-white/60'
               }`}
             >
@@ -248,17 +256,72 @@ export default function App() {
 
           <button
             onClick={() => handleUpdateProfile({ ...userProfile, gamificationEnabled: !userProfile.gamificationEnabled })}
-            className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition"
+            className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition"
           >
-            <span className="text-white text-sm font-semibold">Gamification</span>
+            <span className="text-white text-xs font-semibold">Gamification</span>
             <span
-              className={`text-xs font-mono px-2.5 py-1 rounded-full ${
+              className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
                 userProfile.gamificationEnabled ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-white/10 text-white/60'
               }`}
             >
               {userProfile.gamificationEnabled ? 'ON' : 'OFF'}
             </span>
           </button>
+        </div>
+
+        {/* Tools Menu */}
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-3">
+          <div className="text-xs font-bold text-white/90 mb-2">Tools</div>
+          <div className="grid grid-cols-3 gap-2">
+            <button onClick={() => setView("DRIVE_MODE")} className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-2 transition flex flex-col items-center gap-1">
+              <span className="text-xl">🚗</span>
+              <span className="text-[9px] font-semibold text-white/80">Drive</span>
+            </button>
+            <button onClick={() => setView("CANVAS")} className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-2 transition flex flex-col items-center gap-1">
+              <span className="text-xl">🎨</span>
+              <span className="text-[9px] font-semibold text-white/80">Canvas</span>
+            </button>
+            <button onClick={() => setView("HOLODECK")} className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-2 transition flex flex-col items-center gap-1">
+              <span className="text-xl">🎭</span>
+              <span className="text-[9px] font-semibold text-white/80">Holodeck</span>
+            </button>
+            <button onClick={() => setView("ORACLE")} className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-2 transition flex flex-col items-center gap-1">
+              <span className="text-xl">💬</span>
+              <span className="text-[9px] font-semibold text-white/80">Oracle</span>
+            </button>
+            <button onClick={() => setView("BIO_RHYTHM")} className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-2 transition flex flex-col items-center gap-1">
+              <span className="text-xl">🫁</span>
+              <span className="text-[9px] font-semibold text-white/80">BioRhythm</span>
+            </button>
+            <button onClick={() => setView("GROUNDING")} className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-2 transition flex flex-col items-center gap-1">
+              <span className="text-xl">🌊</span>
+              <span className="text-[9px] font-semibold text-white/80">Grounding</span>
+            </button>
+            <button onClick={() => setView("CRISIS_PROTOCOLS")} className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-2 transition flex flex-col items-center gap-1">
+              <span className="text-xl">🚨</span>
+              <span className="text-[9px] font-semibold text-white/80">Crisis</span>
+            </button>
+            <button onClick={() => setView("CALENDAR")} className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-2 transition flex flex-col items-center gap-1">
+              <span className="text-xl">📅</span>
+              <span className="text-[9px] font-semibold text-white/80">Calendar</span>
+            </button>
+            <button onClick={() => setView("MENTAL_ATLAS")} className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-2 transition flex flex-col items-center gap-1">
+              <span className="text-xl">🗺️</span>
+              <span className="text-[9px] font-semibold text-white/80">Atlas</span>
+            </button>
+            <button onClick={() => setView("LIBRARY")} className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-2 transition flex flex-col items-center gap-1">
+              <span className="text-xl">📚</span>
+              <span className="text-[9px] font-semibold text-white/80">Library</span>
+            </button>
+            <button onClick={() => setView("CPD")} className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-2 transition flex flex-col items-center gap-1">
+              <span className="text-xl">📋</span>
+              <span className="text-[9px] font-semibold text-white/80">CPD</span>
+            </button>
+            <button onClick={() => setView("GAMIFICATION")} className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-2 transition flex flex-col items-center gap-1">
+              <span className="text-xl">🏆</span>
+              <span className="text-[9px] font-semibold text-white/80">Achievements</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -430,6 +493,13 @@ export default function App() {
         return (
           <Suspense fallback={<ComponentLoader />}>
               <CanvasBoard onCancel={() => setView("DASHBOARD")} />
+          </Suspense>
+        );
+
+      case "MENTAL_ATLAS":
+        return (
+          <Suspense fallback={<ComponentLoader />}>
+              <MentalAtlas entries={entries} onClose={() => setView("DASHBOARD")} privacyLockEnabled={userProfile.privacyLockEnabled} />
           </Suspense>
         );
 

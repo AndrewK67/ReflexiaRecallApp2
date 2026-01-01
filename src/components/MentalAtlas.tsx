@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { TrendingUp, TrendingDown, Minus, Map, Clock, Grid } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Map, Clock, Grid, X } from 'lucide-react';
 import type { Entry } from '../types';
 import {
   getTopKeywords,
@@ -10,11 +10,13 @@ import {
 
 interface MentalAtlasProps {
   entries: Entry[];
+  onClose: () => void;
+  privacyLockEnabled?: boolean;
 }
 
 type ViewMode = 'map' | 'timeline' | 'patterns';
 
-const MentalAtlas: React.FC<MentalAtlasProps> = ({ entries }) => {
+const MentalAtlas: React.FC<MentalAtlasProps> = ({ entries, onClose, privacyLockEnabled = false }) => {
   const [viewMode, setViewMode] = useState<ViewMode>('map');
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
 
@@ -65,13 +67,26 @@ const MentalAtlas: React.FC<MentalAtlasProps> = ({ entries }) => {
   // Empty state
   if (entries.length === 0) {
     return (
-      <div className="h-full flex flex-col">
-        <div className="p-6 border-b border-white/10">
-          <h1 className="text-2xl font-bold text-white">Mental Atlas</h1>
-          <p className="text-white/60 text-sm mt-1">Pattern detection from your reflections</p>
+      <div className="h-full flex flex-col relative nav-safe">
+        <div className="animated-backdrop-dark overflow-hidden">
+          <div className="orb one" />
+          <div className="orb two" />
+          <div className="orb three" />
+          <div className="grain" />
         </div>
 
-        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+        <div className="p-6 border-b border-white/10 relative z-10 flex items-center justify-between">
+          <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center transition">
+            <X size={20} />
+          </button>
+          <div>
+            <h1 className="text-xl font-bold text-white text-center">Mental Atlas</h1>
+            <p className="text-white/60 text-xs mt-1 text-center">Pattern detection from your reflections</p>
+          </div>
+          <div className="w-10" />
+        </div>
+
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center relative z-10">
           <div className="w-20 h-20 rounded-full border-2 border-white/10 mb-4 flex items-center justify-center">
             <Map size={32} className="text-white/30" />
           </div>
@@ -187,7 +202,7 @@ const MentalAtlas: React.FC<MentalAtlasProps> = ({ entries }) => {
                   className="pointer-events-none"
                   style={{ textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}
                 >
-                  {node.label}
+                  {privacyLockEnabled && !isSelf ? '●●●' : node.label}
                 </text>
 
                 {isHovered && !isSelf && (
@@ -236,7 +251,7 @@ const MentalAtlas: React.FC<MentalAtlasProps> = ({ entries }) => {
                         className="px-3 py-1 rounded-full text-xs font-bold"
                         style={{ backgroundColor: `${color}30`, color }}
                       >
-                        {keyword}
+                        {privacyLockEnabled ? '●●●' : keyword}
                       </span>
                     ))}
                   </div>
@@ -292,7 +307,7 @@ const MentalAtlas: React.FC<MentalAtlasProps> = ({ entries }) => {
                 className="p-3 rounded-xl border border-white/10 bg-white/5 flex items-center justify-between"
               >
                 <div>
-                  <div className="font-semibold text-sm text-white">{pattern.keywords.join(', ')}</div>
+                  <div className="font-semibold text-sm text-white">{privacyLockEnabled ? '●●●●●●' : pattern.keywords.join(', ')}</div>
                   <div className="text-xs text-white/50 mt-1">
                     {pattern.frequency.toFixed(1)} times/week
                   </div>
@@ -319,15 +334,28 @@ const MentalAtlas: React.FC<MentalAtlasProps> = ({ entries }) => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-b from-slate-950 to-slate-900 text-white">
+    <div className="h-full flex flex-col bg-gradient-to-b from-slate-950 to-slate-900 text-white relative nav-safe">
+      <div className="animated-backdrop-dark overflow-hidden">
+        <div className="orb one" />
+        <div className="orb two" />
+        <div className="orb three" />
+        <div className="grain" />
+      </div>
+
       {/* Header */}
-      <div className="flex-shrink-0 p-6 border-b border-white/10">
-        <h1 className="text-2xl font-bold mb-1">Mental Atlas</h1>
-        <p className="text-white/60 text-sm">Pattern detection from {entries.length} entries</p>
+      <div className="flex-shrink-0 p-6 border-b border-white/10 relative z-10 flex items-center justify-between">
+        <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center transition">
+          <X size={20} />
+        </button>
+        <div className="flex-1 text-center">
+          <h1 className="text-xl font-bold">Mental Atlas</h1>
+          <p className="text-white/60 text-xs mt-1">Pattern detection from {entries.length} entries</p>
+        </div>
+        <div className="w-10" />
       </div>
 
       {/* View Tabs */}
-      <div className="flex-shrink-0 px-6 pt-4">
+      <div className="flex-shrink-0 px-6 pt-4 relative z-10">
         <div className="flex gap-2 bg-white/5 p-1 rounded-2xl border border-white/10">
           <button
             onClick={() => setViewMode('map')}
@@ -357,14 +385,14 @@ const MentalAtlas: React.FC<MentalAtlasProps> = ({ entries }) => {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6 pb-32">
+      <div className="flex-1 overflow-y-auto p-6 pb-32 relative z-10">
         {viewMode === 'map' && renderMapView()}
         {viewMode === 'timeline' && renderTimelineView()}
         {viewMode === 'patterns' && renderPatternsView()}
       </div>
 
       {/* Info Footer */}
-      <div className="flex-shrink-0 p-4 border-t border-white/10 bg-slate-950/80 backdrop-blur">
+      <div className="flex-shrink-0 p-4 border-t border-white/10 bg-slate-950/80 backdrop-blur relative z-10">
         <p className="text-xs text-white/40 text-center">
           Analysis is deterministic and works offline • No AI required
         </p>
