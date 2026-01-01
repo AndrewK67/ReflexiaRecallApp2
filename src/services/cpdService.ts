@@ -214,56 +214,94 @@ export function calculateCPDSummary(
 }
 
 /**
- * Export CPD records to CSV format
+ * Export CPD records to CSV format (Enhanced for regulatory compliance)
  */
 export function exportCPDToCSV(records: CPDRecord[], summary: CPDSummary): string {
   const lines: string[] = [];
+  const country = summary.standard.country;
 
   // Header section
-  lines.push(`"CPD Portfolio Export"`);
-  lines.push(`"Generated: ${new Date().toISOString()}"`);
+  lines.push(`"CPD Portfolio Export - ${country}"`);
+  lines.push(`"Generated: ${new Date().toLocaleString()}"`);
+  lines.push(`"Export ID: ${Date.now()}"`);
   lines.push(`""`);
+  lines.push(`"REGULATORY INFORMATION"`);
+  lines.push(`"Country: ${country}"`);
   lines.push(`"Regulatory Body: ${summary.standard.regulatoryBody}"`);
   lines.push(`"CPD Cycle: ${new Date(summary.cycleStartDate).toLocaleDateString()} to ${new Date(summary.cycleEndDate).toLocaleDateString()}"`);
-  lines.push(`"Total Hours: ${summary.totalHours.toFixed(1)}"`);
-  lines.push(`"Annual Requirement: ${summary.standard.annualRequirement.totalHours} hours"`);
-  lines.push(`"Status: ${summary.meetsRequirements ? 'MEETS REQUIREMENTS' : 'REQUIREMENTS NOT MET'}"`);
+  lines.push(`"Cycle Period: ${summary.standard.cycleYears} year(s)"`);
   lines.push(`""`);
 
-  // Category summary
-  lines.push(`"Category Breakdown"`);
-  lines.push(`"Category","Hours","Percentage"`);
+  // Compliance Status
+  lines.push(`"COMPLIANCE STATUS"`);
+  lines.push(`"Total Hours Completed: ${summary.totalHours.toFixed(1)}"`);
+  lines.push(`"Annual Requirement: ${summary.standard.annualRequirement.totalHours} hours"`);
+  lines.push(`"Status: ${summary.meetsRequirements ? '✓ MEETS REQUIREMENTS' : '✗ REQUIREMENTS NOT MET'}"`);
+  if (summary.standard.annualRequirement.minimumReflection) {
+    const reflectionHours = summary.categoryBreakdown.find(c => c.category === 'reflection')?.hours || 0;
+    lines.push(`"Reflection Hours: ${reflectionHours.toFixed(1)} / ${summary.standard.annualRequirement.minimumReflection} required"`);
+  }
+  lines.push(`""`);
+
+  // Category Breakdown with Requirements
+  lines.push(`"CATEGORY BREAKDOWN"`);
+  lines.push(`"Category","Hours Completed","Percentage","Minimum Required","Status"`);
   summary.categoryBreakdown.forEach((cat) => {
     const categoryInfo = getCategoryInfo(cat.category);
-    lines.push(`"${categoryInfo.label}","${cat.hours.toFixed(1)}","${cat.percentage.toFixed(1)}%"`);
+    const requirement = summary.standard.annualRequirement.categories?.find(c => c.category === cat.category);
+    const minRequired = requirement ? requirement.minimumHours.toString() : 'None';
+    const meetsMin = !requirement || cat.hours >= requirement.minimumHours;
+    const status = meetsMin ? '✓' : '✗';
+    lines.push(`"${categoryInfo.label}","${cat.hours.toFixed(1)}","${cat.percentage.toFixed(1)}%","${minRequired}","${status}"`);
   });
   lines.push(`""`);
 
-  // Gaps if any
+  // Gaps Analysis
   if (summary.gaps.length > 0) {
-    lines.push(`"Requirements Gaps"`);
+    lines.push(`"REQUIREMENTS GAPS"`);
     summary.gaps.forEach((gap) => {
-      lines.push(`"${gap}"`);
+      lines.push(`"⚠ ${gap}"`);
     });
     lines.push(`""`);
   }
 
-  // Detailed records
-  lines.push(`"Detailed CPD Records"`);
+  // Country-Specific Evidence Requirements
+  lines.push(`"EVIDENCE REQUIREMENTS FOR ${country}"`);
+  summary.standard.evidenceRequired.forEach((req) => {
+    lines.push(`"• ${req}"`);
+  });
+  lines.push(`""`);
+  lines.push(`"Notes: ${summary.standard.notes}"`);
+  lines.push(`""`);
+
+  // Detailed CPD Records (Regulatory Format)
+  lines.push(`"DETAILED CPD ACTIVITY LOG"`);
   lines.push(
-    `"Date","Title","Category","Hours","Evidence Type","Description","Learning Outcomes","Tags"`
+    `"Activity Date","Activity Title","CPD Category","Hours Claimed","Evidence Type","Learning Outcomes","Reflection","Impact on Practice","Tags","Record ID"`
   );
 
   records.forEach((record) => {
     const categoryInfo = getCategoryInfo(record.category);
-    const learningOutcomes = record.learningOutcomes?.join('; ') || '';
+    const learningOutcomes = record.learningOutcomes?.join('; ') || 'See reflection notes';
     const tags = record.tags.join(', ');
     const description = record.description.replace(/"/g, '""'); // Escape quotes
+    const reflection = record.reflectionText?.replace(/"/g, '""').substring(0, 500) || 'See linked entry';
+    const impact = `Professional development in ${categoryInfo.label.toLowerCase()}`;
 
     lines.push(
-      `"${new Date(record.date).toLocaleDateString()}","${record.title}","${categoryInfo.label}","${record.hours}","${record.evidenceType}","${description}","${learningOutcomes}","${tags}"`
+      `"${new Date(record.date).toLocaleDateString()}","${record.title}","${categoryInfo.label}","${record.hours.toFixed(2)}","${record.evidenceType}","${learningOutcomes}","${reflection}","${impact}","${tags}","${record.id}"`
     );
   });
+
+  lines.push(`""`);
+  lines.push(`"Total Records: ${records.length}"`);
+  lines.push(`"Total Hours: ${summary.totalHours.toFixed(2)}"`);
+  lines.push(`""`);
+
+  // Footer certification statement
+  lines.push(`"DECLARATION"`);
+  lines.push(`"I confirm that the CPD activities listed above are accurate and have been completed as stated."`);
+  lines.push(`"Signature: _______________________  Date: _______________________"`);
 
   return lines.join('\n');
 }
