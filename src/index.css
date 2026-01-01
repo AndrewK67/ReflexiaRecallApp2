@@ -98,18 +98,23 @@ body {
   overflow: hidden;
 }
 
-/* soft gradient wash */
+/* soft gradient wash with pattern */
 .animated-backdrop-dark::before {
   content: "";
   position: absolute;
   inset: -20%;
   background:
-    radial-gradient(700px 520px at 30% 20%, rgba(72, 180, 255, 0.22), transparent 60%),
-    radial-gradient(650px 520px at 70% 35%, rgba(160, 90, 255, 0.18), transparent 62%),
-    radial-gradient(780px 600px at 55% 85%, rgba(0, 255, 214, 0.10), transparent 60%);
-  filter: blur(2px);
+    /* Subtle dot pattern */
+    radial-gradient(circle at center, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    /* Gradient overlays */
+    radial-gradient(700px 520px at 30% 20%, rgba(72, 180, 255, 0.28), transparent 60%),
+    radial-gradient(650px 520px at 70% 35%, rgba(160, 90, 255, 0.24), transparent 62%),
+    radial-gradient(780px 600px at 55% 85%, rgba(0, 255, 214, 0.16), transparent 60%);
+  background-size: 20px 20px, auto, auto, auto;
+  background-position: 0 0, -20% -20%, -20% -20%, -20% -20%;
+  filter: blur(1px);
   animation: bgDrift 10s ease-in-out infinite alternate;
-  opacity: 0.95;
+  opacity: 1;
 }
 
 /* subtle vignette */
@@ -127,13 +132,13 @@ body {
   width: 320px;
   height: 320px;
   border-radius: 999px;
-  background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.70), rgba(255, 255, 255, 0.05) 38%, rgba(255, 255, 255, 0.02) 60%, transparent 72%);
+  background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.12), rgba(72, 180, 255, 0.08) 38%, rgba(160, 90, 255, 0.04) 60%, transparent 72%);
   box-shadow:
-    0 0 60px rgba(61, 156, 255, 0.22),
-    0 0 120px rgba(141, 55, 255, 0.14);
-  filter: blur(0.5px);
+    0 0 80px rgba(61, 156, 255, 0.35),
+    0 0 140px rgba(141, 55, 255, 0.22);
+  filter: blur(1px);
   mix-blend-mode: screen;
-  opacity: 0.55;
+  opacity: 0.75;
   animation:
     orbFloat 8s ease-in-out infinite,
     orbPulse 5.5s ease-in-out infinite;

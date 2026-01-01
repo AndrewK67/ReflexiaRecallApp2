@@ -224,44 +224,45 @@ export default function App() {
       </div>
 
       <div className="w-full max-w-xs space-y-2.5 relative z-10">
-        <button
-          onClick={() => setView("QUICK_CAPTURE")}
-          className="w-full bg-gradient-to-r from-cyan-600 to-indigo-600 text-white h-14 rounded-full font-bold text-base shadow-xl hover:shadow-2xl hover:from-cyan-500 hover:to-indigo-500 active:scale-95 transition-all"
-        >
-          Quick Capture
-        </button>
-
-        <button
-          onClick={() => setView("REFLECTION")}
-          className="w-full bg-white/10 text-white h-12 rounded-full font-semibold text-sm border border-white/20 shadow-lg hover:bg-white/15 active:scale-95 transition-all"
-        >
-          Full Reflection
-        </button>
-
-        {/* Feature Toggles */}
-        <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-3 space-y-1.5">
+        {/* Quick Capture + AI Features */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setView("QUICK_CAPTURE")}
+            className="flex-1 bg-gradient-to-r from-cyan-600 to-indigo-600 text-white h-14 rounded-full font-bold text-base shadow-xl hover:shadow-2xl hover:from-cyan-500 hover:to-indigo-500 active:scale-95 transition-all"
+          >
+            Quick Capture
+          </button>
           <button
             onClick={() => handleUpdateProfile({ ...userProfile, aiEnabled: !userProfile.aiEnabled })}
-            className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition"
+            className="w-[30%] flex flex-col items-center justify-center h-14 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 transition"
           >
-            <span className="text-white text-xs font-semibold">AI Features</span>
+            <span className="text-white text-[10px] font-semibold">AI</span>
             <span
-              className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
-                userProfile.aiEnabled ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-white/10 text-white/60'
+              className={`text-[9px] font-mono px-1.5 py-0.5 rounded-full mt-0.5 ${
+                userProfile.aiEnabled ? 'bg-emerald-500/20 text-emerald-300' : 'bg-white/10 text-white/60'
               }`}
             >
               {userProfile.aiEnabled ? 'ON' : 'OFF'}
             </span>
           </button>
+        </div>
 
+        {/* Full Reflection + Gamification */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setView("REFLECTION")}
+            className="flex-1 bg-white/10 text-white h-12 rounded-full font-semibold text-sm border border-white/20 shadow-lg hover:bg-white/15 active:scale-95 transition-all"
+          >
+            Full Reflection
+          </button>
           <button
             onClick={() => handleUpdateProfile({ ...userProfile, gamificationEnabled: !userProfile.gamificationEnabled })}
-            className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition"
+            className="w-[30%] flex flex-col items-center justify-center h-12 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 transition"
           >
-            <span className="text-white text-xs font-semibold">Gamification</span>
+            <span className="text-white text-[10px] font-semibold">Gamify</span>
             <span
-              className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
-                userProfile.gamificationEnabled ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-white/10 text-white/60'
+              className={`text-[9px] font-mono px-1.5 py-0.5 rounded-full mt-0.5 ${
+                userProfile.gamificationEnabled ? 'bg-emerald-500/20 text-emerald-300' : 'bg-white/10 text-white/60'
               }`}
             >
               {userProfile.gamificationEnabled ? 'ON' : 'OFF'}
