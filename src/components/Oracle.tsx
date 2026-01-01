@@ -50,81 +50,87 @@ const Oracle: React.FC<OracleProps> = ({ entries, onClose }) => {
   };
 
   return (
-    <div className="absolute inset-0 z-50 flex items-end justify-center bg-black/30 backdrop-blur-sm">
-      <div className="w-full max-w-md mx-auto bg-white/90 backdrop-blur-xl rounded-t-[2rem] border border-white/40 shadow-2xl flex flex-col max-h-[85vh] animate-in slide-in-from-bottom-6">
-        <div className="flex-shrink-0 p-6 pb-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center">
-                <Sparkles size={18} />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-slate-900">Oracle</h2>
-                <p className="text-xs text-slate-500">Ask about themes in your recent entries</p>
-              </div>
-            </div>
-
-            <button
-              onClick={onClose}
-              className="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"
-              title="Close"
-            >
-              <X size={18} className="text-slate-600" />
-            </button>
+    <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col overflow-y-auto custom-scrollbar">
+      {/* Header */}
+      <div className="flex-shrink-0 p-6 flex items-center gap-3 border-b border-white/10">
+        <button
+          onClick={onClose}
+          className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center transition"
+        >
+          <X size={20} />
+        </button>
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-purple-600/20 border border-purple-500/30 flex items-center justify-center">
+            <Sparkles size={24} className="text-purple-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">Oracle</h1>
+            <p className="text-white/60 text-xs uppercase tracking-widest font-mono">Pattern Analysis</p>
           </div>
         </div>
+      </div>
 
-        <div className="flex-1 overflow-y-auto px-6 pb-7 space-y-3 custom-scrollbar nav-safe">
-          <textarea
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            placeholder='Try: "What have I been writing about lately?"'
-            className="w-full h-20 resize-none rounded-2xl p-4 bg-white border border-slate-200 focus:outline-none focus:ring-4 focus:ring-purple-100 text-slate-800 placeholder:text-slate-300"
-          />
+      {/* Description */}
+      <div className="flex-shrink-0 px-6 pt-4 pb-2">
+        <p className="text-white/70 text-sm leading-relaxed">
+          Ask about patterns, themes, or insights from your recent reflections. The Oracle analyzes your entries to help you see the bigger picture.
+        </p>
+      </div>
 
-          <button
-            onClick={handleAsk}
-            disabled={!question.trim() || isLoading}
-            className={`w-full h-12 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all ${
-              !question.trim() || isLoading
-                ? "bg-slate-100 text-slate-300 cursor-not-allowed"
-                : "bg-slate-900 text-white hover:bg-slate-800 active:scale-95"
-            }`}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Thinking…
-              </>
-            ) : (
-              <>
-                <Sparkles size={16} className="opacity-80" />
-                Ask Oracle
-              </>
-            )}
-          </button>
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-6 pb-32 custom-scrollbar space-y-4">
+        <textarea
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          placeholder='Try: "What have I been writing about lately?"'
+          className="w-full h-24 resize-none rounded-2xl p-4 bg-white/5 border border-white/10 focus:outline-none focus:border-purple-500/50 focus:bg-white/10 text-white placeholder:text-white/40 transition-all"
+        />
 
-          {error && (
-            <div className="p-4 rounded-2xl bg-red-50 border border-red-100 text-red-700 text-sm">
-              {error}
-            </div>
+        <button
+          onClick={handleAsk}
+          disabled={!question.trim() || isLoading}
+          className={`w-full h-14 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all ${
+            !question.trim() || isLoading
+              ? "bg-white/5 text-white/30 cursor-not-allowed border border-white/10"
+              : "bg-purple-600/20 border border-purple-500/30 text-purple-300 hover:bg-purple-600/30 active:scale-95"
+          }`}
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              Thinking…
+            </>
+          ) : (
+            <>
+              <Sparkles size={20} className="opacity-80" />
+              Ask Oracle
+            </>
           )}
+        </button>
 
-          {answer && (
-            <div className="p-5 rounded-3xl bg-white border border-slate-100 shadow-sm">
-              <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
-                Oracle Response
-              </div>
-              <div className="text-slate-700 text-sm leading-relaxed whitespace-pre-line">
-                {answer}
-              </div>
-            </div>
-          )}
-
-          <div className="text-[10px] text-slate-400 pt-2">
-            Uses only your local entries (no hidden data).
+        {error && (
+          <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm">
+            {error}
           </div>
-        </div>
+        )}
+
+        {answer && (
+          <div className="p-5 rounded-2xl bg-white/5 border border-white/10">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-purple-400 mb-3">
+              Oracle Response
+            </div>
+            <div className="text-white/90 text-sm leading-relaxed whitespace-pre-line">
+              {answer}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="flex-shrink-0 p-6 border-t border-white/10 bg-slate-950/80 backdrop-blur">
+        <p className="text-xs text-white/40 text-center">
+          Uses only your local entries • No data sent to cloud
+        </p>
       </div>
     </div>
   );

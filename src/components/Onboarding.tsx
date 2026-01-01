@@ -30,9 +30,9 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         name: name.trim(),
         profession,
         isOnboarded: true,
-        // Defaults: people can change later in Profile/Settings
-        gamificationEnabled: true,
-        aiEnabled: true,
+        // Defaults: OFF (people can turn ON later in Profile/Settings)
+        gamificationEnabled: false,
+        aiEnabled: false,
       });
     }
   };

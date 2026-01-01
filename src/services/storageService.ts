@@ -8,6 +8,32 @@ const KEYS = {
   recentNames: 'reflexia.recentNames.v1',
 };
 
+const DEFAULT_PROFILE: UserProfile = {
+  name: '',
+  profession: 'NONE',
+  guidePersonality: 'ZEN',
+  aiEnabled: false,
+  gamificationEnabled: false,
+  themeMode: 'DARK',
+  isOnboarded: false,
+  privacyLockEnabled: false,
+  blurHistory: false,
+};
+
+const DEFAULT_STATS: UserStats = {
+  totalEntries: 0,
+  reflectionStreak: 0,
+  cpdMinutesTotal: 0,
+  unlockedAchievements: [],
+  lastActiveDate: '',
+  level: 1,
+  currentXP: 0,
+  nextLevelXP: 100,
+  streak: 0,
+  totalReflections: 0,
+  achievements: [],
+};
+
 function safeJsonParse<T>(raw: string | null, fallback: T): T {
   if (!raw) return fallback;
   try {
@@ -49,31 +75,51 @@ export const storageService = {
 
   // ---- Profile ----
   loadProfile(): UserProfile {
-    return safeJsonParse<UserProfile>(localStorage.getItem(KEYS.profile), {
-      name: '',
-      profession: 'NONE',
-      guidePersonality: 'ZEN',
-      aiEnabled: false,
-      gamificationEnabled: false,
-      themeMode: 'DARK',
-      isOnboarded: false,
-      privacyLockEnabled: false,
-      blurHistory: false,
-    });
+    return safeJsonParse<UserProfile>(localStorage.getItem(KEYS.profile), DEFAULT_PROFILE);
   },
 
   saveProfile(profile: Partial<UserProfile> | UserProfile): UserProfile {
     const current = storageService.loadProfile();
     const merged = { ...current, ...(profile as any) } as UserProfile;
 
-    // Ensure defaults always exist (prevents “toggle missing” bugs)
+    // Ensure defaults always exist (prevents "toggle missing" bugs)
     if (merged.aiEnabled === undefined) merged.aiEnabled = false;
     if (merged.gamificationEnabled === undefined) merged.gamificationEnabled = false;
     if (!merged.themeMode) merged.themeMode = 'DARK';
     if (merged.isOnboarded === undefined) merged.isOnboarded = false;
+    if (merged.privacyLockEnabled === undefined) merged.privacyLockEnabled = false;
+    if (merged.blurHistory === undefined) merged.blurHistory = false;
 
     localStorage.setItem(KEYS.profile, JSON.stringify(merged));
     return merged;
+  },
+
+  /**
+   * Patch profile with partial updates (merge with existing)
+   */
+  patchProfile(partial: Partial<UserProfile>): UserProfile {
+    const current = storageService.loadProfile();
+    const updated = { ...current, ...partial };
+    return storageService.saveProfile(updated);
+  },
+
+  /**
+   * Set onboarded status without affecting other profile fields
+   */
+  setOnboarded(value: boolean): UserProfile {
+    return storageService.patchProfile({ isOnboarded: value });
+  },
+
+  /**
+   * Reset all toggles to default (off)
+   */
+  resetToggles(): UserProfile {
+    return storageService.patchProfile({
+      aiEnabled: false,
+      gamificationEnabled: false,
+      privacyLockEnabled: false,
+      blurHistory: false,
+    });
   },
 
   resetProfile() {
@@ -81,22 +127,46 @@ export const storageService = {
   },
 
   // ---- Stats (Gamification) ----
-  async loadStats(defaultStats: UserStats): Promise<UserStats> {
-    const s = safeJsonParse<UserStats>(localStorage.getItem(KEYS.stats), defaultStats);
+  async loadStats(defaultStats?: UserStats): Promise<UserStats> {
+    const fallback = defaultStats ?? DEFAULT_STATS;
+    const s = safeJsonParse<UserStats>(localStorage.getItem(KEYS.stats), fallback);
     // Hardening: fill required fields if older data exists
     return {
-      level: s.level ?? defaultStats.level,
-      currentXP: s.currentXP ?? defaultStats.currentXP,
-      nextLevelXP: s.nextLevelXP ?? defaultStats.nextLevelXP,
-      streak: s.streak ?? defaultStats.streak,
-      totalReflections: s.totalReflections ?? defaultStats.totalReflections,
-      cpdMinutesTotal: s.cpdMinutesTotal ?? defaultStats.cpdMinutesTotal,
+      totalEntries: s.totalEntries ?? fallback.totalEntries,
+      reflectionStreak: s.reflectionStreak ?? fallback.reflectionStreak,
+      cpdMinutesTotal: s.cpdMinutesTotal ?? fallback.cpdMinutesTotal,
+      unlockedAchievements: s.unlockedAchievements ?? fallback.unlockedAchievements,
+      lastActiveDate: s.lastActiveDate ?? fallback.lastActiveDate,
+      level: s.level ?? fallback.level,
+      currentXP: s.currentXP ?? fallback.currentXP,
+      nextLevelXP: s.nextLevelXP ?? fallback.nextLevelXP,
+      streak: s.streak ?? fallback.streak,
+      totalReflections: s.totalReflections ?? fallback.totalReflections,
       achievements: Array.isArray(s.achievements) ? s.achievements : [],
     };
   },
 
   saveStats(stats: UserStats) {
     localStorage.setItem(KEYS.stats, JSON.stringify(stats));
+  },
+
+  /**
+   * Reset stats to default values
+   */
+  resetStats(): UserStats {
+    const reset = { ...DEFAULT_STATS };
+    storageService.saveStats(reset);
+    return reset;
+  },
+
+  /**
+   * Patch stats with partial updates
+   */
+  patchStats(partial: Partial<UserStats>): UserStats {
+    const current = safeJsonParse<UserStats>(localStorage.getItem(KEYS.stats), DEFAULT_STATS);
+    const updated = { ...current, ...partial };
+    storageService.saveStats(updated);
+    return updated;
   },
 
   // ---- Backup / Restore ----

@@ -368,72 +368,88 @@ export default function CrisisProtocols({ onClose }: { onClose: () => void }) {
   }, [q, cat]);
 
   return (
-    <div className="h-full bg-slate-50 flex flex-col overflow-y-auto custom-scrollbar nav-safe">
-      <div className="p-4 pt-12 bg-white border-b border-slate-200 sticky top-0 z-10">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-extrabold text-slate-800">Crisis Protocols</h1>
-          <button
-            onClick={onClose}
-            className="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200"
-          >
-            Close
-          </button>
-        </div>
-
-        <div className="mt-3 grid grid-cols-1 gap-2">
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search (e.g. fire, suicide, phishing)…"
-            className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-4 focus:ring-indigo-100"
-          />
-
-          <div className="flex gap-2 overflow-x-auto py-1">
-            <button
-              onClick={() => setCat("ALL")}
-              className={`px-3 py-2 rounded-xl text-xs font-bold border whitespace-nowrap ${
-                cat === "ALL" ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-600 border-slate-200"
-              }`}
-            >
-              ALL
-            </button>
-            {CATS.map((c) => (
-              <button
-                key={c}
-                onClick={() => setCat(c)}
-                className={`px-3 py-2 rounded-xl text-xs font-bold border whitespace-nowrap ${
-                  cat === c ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-600 border-slate-200"
-                }`}
-              >
-                {c}
-              </button>
-            ))}
+    <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col overflow-y-auto custom-scrollbar nav-safe">
+      {/* Header */}
+      <div className="flex-shrink-0 p-6 flex items-center gap-3 border-b border-white/10">
+        <button
+          onClick={onClose}
+          className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center transition"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-red-600/20 border border-red-500/30 flex items-center justify-center">
+            <svg className="w-6 h-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">Crisis Protocols</h1>
+            <p className="text-white/60 text-xs uppercase tracking-widest font-mono">Emergency Response</p>
           </div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-5 space-y-3 custom-scrollbar pb-40">
-        {filtered.length === 0 && <div className="text-center text-slate-400 py-10">No matches.</div>}
+      {/* Search & Filters */}
+      <div className="flex-shrink-0 p-6 pt-4 space-y-3">
+        <p className="text-white/70 text-sm leading-relaxed">
+          Quick-access emergency protocols for critical situations. Choose by category or search by keyword.
+        </p>
+
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search (e.g. fire, suicide, phishing)…"
+          className="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-red-500/50 focus:bg-white/10 transition-all"
+        />
+
+        <div className="flex gap-2 overflow-x-auto py-1 custom-scrollbar">
+          <button
+            onClick={() => setCat("ALL")}
+            className={`px-3 py-2 rounded-xl text-xs font-bold border whitespace-nowrap ${
+              cat === "ALL" ? "bg-red-600/20 text-white border-red-500/30" : "bg-white/5 text-white/80 border-white/10 hover:bg-white/10"
+            }`}
+          >
+            ALL
+          </button>
+          {CATS.map((c) => (
+            <button
+              key={c}
+              onClick={() => setCat(c)}
+              className={`px-3 py-2 rounded-xl text-xs font-bold border whitespace-nowrap ${
+                cat === c ? "bg-red-600/20 text-white border-red-500/30" : "bg-white/5 text-white/80 border-white/10 hover:bg-white/10"
+              }`}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-6 space-y-3 custom-scrollbar pb-40">
+        {filtered.length === 0 && <div className="text-center text-white/40 py-10">No matches.</div>}
 
         {filtered.map((p) => {
           const open = openId === p.id;
           return (
-            <div key={p.id} className="bg-white rounded-3xl border border-slate-200 p-4">
+            <div key={p.id} className="bg-white/5 rounded-2xl border border-white/10 p-4 hover:bg-white/10 transition-all">
               <button className="w-full text-left" onClick={() => setOpenId(open ? null : p.id)}>
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <div className="text-[11px] font-extrabold text-slate-500">{p.category}</div>
-                    <div className="text-base font-extrabold text-slate-800">{p.title}</div>
-                    <div className="mt-1 text-xs text-slate-600">{p.whenToUse}</div>
+                    <div className="text-[11px] font-extrabold text-red-400 uppercase tracking-wider">{p.category}</div>
+                    <div className="text-base font-extrabold text-white mt-1">{p.title}</div>
+                    <div className="mt-1 text-xs text-white/70">{p.whenToUse}</div>
                   </div>
-                  <div className="text-xs font-bold text-indigo-600">{open ? "Hide" : "Open"}</div>
+                  <div className="text-xs font-bold text-red-400">{open ? "Hide" : "Open"}</div>
                 </div>
               </button>
 
               {open && (
-                <div className="mt-3">
-                  <div className="text-xs font-extrabold text-slate-700 mb-2">Steps</div>
-                  <ol className="list-decimal pl-5 space-y-1 text-sm text-slate-700">
+                <div className="mt-4 pt-4 border-t border-white/10">
+                  <div className="text-xs font-extrabold text-white/90 uppercase tracking-wider mb-2">Steps</div>
+                  <ol className="list-decimal pl-5 space-y-1 text-sm text-white/80">
                     {p.steps.map((s, i) => (
                       <li key={i}>{s}</li>
                     ))}
@@ -442,8 +458,8 @@ export default function CrisisProtocols({ onClose }: { onClose: () => void }) {
 
                   {p.notes && (Array.isArray(p.notes) ? p.notes.length : p.notes.trim().length) ? (
                     <>
-                      <div className="text-xs font-extrabold text-slate-700 mt-4 mb-2">Notes</div>
-                      <ul className="list-disc pl-5 space-y-1 text-sm text-slate-600">
+                      <div className="text-xs font-extrabold text-white/90 uppercase tracking-wider mt-4 mb-2">Notes</div>
+                      <ul className="list-disc pl-5 space-y-1 text-sm text-white/70">
                         {(Array.isArray(p.notes) ? p.notes : [p.notes]).map((n, i) => (
                           <li key={i}>{n}</li>
                         ))}

@@ -305,36 +305,42 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
 
   if (!selectedModel) {
     return (
-      <div className="h-full bg-slate-50 flex flex-col overflow-y-auto custom-scrollbar animate-in fade-in duration-300 nav-safe">
-        <div className="p-6 pt-10 bg-white border-b border-slate-200">
+      <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 flex flex-col overflow-y-auto custom-scrollbar animate-in fade-in duration-300 nav-safe">
+        <div className="p-6 pt-10 border-b border-white/10">
           <div className="flex items-center justify-between">
             <button
               onClick={onCancel}
-              className="p-3 bg-white rounded-full hover:bg-slate-100 shadow-sm border border-slate-100 transition-colors"
+              className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center transition"
               title="Back"
             >
-              <ChevronLeft className="text-slate-600" size={22} />
+              <ChevronLeft className="text-white" size={22} />
             </button>
 
-            <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-              <Layers className="text-indigo-600" /> Select Framework
-            </h1>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center">
+                <Layers className="text-indigo-400" size={24} />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-white">Select Framework</h1>
+                <p className="text-white/60 text-xs uppercase tracking-widest font-mono">Reflection</p>
+              </div>
+            </div>
 
-            <div className="w-12" />
+            <div className="w-10" />
           </div>
 
-          <div className="mt-3 text-xs text-slate-500">
-            Profession: <span className="font-bold text-slate-700">{PROFESSION_CONFIG?.[profession]?.label ?? "Unknown"}</span>
+          <div className="mt-4 text-xs text-white/60">
+            Profession: <span className="font-bold text-white/90">{PROFESSION_CONFIG?.[profession]?.label ?? "Unknown"}</span>
             <span className="mx-2">•</span>
-            AI: <span className={`font-bold ${AI_ON ? "text-indigo-600" : "text-slate-500"}`}>{AI_ON ? "ON" : "OFF"}</span>
+            AI: <span className={`font-bold ${AI_ON ? "text-emerald-400" : "text-white/60"}`}>{AI_ON ? "ON" : "OFF"}</span>
           </div>
         </div>
 
         {/* INSTRUCTIONS AT TOP - CLEANER UI */}
         <div className="px-6 pt-4">
-          <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-4 flex items-start gap-3">
-            <Info className="text-indigo-600 flex-shrink-0 mt-0.5" size={18} />
-            <div className="text-sm text-indigo-900">
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex items-start gap-3">
+            <Info className="text-indigo-400 flex-shrink-0 mt-0.5" size={18} />
+            <div className="text-sm text-white/90">
               <span className="font-bold">How it works:</span> Tap any framework to start. You can use voice dictation and get optional coaching tips {AI_ON ? "powered by AI" : "with offline prompts"}.
             </div>
           </div>
@@ -355,28 +361,28 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
                   setShowInsight(false);
                   audioEngine.playTone(0);
                 }}
-                className="text-left bg-white rounded-3xl border-2 border-slate-200 p-5 hover:border-indigo-500 hover:shadow-lg transition group"
+                className="text-left bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-5 hover:bg-white/10 hover:border-indigo-500/30 transition group"
               >
                 <div className="flex items-center justify-between mb-3">
-                  <div className="text-base font-extrabold text-slate-800 group-hover:text-indigo-600 transition">
+                  <div className="text-base font-extrabold text-white group-hover:text-indigo-400 transition">
                     {safeModelLabel(m)}
                   </div>
-                  <div className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-full">
+                  <div className="text-[10px] font-bold text-white/60 bg-white/10 px-2 py-1 rounded-full">
                     {safeModelStages(m).length} stages
                   </div>
                 </div>
-                <div className="flex items-center gap-2 text-sm font-bold text-indigo-600 group-hover:translate-x-1 transition">
+                <div className="flex items-center gap-2 text-sm font-bold text-indigo-400 group-hover:translate-x-1 transition">
                   Start <ArrowRight size={16} />
                 </div>
               </button>
             ))}
           </div>
 
-          <div className="mt-6 bg-white rounded-3xl border border-slate-200 p-5">
-            <div className="text-sm font-bold text-slate-800 flex items-center gap-2">
-              <Sparkles className="text-indigo-500" size={18} /> Tip
+          <div className="mt-6 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-5">
+            <div className="text-sm font-bold text-white flex items-center gap-2">
+              <Sparkles className="text-indigo-400" size={18} /> Tip
             </div>
-            <div className="mt-2 text-xs text-slate-500">
+            <div className="mt-2 text-xs text-white/70">
               If AI is OFF, the app uses built-in prompts for each stage (no internet required).
               Turn AI ON in <span className="font-bold">Profile → Neural Link</span>.
             </div>
@@ -388,46 +394,46 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
 
   if (isFinished) {
     return (
-      <div className="flex flex-col h-full bg-slate-50 animate-in fade-in duration-300 nav-safe">
+      <div className="flex flex-col h-full bg-gradient-to-b from-slate-950 to-slate-900 animate-in fade-in duration-300 nav-safe">
         <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center justify-center custom-scrollbar pb-28">
           <div className="mb-8 scale-110">
             <Guide stageId={null} state={guideState} />
           </div>
 
           <div className="text-center mb-10">
-            <h2 className="text-3xl font-light text-slate-800 mb-2">Complete</h2>
-            <p className="text-slate-400 text-lg">Your reflection is ready to save.</p>
+            <h2 className="text-3xl font-light text-white mb-2">Complete</h2>
+            <p className="text-white/60 text-lg">Your reflection is ready to save.</p>
           </div>
 
           <div className="w-full max-w-md space-y-4">
             {!showInsight ? (
               <button
                 onClick={handleUnlockInsight}
-                className="w-full py-4 bg-white border border-slate-200 text-slate-700 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors"
+                className="w-full py-4 bg-white/5 backdrop-blur-xl border border-white/10 text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-white/10 transition-colors"
               >
-                <Sparkles size={18} className="text-indigo-500" />
+                <Sparkles size={18} className="text-indigo-400" />
                 Unlock Insight {AI_ON ? "" : "(Offline)"}
               </button>
             ) : (
-              <div className="w-full bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
+              <div className="w-full bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
                 <div className="flex justify-between items-start mb-3">
-                  <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-indigo-500" /> Insight
+                  <h3 className="font-bold text-white flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-indigo-400" /> Insight
                   </h3>
 
                   {guideState === "thinking" && (
-                    <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
+                    <Loader2 className="w-5 h-5 text-indigo-400 animate-spin" />
                   )}
                 </div>
 
-                <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+                <div className="text-sm text-white/90 leading-relaxed whitespace-pre-line">
                   {analysisResult || "Generating..."}
                 </div>
               </div>
             )}
 
-            <div className="bg-white rounded-3xl p-5 border border-slate-200">
-              <div className="text-xs font-bold text-slate-700 mb-3">How are you feeling?</div>
+            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-5 border border-white/10">
+              <div className="text-xs font-bold text-white mb-3">How are you feeling?</div>
               <div className="flex justify-between gap-2">
                 {MOODS.map((m) => (
                   <button
@@ -435,12 +441,12 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
                     onClick={() => setMood(m.value)}
                     className={`flex-1 aspect-square rounded-2xl border-2 flex flex-col items-center justify-center transition ${
                       mood === m.value
-                        ? "border-indigo-500 bg-indigo-50 shadow-md"
-                        : "border-slate-200 bg-white hover:border-slate-300"
+                        ? "border-indigo-500 bg-indigo-500/20 shadow-md"
+                        : "border-white/10 bg-white/5 hover:border-white/20"
                     }`}
                   >
                     <div className="text-2xl mb-1">{m.emoji}</div>
-                    <div className="text-[10px] font-bold text-slate-600">{m.label}</div>
+                    <div className="text-[10px] font-bold text-white/90">{m.label}</div>
                   </button>
                 ))}
               </div>
@@ -451,8 +457,8 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
               disabled={isSaving}
               className={`w-full py-4 rounded-2xl font-bold text-lg shadow-xl transition-all ${
                 isSaving
-                  ? "bg-slate-300 text-slate-500"
-                  : "bg-slate-900 hover:bg-slate-800 text-white active:scale-95"
+                  ? "bg-white/10 text-white/50"
+                  : "bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white active:scale-95"
               }`}
             >
               {isSaving ? "Saving..." : "Save Reflection"}
@@ -473,30 +479,30 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
   }
 
   return (
-    <div className="h-full bg-slate-50 flex flex-col overflow-y-auto custom-scrollbar nav-safe">
-      <div className="p-5 bg-white border-b border-slate-200">
+    <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 flex flex-col overflow-y-auto custom-scrollbar nav-safe">
+      <div className="p-5 border-b border-white/10">
         <div className="flex items-center justify-between">
           <button
             onClick={currentStageIndex === 0 ? () => setSelectedModel(null) : handleStagePrev}
-            className="p-3 bg-white rounded-full hover:bg-slate-100 shadow-sm border border-slate-100 transition-colors"
+            className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center transition"
             title="Back"
           >
-            <ChevronLeft className="text-slate-600" size={20} />
+            <ChevronLeft className="text-white" size={20} />
           </button>
 
           <div className="flex-1 text-center">
-            <div className="text-xs text-slate-500 font-bold uppercase tracking-wide mb-1">
+            <div className="text-xs text-white/60 font-bold uppercase tracking-wide mb-1">
               {safeModelLabel(selectedModel)} • Stage {currentStageIndex + 1} of {stages.length}
             </div>
-            <div className="text-sm font-bold text-slate-800">{stageData?.label}</div>
+            <div className="text-sm font-bold text-white">{stageData?.label}</div>
           </div>
 
           <button
             onClick={() => audioEngine.isMuted ? audioEngine.unmuteAll() : audioEngine.muteAll()}
-            className="p-3 bg-white rounded-full hover:bg-slate-100 shadow-sm border border-slate-100 transition-colors"
+            className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center transition"
             title={audioEngine.isMuted ? "Unmute" : "Mute"}
           >
-            {audioEngine.isMuted ? <VolumeX className="text-slate-600" size={20} /> : <Volume2 className="text-slate-600" size={20} />}
+            {audioEngine.isMuted ? <VolumeX className="text-white" size={20} /> : <Volume2 className="text-white" size={20} />}
           </button>
         </div>
 
@@ -506,9 +512,9 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
       </div>
 
       <div className="flex-1 overflow-y-auto p-5 pb-40 custom-scrollbar">
-        <div className="bg-white rounded-3xl border border-slate-200 p-5 mb-4">
-          <div className="text-xs font-bold text-indigo-600 mb-2">Prompt</div>
-          <div className="text-sm text-slate-700 leading-relaxed">
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-5 mb-4">
+          <div className="text-xs font-bold text-indigo-400 mb-2">Prompt</div>
+          <div className="text-sm text-white/90 leading-relaxed">
             {profPromptPrefix} {stageData?.prompt}
           </div>
         </div>
@@ -518,14 +524,14 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
           value={currentAnswer}
           onChange={(e) => handleTextChange(e.target.value)}
           placeholder={stageData?.placeholder || "Write your thoughts here..."}
-          className="w-full h-64 p-4 rounded-2xl border border-slate-300 bg-white text-slate-800 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm"
+          className="w-full h-64 p-4 rounded-2xl border border-white/20 bg-white/10 text-white placeholder-white/50 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent backdrop-blur-xl"
         />
 
         {coachTip && (
-          <div className="mt-4 bg-indigo-50 border border-indigo-200 rounded-2xl p-4">
+          <div className="mt-4 bg-white/5 backdrop-blur-xl border border-indigo-500/30 rounded-2xl p-4">
             <div className="flex items-start gap-2">
-              <Sparkles className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-indigo-900 leading-relaxed">{coachTip}</div>
+              <Sparkles className="w-5 h-5 text-indigo-400 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-white/90 leading-relaxed">{coachTip}</div>
             </div>
           </div>
         )}
@@ -534,7 +540,7 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
           <button
             onClick={handleCoaching}
             disabled={guideState !== "idle"}
-            className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-50 disabled:opacity-50 flex items-center gap-2"
+            className="px-4 py-2 bg-white/10 border border-white/10 text-white rounded-xl text-sm font-semibold hover:bg-white/15 disabled:opacity-50 flex items-center gap-2"
           >
             <Sparkles size={16} />
             Coach {AI_ON ? "" : "(Offline)"}
@@ -542,7 +548,7 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
 
           <button
             onClick={() => setShowCanvas(true)}
-            className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-50 flex items-center gap-2"
+            className="px-4 py-2 bg-white/10 border border-white/10 text-white rounded-xl text-sm font-semibold hover:bg-white/15 flex items-center gap-2"
           >
             <PenTool size={16} />
             Sketch
@@ -552,7 +558,7 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
             <button
               onClick={handleVoiceStart}
               disabled={guideState !== "idle"}
-              className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-50 disabled:opacity-50 flex items-center gap-2"
+              className="px-4 py-2 bg-white/10 border border-white/10 text-white rounded-xl text-sm font-semibold hover:bg-white/15 disabled:opacity-50 flex items-center gap-2"
             >
               <Mic size={16} />
               Voice
@@ -569,13 +575,13 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
         </div>
 
         {attachments.length > 0 && (
-          <div className="mt-4 bg-white rounded-2xl border border-slate-200 p-4">
-            <div className="text-xs font-bold text-slate-700 mb-2">Attachments ({attachments.length})</div>
+          <div className="mt-4 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-4">
+            <div className="text-xs font-bold text-white mb-2">Attachments ({attachments.length})</div>
             <div className="space-y-2">
               {attachments.map((att) => (
-                <div key={att.id} className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 p-2 rounded-lg">
+                <div key={att.id} className="flex items-center gap-2 text-xs text-white/90 bg-white/5 p-2 rounded-lg">
                   <span className="font-medium">{att.type}</span>
-                  <span className="text-slate-400">•</span>
+                  <span className="text-white/40">•</span>
                   <span>{att.name || "Untitled"}</span>
                 </div>
               ))}
@@ -584,14 +590,14 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
         )}
       </div>
 
-      <div className="p-5 bg-white border-t border-slate-200">
+      <div className="p-5 border-t border-white/10">
         <button
           onClick={handleStageNext}
           disabled={!currentAnswer.trim()}
           className={`w-full py-4 rounded-2xl font-bold text-lg shadow-xl transition-all flex items-center justify-center gap-2 ${
             !currentAnswer.trim()
-              ? "bg-slate-200 text-slate-400"
-              : "bg-slate-900 hover:bg-slate-800 text-white active:scale-95"
+              ? "bg-white/10 text-white/50"
+              : "bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white active:scale-95"
           }`}
         >
           {currentStageIndex < stages.length - 1 ? (

@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import type { Entry, ReflectionEntry } from "../types";
+import { storageService } from "../services/storageService";
 
 interface CalendarViewProps {
   entries: Entry[];
@@ -68,6 +69,14 @@ export default function CalendarView({ entries, onOpenEntry }: CalendarViewProps
   const [cursorYear, setCursorYear] = useState(now.getFullYear());
   const [cursorMonth, setCursorMonth] = useState(now.getMonth()); // 0-11
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+
+  // Load user profile for blur setting
+  const [blurEnabled, setBlurEnabled] = useState(false);
+
+  useEffect(() => {
+    const profile = storageService.loadProfile();
+    setBlurEnabled(profile.blurHistory ?? false);
+  }, []);
 
   const byDay = useMemo(() => {
     const map = new Map<string, Entry[]>();
@@ -224,7 +233,7 @@ export default function CalendarView({ entries, onOpenEntry }: CalendarViewProps
           </div>
         )}
 
-        {/* YEAR (✅ 12 months nicely split) */}
+        {/* YEAR (12 months nicely split) */}
         {viewMode === "YEAR" && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {Array.from({ length: 12 }).map((_, monthIdx) => {
@@ -311,7 +320,7 @@ export default function CalendarView({ entries, onOpenEntry }: CalendarViewProps
                         className="w-full text-left p-4 bg-white rounded-2xl border border-slate-200 hover:border-indigo-500 transition"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-slate-700">
+                          <span className={`text-xs font-bold text-slate-700 ${blurEnabled ? 'blur-sm' : ''}`}>
                             {e.type === "INCIDENT" ? "Incident" : (e as any).model}
                           </span>
                           <span className="text-[10px] text-slate-400 font-semibold">

@@ -135,20 +135,29 @@ export default function BioRhythm({ onClose }: BioRhythmProps) {
     "#c084fc";
 
   return (
-    <div className="h-full bg-slate-950 text-white relative overflow-y-auto custom-scrollbar">
+    <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 text-white relative overflow-y-auto custom-scrollbar">
       <div
         className="absolute inset-0 opacity-30 pointer-events-none overflow-hidden"
         style={{ background: `radial-gradient(circle at center, ${phaseColor}40, transparent 70%)` }}
       />
 
-      <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-20">
-        <button onClick={onClose} className="p-2 bg-slate-800 rounded-full hover:bg-slate-700">
-          <ArrowLeft />
+      {/* Header */}
+      <div className="relative z-20 p-6 flex items-center gap-3 border-b border-white/10 bg-slate-950/50 backdrop-blur">
+        <button
+          onClick={onClose}
+          className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center transition"
+        >
+          <ArrowLeft size={20} />
         </button>
-        <div className="text-xl font-bold flex items-center gap-2">
-          <Wind className="text-cyan-400" /> Bio-Rhythm
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-cyan-600/20 border border-cyan-500/30 flex items-center justify-center">
+            <Wind size={24} className="text-cyan-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">Bio-Rhythm</h1>
+            <p className="text-white/60 text-xs uppercase tracking-widest font-mono">Breathwork</p>
+          </div>
         </div>
-        <div className="w-10" />
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center pb-72 z-10">
@@ -216,7 +225,7 @@ export default function BioRhythm({ onClose }: BioRhythmProps) {
         </div>
       </div>
 
-      <div className="absolute bottom-0 w-full p-6 bg-slate-900/90 backdrop-blur-xl border-t border-slate-800 z-30 flex flex-col gap-4">
+      <div className="absolute bottom-0 w-full p-6 bg-slate-950/80 backdrop-blur border-t border-white/10 z-30 flex flex-col gap-4">
         <div>
           <div className="flex justify-between items-end mb-2">
             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Session length</p>
@@ -231,8 +240,8 @@ export default function BioRhythm({ onClose }: BioRhythmProps) {
                 onClick={() => setSessionMinutes(m as 2 | 5 | 10)}
                 className={`py-2 rounded-xl text-xs font-bold border ${
                   sessionMinutes === m
-                    ? "bg-cyan-600 text-white border-cyan-500"
-                    : "bg-slate-800 text-slate-200 border-slate-700 hover:border-slate-600"
+                    ? "bg-cyan-600/20 text-white border-cyan-500/30"
+                    : "bg-white/5 text-slate-200 border-white/10 hover:bg-white/10"
                 } ${isRunning ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 {m} min
@@ -259,8 +268,8 @@ export default function BioRhythm({ onClose }: BioRhythmProps) {
                 }}
                 className={`p-3 rounded-2xl border text-left ${
                   pattern.name === p.name
-                    ? "bg-indigo-600/90 border-indigo-400 text-white"
-                    : "bg-slate-800/70 border-slate-700 text-slate-200 hover:border-slate-600"
+                    ? "bg-cyan-600/20 border-cyan-500/30 text-white"
+                    : "bg-white/5 border-white/10 text-slate-200 hover:bg-white/10"
                 }`}
               >
                 <div className="text-sm font-bold">{p.name}</div>

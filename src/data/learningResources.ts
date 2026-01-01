@@ -16,7 +16,17 @@ export type ResourceCategory =
   | 'research'
   | 'technology'
   | 'patient-safety'
-  | 'burnout-prevention';
+  | 'burnout-prevention'
+  | 'education'
+  | 'legal'
+  | 'business-management'
+  | 'finance-accounting'
+  | 'engineering'
+  | 'emergency-services'
+  | 'social-work'
+  | 'creative-arts'
+  | 'public-service'
+  | 'customer-service';
 
 export type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced';
 
@@ -465,6 +475,396 @@ export const LEARNING_RESOURCES: LearningResource[] = [
     difficulty: 'intermediate',
     dateAdded: '2024-02-25T00:00:00Z',
   },
+
+  // ==================== EDUCATION ====================
+  {
+    id: 'edu-001',
+    title: 'Reflective Practice in Teaching',
+    type: 'article',
+    category: 'education',
+    description: 'Using structured reflection to improve teaching effectiveness and student outcomes.',
+    keyPoints: [
+      'Kolb and Gibbs reflective cycles for educators',
+      'Critical incident analysis in classroom settings',
+      'Peer observation and collaborative reflection',
+      'Creating a reflective teaching portfolio',
+    ],
+    author: 'Dr. Rachel Green',
+    duration: '14 min read',
+    tags: ['teaching', 'professional development', 'pedagogy', 'reflection'],
+    difficulty: 'intermediate',
+    dateAdded: '2024-03-01T00:00:00Z',
+    offlineContent: `Reflective practice is essential for continuous teaching improvement. Kolb's cycle (concrete experience, reflective observation, abstract conceptualization, active experimentation) helps teachers systematically analyze classroom experiences. Critical incident technique focuses on significant teaching moments - both successful and challenging. Regular reflection helps identify patterns in student engagement, assess instructional strategies, and refine classroom management. Maintain a teaching journal noting what worked, what didn't, and why. Peer observation provides external perspectives on teaching blind spots.`,
+  },
+  {
+    id: 'edu-002',
+    title: 'Differentiated Instruction Strategies',
+    type: 'video',
+    category: 'education',
+    description: 'Practical approaches to meeting diverse student needs in mixed-ability classrooms.',
+    keyPoints: [
+      'Content, process, product differentiation',
+      'Flexible grouping strategies',
+      'Tiered assignments and scaffolding',
+      'Assessment for learning vs assessment of learning',
+    ],
+    duration: '25 min',
+    tags: ['differentiation', 'inclusive education', 'classroom management', 'student needs'],
+    difficulty: 'intermediate',
+    dateAdded: '2024-03-05T00:00:00Z',
+  },
+  {
+    id: 'edu-003',
+    title: 'Managing Teacher Stress and Workload',
+    type: 'exercise',
+    category: 'education',
+    description: 'Evidence-based techniques for managing the emotional and time demands of teaching.',
+    keyPoints: [
+      'Boundary setting with work hours',
+      'Efficient marking and feedback strategies',
+      'Self-compassion for teaching challenges',
+      'Building supportive professional networks',
+    ],
+    duration: '18 min',
+    tags: ['teacher wellness', 'stress management', 'work-life balance', 'self-care'],
+    difficulty: 'beginner',
+    dateAdded: '2024-03-08T00:00:00Z',
+    offlineContent: `Teaching is emotionally and cognitively demanding. Protect boundaries: set specific work hours and stick to them. Efficient marking: use rubrics, provide group feedback on common errors, focus detailed feedback on high-impact areas. Practice self-compassion: not every lesson will be perfect, and that's normal. Build networks: connect with colleagues for support, share resources, debrief challenging situations. Schedule regular breaks during term and fully disconnect during holidays. Recognize early signs of burnout: cynicism, exhaustion, reduced effectiveness.`,
+  },
+
+  // ==================== LEGAL ====================
+  {
+    id: 'legal-001',
+    title: 'Ethical Dilemmas in Legal Practice',
+    type: 'article',
+    category: 'legal',
+    description: 'Navigating conflicts between client advocacy and professional responsibility.',
+    keyPoints: [
+      'Confidentiality vs duty to report',
+      'Conflicts of interest identification',
+      'Candor to the court requirements',
+      'Declining representation ethically',
+    ],
+    author: 'Sarah Martinez, JD',
+    duration: '16 min read',
+    tags: ['legal ethics', 'professional responsibility', 'client relations', 'integrity'],
+    difficulty: 'advanced',
+    dateAdded: '2024-03-10T00:00:00Z',
+  },
+  {
+    id: 'legal-002',
+    title: 'Reflective Practice for Lawyers',
+    type: 'tool',
+    category: 'legal',
+    description: 'Structured frameworks for analyzing case outcomes and improving legal judgment.',
+    keyPoints: [
+      'Case outcome analysis beyond win/loss',
+      'Client communication effectiveness review',
+      'Legal strategy evaluation frameworks',
+      'Continuing professional development through reflection',
+    ],
+    duration: '12 min',
+    tags: ['reflection', 'legal practice', 'professional development', 'case analysis'],
+    difficulty: 'intermediate',
+    dateAdded: '2024-03-12T00:00:00Z',
+  },
+
+  // ==================== BUSINESS & MANAGEMENT ====================
+  {
+    id: 'biz-001',
+    title: 'Strategic Decision-Making Frameworks',
+    type: 'article',
+    category: 'business-management',
+    description: 'Structured approaches to making high-stakes business decisions under uncertainty.',
+    keyPoints: [
+      'SWOT analysis and competitive positioning',
+      'Scenario planning and risk assessment',
+      'Stakeholder analysis and management',
+      'Decision trees and expected value calculations',
+    ],
+    author: 'James Chen, MBA',
+    duration: '18 min read',
+    tags: ['strategy', 'decision making', 'risk management', 'business analysis'],
+    difficulty: 'advanced',
+    dateAdded: '2024-03-15T00:00:00Z',
+  },
+  {
+    id: 'biz-002',
+    title: 'Leading Through Change',
+    type: 'video',
+    category: 'business-management',
+    description: 'Change management principles for organizational transformation.',
+    keyPoints: [
+      "Kotter's 8-step change process",
+      'Managing resistance and building buy-in',
+      'Communication strategies during transition',
+      'Sustaining change momentum',
+    ],
+    duration: '30 min',
+    tags: ['change management', 'leadership', 'organizational development', 'communication'],
+    difficulty: 'intermediate',
+    dateAdded: '2024-03-18T00:00:00Z',
+  },
+
+  // ==================== FINANCE & ACCOUNTING ====================
+  {
+    id: 'fin-001',
+    title: 'Professional Skepticism in Audit Practice',
+    type: 'article',
+    category: 'finance-accounting',
+    description: 'Maintaining appropriate professional skepticism while building client relationships.',
+    keyPoints: [
+      'Balancing trust and verification',
+      'Red flags in financial statements',
+      'Questioning management assertions',
+      'Documentation of skeptical inquiry',
+    ],
+    author: 'Michael Roberts, CPA',
+    duration: '14 min read',
+    tags: ['audit', 'professional skepticism', 'ethics', 'fraud detection'],
+    difficulty: 'advanced',
+    dateAdded: '2024-03-20T00:00:00Z',
+  },
+  {
+    id: 'fin-002',
+    title: 'Reflective Practice for Finance Professionals',
+    type: 'exercise',
+    category: 'finance-accounting',
+    description: 'Using reflection to improve financial analysis and decision quality.',
+    keyPoints: [
+      'Post-decision analysis of forecasts',
+      'Learning from estimation errors',
+      'Ethical decision documentation',
+      'Continuous professional competence',
+    ],
+    duration: '15 min',
+    tags: ['reflection', 'professional development', 'financial analysis', 'ethics'],
+    difficulty: 'intermediate',
+    dateAdded: '2024-03-22T00:00:00Z',
+  },
+
+  // ==================== ENGINEERING ====================
+  {
+    id: 'eng-001',
+    title: 'Root Cause Analysis for Engineering Failures',
+    type: 'tool',
+    category: 'engineering',
+    description: 'Systematic methods for investigating technical failures and preventing recurrence.',
+    keyPoints: [
+      'Fishbone diagrams and 5 Whys technique',
+      'Failure mode and effects analysis (FMEA)',
+      'Lessons learned documentation',
+      'Safety culture and error reporting',
+    ],
+    duration: '25 min',
+    tags: ['root cause analysis', 'safety', 'quality', 'problem solving'],
+    difficulty: 'advanced',
+    dateAdded: '2024-03-25T00:00:00Z',
+  },
+  {
+    id: 'eng-002',
+    title: 'Engineering Ethics and Professional Responsibility',
+    type: 'article',
+    category: 'engineering',
+    description: 'Ethical frameworks for engineering practice and public safety responsibilities.',
+    keyPoints: [
+      'Professional codes of conduct',
+      'Whistleblowing and duty to public',
+      'Conflicts between safety and cost',
+      'Environmental and social responsibilities',
+    ],
+    author: 'Dr. Patricia Lee, PE',
+    duration: '16 min read',
+    tags: ['ethics', 'professional responsibility', 'public safety', 'sustainability'],
+    difficulty: 'intermediate',
+    dateAdded: '2024-03-28T00:00:00Z',
+  },
+
+  // ==================== EMERGENCY SERVICES ====================
+  {
+    id: 'emer-001',
+    title: 'Critical Incident Stress Management',
+    type: 'article',
+    category: 'emergency-services',
+    description: 'Recognizing and managing psychological impact of traumatic emergency responses.',
+    keyPoints: [
+      'Normal reactions to abnormal events',
+      'Critical incident stress debriefing (CISD)',
+      'Peer support and professional counseling',
+      'Long-term resilience building',
+    ],
+    author: 'Chief Robert Thompson',
+    duration: '18 min read',
+    tags: ['trauma', 'mental health', 'peer support', 'resilience'],
+    difficulty: 'intermediate',
+    dateAdded: '2024-04-01T00:00:00Z',
+    offlineContent: `Emergency responders face repeated exposure to traumatic events. Normal stress reactions include sleep disturbance, intrusive thoughts, hypervigilance, and emotional numbing. Critical incident stress debriefing within 24-72 hours helps process traumatic responses. Peer support programs provide immediate, confidential assistance from colleagues who understand the work. Professional counseling should be readily available without stigma. Build resilience through physical fitness, strong social connections, healthy coping mechanisms, and regular mental health check-ins. Organizations must create culture where seeking help is normalized.`,
+  },
+  {
+    id: 'emer-002',
+    title: 'After-Action Reviews for Emergency Operations',
+    type: 'tool',
+    category: 'emergency-services',
+    description: 'Structured debriefing process to learn from emergency incidents and improve response.',
+    keyPoints: [
+      'What was supposed to happen vs what actually happened',
+      'Identifying effective practices and gaps',
+      'Blame-free analysis culture',
+      'Actionable improvements and follow-up',
+    ],
+    duration: '20 min',
+    tags: ['debriefing', 'continuous improvement', 'operations', 'learning'],
+    difficulty: 'intermediate',
+    dateAdded: '2024-04-05T00:00:00Z',
+  },
+
+  // ==================== SOCIAL WORK ====================
+  {
+    id: 'sw-001',
+    title: 'Reflective Supervision in Social Work',
+    type: 'article',
+    category: 'social-work',
+    description: 'Using supervision to process complex cases and maintain professional boundaries.',
+    keyPoints: [
+      'Functions of supervision: support, education, management',
+      'Parallel process in supervision relationships',
+      'Self-care and vicarious trauma prevention',
+      'Ethical dilemma exploration',
+    ],
+    author: 'Dr. Linda Martinez, LCSW',
+    duration: '15 min read',
+    tags: ['supervision', 'self-care', 'professional development', 'ethics'],
+    difficulty: 'intermediate',
+    dateAdded: '2024-04-08T00:00:00Z',
+  },
+  {
+    id: 'sw-002',
+    title: 'Trauma-Informed Practice Principles',
+    type: 'video',
+    category: 'social-work',
+    description: 'Understanding trauma impact and applying trauma-informed approaches in social work.',
+    keyPoints: [
+      'Recognizing signs and impact of trauma',
+      'Safety, trustworthiness, and collaboration',
+      'Avoiding re-traumatization in interventions',
+      'Cultural considerations in trauma work',
+    ],
+    duration: '28 min',
+    tags: ['trauma-informed', 'client care', 'safety', 'cultural competence'],
+    difficulty: 'advanced',
+    dateAdded: '2024-04-10T00:00:00Z',
+  },
+
+  // ==================== CREATIVE ARTS ====================
+  {
+    id: 'art-001',
+    title: 'Reflective Practice for Creative Professionals',
+    type: 'article',
+    category: 'creative-arts',
+    description: 'Using reflection to develop artistic practice and overcome creative blocks.',
+    keyPoints: [
+      'Documenting creative process and decisions',
+      'Learning from both successes and failures',
+      'Peer critique and feedback integration',
+      'Balancing artistic vision with practical constraints',
+    ],
+    author: 'Maya Johnson',
+    duration: '12 min read',
+    tags: ['creative process', 'artistic development', 'reflection', 'feedback'],
+    difficulty: 'beginner',
+    dateAdded: '2024-04-12T00:00:00Z',
+  },
+  {
+    id: 'art-002',
+    title: 'Managing Creative Career Sustainability',
+    type: 'exercise',
+    category: 'creative-arts',
+    description: 'Strategies for long-term success in creative professions.',
+    keyPoints: [
+      'Financial planning for irregular income',
+      'Building diverse revenue streams',
+      'Networking and professional community',
+      'Preventing creative burnout',
+    ],
+    duration: '20 min',
+    tags: ['career development', 'financial planning', 'sustainability', 'networking'],
+    difficulty: 'intermediate',
+    dateAdded: '2024-04-15T00:00:00Z',
+  },
+
+  // ==================== PUBLIC SERVICE ====================
+  {
+    id: 'pub-001',
+    title: 'Ethical Decision-Making in Public Service',
+    type: 'article',
+    category: 'public-service',
+    description: 'Navigating competing interests and maintaining public trust.',
+    keyPoints: [
+      'Public interest vs political pressure',
+      'Transparency and accountability principles',
+      'Conflicts of interest management',
+      'Whistleblower protections and responsibilities',
+    ],
+    author: 'Dr. Thomas Anderson',
+    duration: '14 min read',
+    tags: ['ethics', 'public accountability', 'transparency', 'integrity'],
+    difficulty: 'advanced',
+    dateAdded: '2024-04-18T00:00:00Z',
+  },
+  {
+    id: 'pub-002',
+    title: 'Stakeholder Engagement Best Practices',
+    type: 'tool',
+    category: 'public-service',
+    description: 'Effective consultation and communication with diverse public stakeholders.',
+    keyPoints: [
+      'Identifying and mapping stakeholders',
+      'Inclusive engagement strategies',
+      'Managing conflicting stakeholder interests',
+      'Feedback integration and accountability',
+    ],
+    duration: '18 min',
+    tags: ['stakeholder engagement', 'consultation', 'communication', 'public participation'],
+    difficulty: 'intermediate',
+    dateAdded: '2024-04-20T00:00:00Z',
+  },
+
+  // ==================== CUSTOMER SERVICE ====================
+  {
+    id: 'cs-service-001',
+    title: 'De-escalation Techniques for Customer Service',
+    type: 'video',
+    category: 'customer-service',
+    description: 'Managing difficult customer interactions with empathy and professionalism.',
+    keyPoints: [
+      'Active listening and acknowledgment',
+      'LEAP technique: Listen, Empathize, Apologize, Problem-solve',
+      'Managing own emotional responses',
+      'When to escalate vs resolve',
+    ],
+    duration: '22 min',
+    tags: ['de-escalation', 'conflict resolution', 'empathy', 'communication'],
+    difficulty: 'beginner',
+    dateAdded: '2024-04-22T00:00:00Z',
+  },
+  {
+    id: 'cs-service-002',
+    title: 'Preventing Burnout in Customer-Facing Roles',
+    type: 'article',
+    category: 'customer-service',
+    description: 'Self-care strategies for emotionally demanding customer service work.',
+    keyPoints: [
+      'Emotional labor and its impact',
+      'Boundary setting with customers',
+      'Peer support and debriefing',
+      'Recovery practices between interactions',
+    ],
+    author: 'Jennifer Williams',
+    duration: '13 min read',
+    tags: ['burnout prevention', 'self-care', 'emotional labor', 'boundaries'],
+    difficulty: 'intermediate',
+    dateAdded: '2024-04-25T00:00:00Z',
+  },
 ];
 
 // Helper functions for filtering and organizing resources
@@ -549,6 +949,56 @@ export const CATEGORY_INFO: Record<
     label: 'Burnout Prevention',
     description: 'Recognition, intervention, and recovery from occupational stress',
     color: '#ec4899',
+  },
+  education: {
+    label: 'Education',
+    description: 'Teaching practice, pedagogy, and professional development for educators',
+    color: '#14b8a6',
+  },
+  legal: {
+    label: 'Legal',
+    description: 'Legal ethics, professional responsibility, and case analysis',
+    color: '#10b981',
+  },
+  'business-management': {
+    label: 'Business & Management',
+    description: 'Strategic thinking, leadership, and organizational development',
+    color: '#f59e0b',
+  },
+  'finance-accounting': {
+    label: 'Finance & Accounting',
+    description: 'Professional skepticism, ethics, and financial practice',
+    color: '#06b6d4',
+  },
+  engineering: {
+    label: 'Engineering',
+    description: 'Technical problem-solving, safety, and professional responsibility',
+    color: '#6366f1',
+  },
+  'emergency-services': {
+    label: 'Emergency Services',
+    description: 'Critical incident management, resilience, and operational learning',
+    color: '#ef4444',
+  },
+  'social-work': {
+    label: 'Social Work',
+    description: 'Supervision, trauma-informed practice, and professional boundaries',
+    color: '#8b5cf6',
+  },
+  'creative-arts': {
+    label: 'Creative Arts',
+    description: 'Artistic development, creative process, and career sustainability',
+    color: '#ec4899',
+  },
+  'public-service': {
+    label: 'Public Service',
+    description: 'Public accountability, ethical decision-making, and stakeholder engagement',
+    color: '#3b82f6',
+  },
+  'customer-service': {
+    label: 'Customer Service',
+    description: 'De-escalation, empathy, and preventing emotional burnout',
+    color: '#f43f5e',
   },
 };
 

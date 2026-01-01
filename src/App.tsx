@@ -25,6 +25,7 @@ const CrisisProtocols = lazy(() => import("./components/CrisisProtocols"));
 const Archive = lazy(() => import("./components/Archive"));
 const GamificationHub = lazy(() => import("./components/GamificationHub"));
 const CPD = lazy(() => import("./components/CPD"));
+const Library = lazy(() => import("./components/Library"));
 const CanvasBoard = lazy(() => import("./components/CanvasBoard"));
 
 function formatReflection(entry: ReflectionEntry) {
@@ -210,16 +211,56 @@ export default function App() {
         <p className="text-white/70 font-medium text-lg leading-relaxed">{dailyPrompt ? `"${dailyPrompt}"` : ""}</p>
       </div>
 
-      <div className="mb-12 transform scale-125 transition-transform duration-1000 hover:scale-[1.3]">
+      <div className="mb-8 transform scale-125 transition-transform duration-1000 hover:scale-[1.3]">
         <Guide stageId={null} state="idle" />
       </div>
 
-      <button
-        onClick={() => setView("REFLECTION")}
-        className="w-full max-w-xs bg-white/10 text-white h-16 rounded-full font-semibold text-lg border border-white/20 shadow-xl hover:bg-white/15 active:scale-95 transition-all"
-      >
-        Reflect
-      </button>
+      <div className="w-full max-w-xs space-y-3">
+        <button
+          onClick={() => setView("QUICK_CAPTURE")}
+          className="w-full bg-gradient-to-r from-cyan-600 to-indigo-600 text-white h-16 rounded-full font-bold text-lg shadow-xl hover:shadow-2xl hover:from-cyan-500 hover:to-indigo-500 active:scale-95 transition-all"
+        >
+          Quick Capture
+        </button>
+
+        <button
+          onClick={() => setView("REFLECTION")}
+          className="w-full bg-white/10 text-white h-14 rounded-full font-semibold text-base border border-white/20 shadow-lg hover:bg-white/15 active:scale-95 transition-all"
+        >
+          Full Reflection
+        </button>
+
+        {/* Feature Toggles */}
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-4 space-y-2">
+          <button
+            onClick={() => handleUpdateProfile({ ...userProfile, aiEnabled: !userProfile.aiEnabled })}
+            className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition"
+          >
+            <span className="text-white text-sm font-semibold">AI Features</span>
+            <span
+              className={`text-xs font-mono px-2.5 py-1 rounded-full ${
+                userProfile.aiEnabled ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-white/10 text-white/60'
+              }`}
+            >
+              {userProfile.aiEnabled ? 'ON' : 'OFF'}
+            </span>
+          </button>
+
+          <button
+            onClick={() => handleUpdateProfile({ ...userProfile, gamificationEnabled: !userProfile.gamificationEnabled })}
+            className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition"
+          >
+            <span className="text-white text-sm font-semibold">Gamification</span>
+            <span
+              className={`text-xs font-mono px-2.5 py-1 rounded-full ${
+                userProfile.gamificationEnabled ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-white/10 text-white/60'
+              }`}
+            >
+              {userProfile.gamificationEnabled ? 'ON' : 'OFF'}
+            </span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 
@@ -375,6 +416,13 @@ export default function App() {
         return (
           <Suspense fallback={<ComponentLoader />}>
               <CPD entries={entries} onClose={() => setView("DASHBOARD")} />
+          </Suspense>
+        );
+
+      case "LIBRARY":
+        return (
+          <Suspense fallback={<ComponentLoader />}>
+              <Library />
           </Suspense>
         );
 

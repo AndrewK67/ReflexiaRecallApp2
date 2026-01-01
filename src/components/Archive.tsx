@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Search,
   Filter,
@@ -24,6 +24,7 @@ import {
   type SearchResult,
 } from '../services/searchService';
 import { isEntryLocked } from '../services/privacyService';
+import { storageService } from '../services/storageService';
 import { MODEL_CONFIG } from '../constants';
 
 interface ArchiveProps {
@@ -40,6 +41,14 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
+
+  // Load user profile for blur setting
+  const [blurEnabled, setBlurEnabled] = useState(false);
+
+  useEffect(() => {
+    const profile = storageService.loadProfile();
+    setBlurEnabled(profile.blurHistory ?? false);
+  }, []);
 
   // Get unique tags from all entries
   const availableTags = useMemo(() => extractUniqueTags(entries), [entries]);
@@ -90,15 +99,23 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
   }, [filters]);
 
   return (
-    <div className="h-full bg-gradient-to-b from-slate-50 to-white flex flex-col overflow-y-auto custom-scrollbar nav-safe">
+    <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col overflow-y-auto custom-scrollbar nav-safe">
       {/* Header */}
-      <div className="bg-white border-b border-slate-200 px-4 pt-12 pb-4 shadow-sm">
+      <div className="border-b border-white/10 px-6 pt-10 pb-4">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold text-slate-800">Archive</h1>
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-cyan-600/20 border border-cyan-500/30 flex items-center justify-center">
+              <FileText size={24} className="text-cyan-400" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold">Archive</h1>
+              <p className="text-white/60 text-xs uppercase tracking-widest font-mono">Search & Filter</p>
+            </div>
+          </div>
           <button
             onClick={handleExport}
             disabled={searchResult.entries.length === 0}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-600 disabled:bg-slate-200 disabled:text-slate-400 text-white text-xs font-semibold transition"
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-cyan-600/20 hover:bg-cyan-600/30 disabled:bg-white/5 disabled:text-white/30 text-cyan-300 border border-cyan-500/30 disabled:border-white/10 text-xs font-semibold transition"
           >
             <Download size={14} />
             Export CSV
@@ -107,7 +124,7 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
 
         {/* Search Bar */}
         <div className="relative mb-3">
-          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
           <input
             type="text"
             value={searchQuery}
@@ -116,7 +133,7 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
               setCurrentPage(1);
             }}
             placeholder="Search entries..."
-            className="w-full pl-10 pr-10 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+            className="w-full pl-10 pr-10 py-3 rounded-2xl border border-white/10 bg-white/5 text-white placeholder:text-white/40 focus:outline-none focus:border-cyan-500/50 focus:bg-white/10 transition-all"
           />
           {searchQuery && (
             <button
@@ -124,7 +141,7 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
                 setSearchQuery('');
                 setCurrentPage(1);
               }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70"
             >
               <X size={18} />
             </button>
@@ -137,36 +154,36 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition ${
               showFilters
-                ? 'bg-cyan-500 text-white border-cyan-500'
-                : 'bg-white text-slate-600 border-slate-200 hover:border-cyan-500'
+                ? 'bg-cyan-600/20 text-white border-cyan-500/30'
+                : 'bg-white/5 text-white/80 border-white/10 hover:bg-white/10'
             }`}
           >
             <SlidersHorizontal size={16} />
             <span className="text-xs font-semibold">Filters</span>
             {activeFilterCount > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full bg-white text-cyan-600 text-[10px] font-bold">
+              <span className="px-1.5 py-0.5 rounded-full bg-cyan-500 text-white text-[10px] font-bold">
                 {activeFilterCount}
               </span>
             )}
           </button>
 
-          <div className="text-xs text-slate-500 font-semibold">
+          <div className="text-xs text-white/60 font-semibold">
             {searchResult.filteredCount} of {searchResult.totalCount} entries
           </div>
         </div>
 
         {/* Advanced Filters */}
         {showFilters && (
-          <div className="mt-4 p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+          <div className="mt-4 p-4 bg-white/5 rounded-2xl border border-white/10 space-y-3">
             {/* Entry Type */}
             <div>
-              <label className="block text-xs font-bold text-slate-600 mb-1.5">Entry Type</label>
+              <label className="block text-xs font-bold text-white/80 mb-1.5">Entry Type</label>
               <select
                 value={filters.entryType || 'all'}
                 onChange={(e) =>
                   handleFilterChange('entryType', e.target.value as 'all' | 'reflection' | 'incident')
                 }
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-white focus:outline-none focus:border-cyan-500/50 focus:bg-white/10"
               >
                 <option value="all">All Types</option>
                 <option value="reflection">Reflections</option>
@@ -285,9 +302,9 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
       </div>
 
       {/* Entry List */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 pb-32 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto px-6 py-4 pb-32 custom-scrollbar">
         {searchResult.entries.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+          <div className="flex flex-col items-center justify-center py-16 text-white/40">
             <FileText size={48} className="mb-3 opacity-50" />
             <p className="text-sm font-semibold">No entries found</p>
             <p className="text-xs mt-1">Try adjusting your search or filters</p>
@@ -303,25 +320,25 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
                 <button
                   key={entry.id}
                   onClick={() => onOpenEntry(entry)}
-                  className="w-full text-left p-4 bg-white rounded-2xl border border-slate-200 hover:border-cyan-500 hover:shadow-md transition group"
+                  className="w-full text-left p-4 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 hover:border-cyan-500/30 transition group"
                 >
                   {/* Header */}
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        {isReflection && <FileText size={14} className="text-cyan-500" />}
-                        {isIncident && <Calendar size={14} className="text-rose-500" />}
-                        {isLocked && <Lock size={12} className="text-amber-500" />}
-                        <span className="text-xs font-bold text-slate-500">
+                        {isReflection && <FileText size={14} className="text-cyan-400" />}
+                        {isIncident && <Calendar size={14} className="text-rose-400" />}
+                        {isLocked && <Lock size={12} className="text-amber-400" />}
+                        <span className="text-xs font-bold text-white/60">
                           {new Date(entry.date).toLocaleDateString()}
                         </span>
                       </div>
-                      <h3 className="text-sm font-bold text-slate-800 line-clamp-1">
+                      <h3 className={`text-sm font-bold text-white line-clamp-1 ${blurEnabled ? 'blur-sm' : ''}`}>
                         {entry.title || (isReflection ? (entry as any).model : 'Incident')}
                       </h3>
                     </div>
                     {entry.attachments && entry.attachments.length > 0 && (
-                      <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-100 text-purple-700">
+                      <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-500/20 border border-purple-500/30 text-purple-300">
                         <Camera size={12} />
                         <span className="text-[10px] font-bold">{entry.attachments.length}</span>
                       </div>
@@ -331,7 +348,7 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
                   {/* Content Preview */}
                   {entry.content && (
                     <p
-                      className="text-xs text-slate-600 line-clamp-2 mb-2"
+                      className={`text-xs text-white/70 line-clamp-2 mb-2 ${blurEnabled ? 'blur-sm' : ''}`}
                       dangerouslySetInnerHTML={{
                         __html: searchQuery
                           ? highlightSearchTerms(entry.content.substring(0, 200), searchQuery)
@@ -345,13 +362,13 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
                     {entry.keywords && entry.keywords.slice(0, 3).map((tag) => (
                       <span
                         key={tag}
-                        className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-semibold"
+                        className={`px-2 py-0.5 rounded-full bg-white/10 text-white/80 text-[10px] font-semibold ${blurEnabled ? 'blur-sm' : ''}`}
                       >
                         {tag}
                       </span>
                     ))}
                     {entry.keywords && entry.keywords.length > 3 && (
-                      <span className="text-[10px] text-slate-400 font-semibold">
+                      <span className="text-[10px] text-white/40 font-semibold">
                         +{entry.keywords.length - 3} more
                       </span>
                     )}

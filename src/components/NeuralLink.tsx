@@ -3,7 +3,20 @@ import type { UserProfile, Entry, UserStats } from '../types';
 import { PROFESSION_CONFIG } from '../constants';
 import { storageService } from '../services/storageService';
 import {
-  Network, Briefcase, Check, Edit2, Download, Upload, Shield, EyeOff, Lock, Flame, LogOut
+  Network,
+  Briefcase,
+  Check,
+  Edit2,
+  Download,
+  Upload,
+  Shield,
+  EyeOff,
+  Lock,
+  Flame,
+  LogOut,
+  RotateCcw,
+  Trophy,
+  Home,
 } from 'lucide-react';
 
 interface NeuralLinkProps {
@@ -46,7 +59,6 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
 
   const togglePrivacyLock = () => patchProfile({ privacyLockEnabled: !profile.privacyLockEnabled });
   const toggleBlurHistory = () => patchProfile({ blurHistory: !profile.blurHistory });
-
   const toggleAI = () => patchProfile({ aiEnabled: !profile.aiEnabled });
   const toggleGamification = () => patchProfile({ gamificationEnabled: !profile.gamificationEnabled });
 
@@ -66,6 +78,38 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
     if (ok) window.location.reload();
     else alert('Backup import failed (file format not recognised).');
   };
+
+  const handleReturnToOnboarding = () => {
+    if (confirm('Return to onboarding screen? Your entries will remain safe.')) {
+      storageService.setOnboarded(false);
+      onNavigateToWelcome();
+    }
+  };
+
+  const handleResetStats = () => {
+    if (confirm('Reset all stats (XP, level, streak, achievements)? This cannot be undone.')) {
+      const reset = storageService.resetStats();
+      setStats(reset);
+    }
+  };
+
+  const handleResetToggles = () => {
+    if (confirm('Reset all feature toggles to OFF (AI, Gamification, Privacy, Blur)?')) {
+      const updated = storageService.resetToggles();
+      onUpdateProfile(updated);
+    }
+  };
+
+  const handleResetAI = () => {
+    if (confirm('Turn OFF AI features?')) {
+      patchProfile({ aiEnabled: false });
+    }
+  };
+
+  // Calculate XP progress percentage
+  const xpProgress = stats
+    ? Math.min(100, ((stats.currentXP || 0) / (stats.nextLevelXP || 100)) * 100)
+    : 0;
 
   return (
     <div className="h-full text-white flex flex-col overflow-y-auto custom-scrollbar">
@@ -108,9 +152,11 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
             )}
 
             <p className="text-sm text-white/70">
-              {PROFESSION_CONFIG[profile.profession]?.label || '—'} •{' '}
-              <span className="text-white/50">{PROFESSION_CONFIG[profile.profession]?.description || ''}</span>
+              {PROFESSION_CONFIG[profile.profession]?.label || '—'}
             </p>
+            {PROFESSION_CONFIG[profile.profession]?.description && (
+              <p className="text-xs text-white/50">{PROFESSION_CONFIG[profile.profession].description}</p>
+            )}
           </div>
         </div>
 
@@ -124,7 +170,11 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
               className="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10"
             >
               <span className="font-bold">AI</span>
-              <span className={`text-xs font-mono ${profile.aiEnabled ? 'text-emerald-300' : 'text-white/60'}`}>
+              <span
+                className={`text-xs font-mono px-2 py-1 rounded ${
+                  profile.aiEnabled ? 'bg-emerald-500/20 text-emerald-300' : 'bg-white/10 text-white/60'
+                }`}
+              >
                 {profile.aiEnabled ? 'ON' : 'OFF'}
               </span>
             </button>
@@ -134,7 +184,11 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
               className="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10"
             >
               <span className="font-bold">Gamification</span>
-              <span className={`text-xs font-mono ${profile.gamificationEnabled ? 'text-emerald-300' : 'text-white/60'}`}>
+              <span
+                className={`text-xs font-mono px-2 py-1 rounded ${
+                  profile.gamificationEnabled ? 'bg-emerald-500/20 text-emerald-300' : 'bg-white/10 text-white/60'
+                }`}
+              >
                 {profile.gamificationEnabled ? 'ON' : 'OFF'}
               </span>
             </button>
@@ -143,8 +197,14 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
               onClick={togglePrivacyLock}
               className="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10"
             >
-              <span className="font-bold flex items-center gap-2"><Lock size={16} /> Privacy Lock</span>
-              <span className={`text-xs font-mono ${profile.privacyLockEnabled ? 'text-emerald-300' : 'text-white/60'}`}>
+              <span className="font-bold flex items-center gap-2">
+                <Lock size={16} /> Privacy Lock
+              </span>
+              <span
+                className={`text-xs font-mono px-2 py-1 rounded ${
+                  profile.privacyLockEnabled ? 'bg-emerald-500/20 text-emerald-300' : 'bg-white/10 text-white/60'
+                }`}
+              >
                 {profile.privacyLockEnabled ? 'ON' : 'OFF'}
               </span>
             </button>
@@ -153,18 +213,24 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
               onClick={toggleBlurHistory}
               className="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10"
             >
-              <span className="font-bold flex items-center gap-2"><EyeOff size={16} /> Blur History</span>
-              <span className={`text-xs font-mono ${profile.blurHistory ? 'text-emerald-300' : 'text-white/60'}`}>
+              <span className="font-bold flex items-center gap-2">
+                <EyeOff size={16} /> Blur History
+              </span>
+              <span
+                className={`text-xs font-mono px-2 py-1 rounded ${
+                  profile.blurHistory ? 'bg-emerald-500/20 text-emerald-300' : 'bg-white/10 text-white/60'
+                }`}
+              >
                 {profile.blurHistory ? 'ON' : 'OFF'}
               </span>
             </button>
           </div>
         </div>
 
-        {/* Gamification Summary (visible only if enabled) */}
+        {/* Progress Hub (visible only if gamification enabled) */}
         <div className="bg-white/10 backdrop-blur-xl p-6 rounded-2xl border border-white/15">
           <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
-            <Flame size={18} className="text-orange-300" /> Progress
+            <Flame size={18} className="text-orange-300" /> Progress & Growth
           </h2>
 
           {!profile.gamificationEnabled && (
@@ -174,22 +240,58 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
           )}
 
           {profile.gamificationEnabled && (
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-white/70">Level</span>
-                <span className="font-mono">{stats?.level ?? 1}</span>
+            <div className="space-y-4">
+              {/* XP Progress Bar */}
+              <div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="text-white/70">Level {stats?.level ?? 1}</span>
+                  <span className="font-mono text-white/90">
+                    {stats?.currentXP ?? 0} / {stats?.nextLevelXP ?? 100} XP
+                  </span>
+                </div>
+                <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden">
+                  <div
+                    className="bg-gradient-to-r from-cyan-400 to-indigo-500 h-full transition-all duration-500"
+                    style={{ width: `${xpProgress}%` }}
+                  />
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-white/70">XP</span>
-                <span className="font-mono">{stats?.currentXP ?? 0}/{stats?.nextLevelXP ?? 100}</span>
+
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-white/5 p-3 rounded-xl">
+                  <div className="text-2xl font-bold">{stats?.streak ?? 0}</div>
+                  <div className="text-xs text-white/60">Day Streak</div>
+                </div>
+                <div className="bg-white/5 p-3 rounded-xl">
+                  <div className="text-2xl font-bold">{entries.length}</div>
+                  <div className="text-xs text-white/60">Total Entries</div>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-white/70">Streak</span>
-                <span className="font-mono">{stats?.streak ?? 0} days</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-white/70">Entries</span>
-                <span className="font-mono">{entries.length}</span>
+
+              {/* Achievements */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Trophy size={16} className="text-yellow-400" />
+                  <span className="text-sm font-bold">Achievements</span>
+                  <span className="text-xs text-white/60">({stats?.achievements?.length ?? 0})</span>
+                </div>
+                {stats?.achievements && stats.achievements.length > 0 ? (
+                  <div className="grid grid-cols-3 gap-2">
+                    {stats.achievements.slice(0, 6).map((achievement) => (
+                      <div
+                        key={achievement.id}
+                        className="bg-white/5 p-2 rounded-lg text-center"
+                        title={achievement.description}
+                      >
+                        <div className="text-2xl mb-1">{achievement.icon || achievement.iconName || '🏆'}</div>
+                        <div className="text-[10px] text-white/70 truncate">{achievement.title}</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-white/50">No achievements unlocked yet. Keep reflecting!</p>
+                )}
               </div>
             </div>
           )}
@@ -198,7 +300,7 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
         {/* Backup */}
         <div className="bg-white/10 backdrop-blur-xl p-6 rounded-2xl border border-white/15">
           <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-            <Shield size={18} className="text-cyan-300" /> Backup
+            <Shield size={18} className="text-cyan-300" /> Backup & Restore
           </h2>
 
           <div className="flex gap-3">
@@ -216,6 +318,45 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
             </button>
             <input ref={fileInputRef} type="file" accept="application/json" onChange={handleRestore} className="hidden" />
           </div>
+        </div>
+
+        {/* Control Actions */}
+        <div className="bg-white/10 backdrop-blur-xl p-6 rounded-2xl border border-white/15">
+          <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+            <RotateCcw size={18} className="text-purple-300" /> Reset Options
+          </h2>
+
+          <div className="space-y-3">
+            <button
+              onClick={handleReturnToOnboarding}
+              className="w-full px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 flex items-center justify-center gap-2 transition"
+            >
+              <Home size={16} /> Return to Onboarding
+            </button>
+
+            <button
+              onClick={handleResetStats}
+              className="w-full px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 flex items-center justify-center gap-2 transition"
+            >
+              <RotateCcw size={16} /> Reset Stats Only
+            </button>
+
+            <button
+              onClick={handleResetToggles}
+              className="w-full px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 flex items-center justify-center gap-2 transition"
+            >
+              <RotateCcw size={16} /> Reset All Toggles
+            </button>
+
+            <button
+              onClick={handleResetAI}
+              className="w-full px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 flex items-center justify-center gap-2 transition"
+            >
+              <RotateCcw size={16} /> Turn OFF AI
+            </button>
+          </div>
+
+          <p className="mt-3 text-xs text-white/50 text-center">These actions help you manage your app state safely.</p>
         </div>
 
         {/* Account Actions */}

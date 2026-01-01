@@ -54,7 +54,7 @@ const Grounding: React.FC<GroundingProps> = ({ onClose }) => {
   const isComplete = step >= steps.length;
 
   return (
-    <div className="h-full bg-slate-900 text-white flex flex-col relative overflow-y-auto custom-scrollbar animate-in fade-in duration-500">
+    <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col relative overflow-y-auto custom-scrollbar animate-in fade-in duration-500">
       {/* Background Decor */}
       <div
         className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden"
@@ -62,12 +62,22 @@ const Grounding: React.FC<GroundingProps> = ({ onClose }) => {
       />
 
       {/* Header */}
-      <div className="p-6 flex items-center justify-between z-10">
-        <button onClick={onClose} className="p-2 bg-slate-800 rounded-full hover:bg-slate-700">
+      <div className="relative z-10 p-6 flex items-center gap-3 border-b border-white/10 bg-slate-950/50 backdrop-blur">
+        <button
+          onClick={onClose}
+          className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center transition"
+        >
           <ArrowLeft size={20} />
         </button>
-        <h1 className="text-xl font-bold uppercase tracking-widest text-slate-400">Grounding Center</h1>
-        <div className="w-10" />
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-green-600/20 border border-green-500/30 flex items-center justify-center">
+            <Eye size={24} className="text-green-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">Grounding</h1>
+            <p className="text-white/60 text-xs uppercase tracking-widest font-mono">5-4-3-2-1 Method</p>
+          </div>
+        </div>
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center p-8 z-10 text-center">
@@ -95,7 +105,7 @@ const Grounding: React.FC<GroundingProps> = ({ onClose }) => {
 
             <div className="relative z-10 animate-in slide-in-from-right duration-300" key={step}>
               <div
-                className={`w-20 h-20 mx-auto bg-slate-800 rounded-2xl flex items-center justify-center mb-6 shadow-xl border border-slate-700 ${steps[step].color}`}
+                className={`w-20 h-20 mx-auto bg-white/5 rounded-2xl flex items-center justify-center mb-6 shadow-xl border border-white/10 ${steps[step].color}`}
               >
                 {React.createElement(steps[step].icon, { size: 40 })}
               </div>
