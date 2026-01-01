@@ -5,6 +5,7 @@
  */
 
 export type CPDCountry =
+  // Healthcare Professions
   | 'UK_GMC'           // General Medical Council (Doctors)
   | 'UK_NMC'           // Nursing and Midwifery Council
   | 'UK_HCPC'          // Health and Care Professions Council
@@ -15,7 +16,31 @@ export type CPDCountry =
   | 'Australia'        // AHPRA
   | 'Canada'           // RCPSC
   | 'Ireland_NMBI'     // Nursing and Midwifery Board of Ireland
-  | 'Ireland_CORU';    // Health & Social Care Professionals Council
+  | 'Ireland_CORU'     // Health & Social Care Professionals Council
+  // Education & Social Care
+  | 'UK_Teaching'      // Teaching Council England
+  | 'UK_SWE'           // Social Work England
+  // Legal Professions
+  | 'UK_SRA'           // Solicitors Regulation Authority
+  | 'UK_BSB'           // Bar Standards Board (Barristers)
+  // Financial & Accounting
+  | 'UK_ACCA'          // Association of Chartered Certified Accountants
+  | 'UK_ICAEW'         // Institute of Chartered Accountants in England and Wales
+  | 'UK_CIMA'          // Chartered Institute of Management Accountants
+  | 'UK_FCA'           // Financial Conduct Authority (Financial Advisors)
+  // HR & Management
+  | 'UK_CIPD'          // Chartered Institute of Personnel and Development
+  | 'UK_APM'           // Association for Project Management
+  | 'UK_CMI'           // Chartered Management Institute
+  // Engineering & Architecture
+  | 'UK_EngCouncil'    // Engineering Council UK
+  | 'UK_ARB'           // Architects Registration Board
+  | 'UK_RICS'          // Royal Institution of Chartered Surveyors
+  // Psychology & Counselling
+  | 'UK_BPS'           // British Psychological Society
+  | 'UK_BACP'          // British Association for Counselling and Psychotherapy
+  // IT & Technology
+  | 'UK_BCS';          // British Computer Society (Chartered IT Professionals)
 
 export type CPDCategoryType =
   | 'clinical-practice'
@@ -424,6 +449,356 @@ export const CPD_STANDARDS: Record<CPDCountry, CPDStandard> = {
     ],
     notes:
       'Requirements vary by profession. Must engage in CPD relevant to scope of practice and maintain comprehensive records.',
+  },
+  // Education & Social Care
+  UK_Teaching: {
+    country: 'UK_Teaching',
+    regulatoryBody: 'Teaching Council England',
+    annualRequirement: {
+      totalHours: 30,
+      minimumReflection: 0,
+      categories: [
+        { category: 'teaching-training', minimumHours: 15 },
+      ],
+    },
+    cycleYears: 1,
+    evidenceRequired: [
+      'Professional Development Record',
+      'Evidence of impact on teaching practice',
+      'Peer feedback and observations',
+      'Student progress evidence',
+    ],
+    notes:
+      'Teachers must engage in continuous professional development aligned with Teaching Standards. Evidence should demonstrate impact on student outcomes.',
+  },
+  UK_SWE: {
+    country: 'UK_SWE',
+    regulatoryBody: 'Social Work England',
+    annualRequirement: {
+      totalHours: 30,
+      minimumReflection: 10,
+      categories: [
+        { category: 'reflection', minimumHours: 10 },
+        { category: 'clinical-practice', minimumHours: 15 },
+      ],
+    },
+    cycleYears: 1,
+    evidenceRequired: [
+      'CPD record with dates, learning activities, outcomes',
+      'Reflective accounts',
+      'Evidence of improved practice',
+      'Link to Professional Standards',
+    ],
+    notes:
+      '30 hours CPD annually (formerly 15 days over 3 years). Must include reflective practice and demonstrate how CPD improves social work practice.',
+  },
+  // Legal Professions
+  UK_SRA: {
+    country: 'UK_SRA',
+    regulatoryBody: 'Solicitors Regulation Authority (SRA)',
+    annualRequirement: {
+      totalHours: 16,
+      minimumReflection: 0,
+      categories: [
+        { category: 'learning-development', minimumHours: 10 },
+      ],
+    },
+    cycleYears: 1,
+    evidenceRequired: [
+      'CPD record with dates and topics',
+      'Reflection on learning and development needs',
+      'Evidence of competence maintenance',
+      'Training certificates where applicable',
+    ],
+    notes:
+      'Minimum 16 hours annually from 1 November 2016 onwards. Must be relevant to current or future practice. Required to reflect on learning needs.',
+  },
+  UK_BSB: {
+    country: 'UK_BSB',
+    regulatoryBody: 'Bar Standards Board (Barristers)',
+    annualRequirement: {
+      totalHours: 12,
+      minimumReflection: 0,
+      categories: [
+        { category: 'learning-development', minimumHours: 9 },
+      ],
+    },
+    cycleYears: 1,
+    evidenceRequired: [
+      'CPD log with learning objectives',
+      'Record of activities undertaken',
+      'Reflection on learning outcomes',
+      'Evidence of competence in practice areas',
+    ],
+    notes:
+      '12 hours annually for new practitioners (years 1-3), 9 hours for established practitioners (year 4+). Must include some hours in practice management, ethics, and wellbeing.',
+  },
+  // Financial & Accounting
+  UK_ACCA: {
+    country: 'UK_ACCA',
+    regulatoryBody: 'Association of Chartered Certified Accountants (ACCA)',
+    annualRequirement: {
+      totalHours: 40,
+      minimumReflection: 0,
+      categories: [
+        { category: 'learning-development', minimumHours: 21 },
+      ],
+    },
+    cycleYears: 1,
+    evidenceRequired: [
+      'CPD record of all units claimed',
+      'Evidence for verifiable CPD (minimum 21 units)',
+      'Description of learning outcomes',
+      'Relevance to professional role',
+    ],
+    notes:
+      '40 CPD units annually, with minimum 21 verifiable units. 1 unit = 1 hour. Must be relevant to current or future professional development.',
+  },
+  UK_ICAEW: {
+    country: 'UK_ICAEW',
+    regulatoryBody: 'Institute of Chartered Accountants in England and Wales (ICAEW)',
+    annualRequirement: {
+      totalHours: 40,
+      minimumReflection: 0,
+      categories: [
+        { category: 'learning-development', minimumHours: 20 },
+      ],
+    },
+    cycleYears: 1,
+    evidenceRequired: [
+      'Annual CPD declaration',
+      'Record of structured and unstructured CPD',
+      'Evidence of learning outcomes',
+      'Relevance to professional development',
+    ],
+    notes:
+      '40 hours annually: minimum 20 hours structured learning, 20 hours unstructured. Must maintain competence in areas of practice.',
+  },
+  UK_CIMA: {
+    country: 'UK_CIMA',
+    regulatoryBody: 'Chartered Institute of Management Accountants (CIMA)',
+    annualRequirement: {
+      totalHours: 30,
+      minimumReflection: 0,
+      categories: [
+        { category: 'learning-development', minimumHours: 20 },
+      ],
+    },
+    cycleYears: 1,
+    evidenceRequired: [
+      'CPD record with dates and activities',
+      'Learning outcomes documented',
+      'Relevance to current/future role',
+      'Mix of technical and business skills development',
+    ],
+    notes:
+      '30 hours CPD annually (minimum 20 verifiable). Must cover technical competence and professional skills relevant to role.',
+  },
+  UK_FCA: {
+    country: 'UK_FCA',
+    regulatoryBody: 'Financial Conduct Authority (Financial Advisors)',
+    annualRequirement: {
+      totalHours: 35,
+      minimumReflection: 0,
+      categories: [
+        { category: 'learning-development', minimumHours: 35 },
+      ],
+    },
+    cycleYears: 1,
+    evidenceRequired: [
+      'Structured CPD scheme records',
+      'Evidence of 35 hours learning',
+      'Relevance to regulated activities',
+      'Learning outcomes assessment',
+    ],
+    notes:
+      '35 hours annually for retail investment advisors under Retail Distribution Review (RDR). Must be relevant to professional activities.',
+  },
+  // HR & Management
+  UK_CIPD: {
+    country: 'UK_CIPD',
+    regulatoryBody: 'Chartered Institute of Personnel and Development (CIPD)',
+    annualRequirement: {
+      totalHours: 35,
+      minimumReflection: 0,
+      categories: [
+        { category: 'learning-development', minimumHours: 20 },
+      ],
+    },
+    cycleYears: 1,
+    evidenceRequired: [
+      'CPD record showing activities and outcomes',
+      'Reflective log of learning',
+      'Evidence of impact on HR practice',
+      'Alignment with CIPD Profession Map',
+    ],
+    notes:
+      'Expected 35 hours annually. Must demonstrate continuous professional development aligned with the CIPD Profession Map competencies.',
+  },
+  UK_APM: {
+    country: 'UK_APM',
+    regulatoryBody: 'Association for Project Management (APM)',
+    annualRequirement: {
+      totalHours: 35,
+      minimumReflection: 0,
+      categories: [
+        { category: 'learning-development', minimumHours: 20 },
+        { category: 'professional-activities', minimumHours: 10 },
+      ],
+    },
+    cycleYears: 1,
+    evidenceRequired: [
+      'CPD log with dates and activities',
+      'Evidence of learning outcomes',
+      'Professional contribution activities',
+      'Alignment with APM Body of Knowledge',
+    ],
+    notes:
+      '35 hours annually for Chartered Project Professionals. Mix of learning activities and professional contribution required.',
+  },
+  UK_CMI: {
+    country: 'UK_CMI',
+    regulatoryBody: 'Chartered Management Institute (CMI)',
+    annualRequirement: {
+      totalHours: 35,
+      minimumReflection: 0,
+      categories: [
+        { category: 'leadership-management', minimumHours: 20 },
+      ],
+    },
+    cycleYears: 1,
+    evidenceRequired: [
+      'CPD record of activities',
+      'Reflective practice evidence',
+      'Application of learning to management practice',
+      'Professional development plan',
+    ],
+    notes:
+      'Chartered Managers expected to undertake 35 hours CPD annually. Must demonstrate ongoing leadership and management development.',
+  },
+  // Engineering & Architecture
+  UK_EngCouncil: {
+    country: 'UK_EngCouncil',
+    regulatoryBody: 'Engineering Council UK',
+    annualRequirement: {
+      totalHours: 30,
+      minimumReflection: 0,
+      categories: [
+        { category: 'learning-development', minimumHours: 20 },
+      ],
+    },
+    cycleYears: 1,
+    evidenceRequired: [
+      'CPD record with dates and activities',
+      'Evidence of competence maintenance',
+      'Reflective commentary on development',
+      'UK-SPEC competence alignment',
+    ],
+    notes:
+      'Minimum 30 hours annually recommended. Must maintain and develop competence aligned with UK-SPEC standards (UK Standard for Professional Engineering Competence).',
+  },
+  UK_ARB: {
+    country: 'UK_ARB',
+    regulatoryBody: 'Architects Registration Board (ARB)',
+    annualRequirement: {
+      totalHours: 35,
+      minimumReflection: 0,
+      categories: [
+        { category: 'learning-development', minimumHours: 20 },
+      ],
+    },
+    cycleYears: 1,
+    evidenceRequired: [
+      'CPD record covering each calendar year',
+      'Evidence of learning activities',
+      'Reflective commentary',
+      'Coverage of all ARB criteria',
+    ],
+    notes:
+      '35 hours annually. Must cover professional, business, and technical knowledge. Random audit may require evidence submission.',
+  },
+  UK_RICS: {
+    country: 'UK_RICS',
+    regulatoryBody: 'Royal Institution of Chartered Surveyors (RICS)',
+    annualRequirement: {
+      totalHours: 20,
+      minimumReflection: 0,
+      categories: [
+        { category: 'learning-development', minimumHours: 10 },
+      ],
+    },
+    cycleYears: 1,
+    evidenceRequired: [
+      'CPD record with formal and informal learning',
+      'Evidence for formal CPD (minimum 10 hours)',
+      'Reflection on learning and development',
+      'Compliance declaration',
+    ],
+    notes:
+      '20 hours annually, with minimum 10 hours formal CPD. Must record learning outcomes and maintain professional competence.',
+  },
+  // Psychology & Counselling
+  UK_BPS: {
+    country: 'UK_BPS',
+    regulatoryBody: 'British Psychological Society (BPS)',
+    annualRequirement: {
+      totalHours: 24,
+      minimumReflection: 0,
+      categories: [
+        { category: 'learning-development', minimumHours: 15 },
+      ],
+    },
+    cycleYears: 1,
+    evidenceRequired: [
+      'CPD log with activities and outcomes',
+      'Reflective practice evidence',
+      'Evidence of ethical practice maintenance',
+      'Supervision records where applicable',
+    ],
+    notes:
+      '24 hours CPD annually for Chartered Psychologists. Must include range of activities relevant to professional practice and ethical standards.',
+  },
+  UK_BACP: {
+    country: 'UK_BACP',
+    regulatoryBody: 'British Association for Counselling and Psychotherapy (BACP)',
+    annualRequirement: {
+      totalHours: 30,
+      minimumReflection: 10,
+      categories: [
+        { category: 'reflection', minimumHours: 10 },
+        { category: 'learning-development', minimumHours: 15 },
+      ],
+    },
+    cycleYears: 1,
+    evidenceRequired: [
+      'CPD record with dates and activities',
+      'Reflective practice log (minimum 1.5 hours per month)',
+      'Supervision records',
+      'Evidence of learning application to practice',
+    ],
+    notes:
+      '30 hours CPD annually. Must include minimum 1.5 hours monthly reflective practice. Supervision is mandatory (separate from CPD hours).',
+  },
+  // IT & Technology
+  UK_BCS: {
+    country: 'UK_BCS',
+    regulatoryBody: 'British Computer Society (Chartered IT Professionals)',
+    annualRequirement: {
+      totalHours: 35,
+      minimumReflection: 0,
+      categories: [
+        { category: 'learning-development', minimumHours: 20 },
+      ],
+    },
+    cycleYears: 1,
+    evidenceRequired: [
+      'CPD record with learning activities',
+      'Evidence of technical and professional development',
+      'Reflective log of learning outcomes',
+      'Application to IT practice',
+    ],
+    notes:
+      '35 hours annually for Chartered IT Professionals (CITP). Must cover technical, business, and professional skills development.',
   },
 };
 
