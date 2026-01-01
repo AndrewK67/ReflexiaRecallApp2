@@ -32,6 +32,7 @@ export default function Library() {
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [expandedResource, setExpandedResource] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [showFilters, setShowFilters] = useState(false);
 
   // Load favorites from localStorage
   useEffect(() => {
@@ -247,112 +248,111 @@ export default function Library() {
       </div>
 
       {/* Header */}
-      <div className="flex-shrink-0 p-6 border-b border-white/10 relative z-10">
-        <h1 className="text-2xl font-bold mb-1">Learning Library</h1>
-        <p className="text-white/60 text-sm">
-          {filteredResources.length} resource{filteredResources.length !== 1 ? 's' : ''} available
-        </p>
+      <div className="flex-shrink-0 px-4 py-3 border-b border-white/10 relative z-10 flex items-center justify-between">
+        <h1 className="text-xl font-bold">Learning Library</h1>
+        <span className="text-xs text-white/60 font-semibold">
+          {filteredResources.length} resource{filteredResources.length !== 1 ? 's' : ''}
+        </span>
       </div>
 
       {/* Search and Filters */}
-      <div className="flex-shrink-0 p-6 space-y-4 border-b border-white/10 relative z-10">
-        {/* Search Bar */}
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" size={18} />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search resources, tags, or authors..."
-            className="w-full pl-12 pr-4 py-3 rounded-2xl border border-white/15 bg-white/5 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition"
-          />
-          {searchQuery && (
+      <div className="flex-shrink-0 px-4 py-3 border-b border-white/10 relative z-10">
+        {/* Search Bar and Filter Toggle */}
+        <div className="flex gap-2 mb-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" size={16} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search resources..."
+              className="w-full pl-10 pr-3 py-2 rounded-xl border border-white/15 bg-white/5 text-white text-sm placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`px-3 py-2 rounded-xl text-sm font-semibold transition flex items-center gap-2 ${
+              showFilters
+                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                : 'bg-white/10 text-white/60 border border-white/15 hover:bg-white/15'
+            }`}
+          >
+            <Filter size={16} />
+            {showFilters ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+        </div>
+
+        {/* Collapsible Filters */}
+        {showFilters && (
+          <div className="space-y-2 pt-2">
+            <div className="grid grid-cols-3 gap-2">
+              {/* Category Filter */}
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value as ResourceCategory | 'all')}
+                className="w-full px-2 py-1.5 rounded-lg border border-white/15 bg-white/10 text-white text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              >
+                <option value="all">All Categories</option>
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {CATEGORY_INFO[cat].label}
+                  </option>
+                ))}
+              </select>
+
+              {/* Type Filter */}
+              <select
+                value={selectedType}
+                onChange={(e) => setSelectedType(e.target.value as ResourceType | 'all')}
+                className="w-full px-2 py-1.5 rounded-lg border border-white/15 bg-white/10 text-white text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              >
+                <option value="all">All Types</option>
+                {types.map((type) => (
+                  <option key={type} value={type}>
+                    {RESOURCE_TYPE_INFO[type].label}
+                  </option>
+                ))}
+              </select>
+
+              {/* Difficulty Filter */}
+              <select
+                value={selectedDifficulty}
+                onChange={(e) => setSelectedDifficulty(e.target.value as DifficultyLevel | 'all')}
+                className="w-full px-2 py-1.5 rounded-lg border border-white/15 bg-white/10 text-white text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              >
+                <option value="all">All Levels</option>
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
+            </div>
+
+            {/* Favorites Toggle */}
             <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60"
+              onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+              className={`w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                showFavoritesOnly
+                  ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
+                  : 'bg-white/10 text-white/60 border border-white/15 hover:bg-white/15'
+              }`}
             >
-              <X size={18} />
+              <Star size={12} className={showFavoritesOnly ? 'fill-yellow-400' : ''} />
+              {showFavoritesOnly ? 'Favorites Only' : 'All Resources'}
             </button>
-          )}
-        </div>
-
-        {/* Category, Type, and Difficulty Filters */}
-        <div className="grid grid-cols-3 gap-3">
-          {/* Category Filter */}
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Filter size={14} className="text-white/60" />
-              <span className="text-xs font-semibold text-white/60 uppercase">Category</span>
-            </div>
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value as ResourceCategory | 'all')}
-              className="w-full px-3 py-2 rounded-xl border border-white/15 bg-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
-            >
-              <option value="all">All Categories</option>
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {CATEGORY_INFO[cat].label}
-                </option>
-              ))}
-            </select>
           </div>
-
-          {/* Type Filter */}
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Tag size={14} className="text-white/60" />
-              <span className="text-xs font-semibold text-white/60 uppercase">Type</span>
-            </div>
-            <select
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value as ResourceType | 'all')}
-              className="w-full px-3 py-2 rounded-xl border border-white/15 bg-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
-            >
-              <option value="all">All Types</option>
-              {types.map((type) => (
-                <option key={type} value={type}>
-                  {RESOURCE_TYPE_INFO[type].icon} {RESOURCE_TYPE_INFO[type].label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Difficulty Filter */}
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Award size={14} className="text-white/60" />
-              <span className="text-xs font-semibold text-white/60 uppercase">Difficulty</span>
-            </div>
-            <select
-              value={selectedDifficulty}
-              onChange={(e) => setSelectedDifficulty(e.target.value as DifficultyLevel | 'all')}
-              className="w-full px-3 py-2 rounded-xl border border-white/15 bg-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
-            >
-              <option value="all">All Levels</option>
-              <option value="beginner">Beginner</option>
-              <option value="intermediate">Intermediate</option>
-              <option value="advanced">Advanced</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Favorites Toggle */}
-        <button
-          onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition ${
-            showFavoritesOnly
-              ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
-              : 'bg-white/10 text-white/60 border border-white/15 hover:bg-white/15'
-          }`}
-        >
-          <Star size={14} className={showFavoritesOnly ? 'fill-yellow-400' : ''} />
-          {showFavoritesOnly ? 'Showing Favorites Only' : 'Show Favorites Only'}
-        </button>
+        )}
       </div>
 
       {/* Resources Grid */}
-      <div className="flex-1 overflow-y-auto p-6 relative z-10">
+      <div className="flex-1 overflow-y-auto p-4 pb-32 relative z-10">
         {filteredResources.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-center">
             <BookOpen size={48} className="text-white/20 mb-4" />
@@ -370,12 +370,6 @@ export default function Library() {
         )}
       </div>
 
-      {/* Footer Info */}
-      <div className="flex-shrink-0 p-4 border-t border-white/10 bg-slate-950/80 backdrop-blur relative z-10">
-        <p className="text-xs text-white/40 text-center">
-          All resources include offline summaries • Curated for healthcare professionals
-        </p>
-      </div>
     </div>
   );
 }
