@@ -99,9 +99,16 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
   }, [filters]);
 
   return (
-    <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col overflow-y-auto custom-scrollbar nav-safe">
+    <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col overflow-y-auto custom-scrollbar nav-safe relative">
+      <div className="animated-backdrop-dark overflow-hidden">
+        <div className="orb one" />
+        <div className="orb two" />
+        <div className="orb three" />
+        <div className="grain" />
+      </div>
+
       {/* Header */}
-      <div className="border-b border-white/10 px-6 pt-10 pb-4">
+      <div className="border-b border-white/10 px-6 pt-10 pb-4 relative z-10">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-cyan-600/20 border border-cyan-500/30 flex items-center justify-center">
@@ -302,7 +309,7 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
       </div>
 
       {/* Entry List */}
-      <div className="flex-1 overflow-y-auto px-6 py-4 pb-32 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto px-6 py-4 pb-32 custom-scrollbar relative z-10">
         {searchResult.entries.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-white/40">
             <FileText size={48} className="mb-3 opacity-50" />

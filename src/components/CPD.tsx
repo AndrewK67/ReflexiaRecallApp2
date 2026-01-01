@@ -82,9 +82,16 @@ export default function CPD({ entries, onClose }: CPDProps) {
   );
 
   return (
-    <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col overflow-y-auto custom-scrollbar">
+    <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col overflow-y-auto custom-scrollbar nav-safe relative">
+      <div className="animated-backdrop-dark overflow-hidden">
+        <div className="orb one" />
+        <div className="orb two" />
+        <div className="orb three" />
+        <div className="grain" />
+      </div>
+
       {/* Header */}
-      <div className="flex-shrink-0 p-6 border-b border-white/10">
+      <div className="flex-shrink-0 p-6 border-b border-white/10 relative z-10">
         <div className="flex items-center gap-3 mb-3">
           <button
             onClick={onClose}
@@ -103,7 +110,7 @@ export default function CPD({ entries, onClose }: CPDProps) {
       </div>
 
       {/* Country Selection */}
-      <div className="flex-shrink-0 p-6 border-b border-white/10">
+      <div className="flex-shrink-0 p-6 border-b border-white/10 relative z-10">
         <label className="block text-sm font-semibold text-white/80 mb-2">
           Regulatory Standard
         </label>
@@ -124,7 +131,7 @@ export default function CPD({ entries, onClose }: CPDProps) {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6 relative z-10">
         {/* Summary Card */}
         <div className="mb-6 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/15 p-6">
           {/* Progress Header */}
@@ -324,7 +331,7 @@ export default function CPD({ entries, onClose }: CPDProps) {
       )}
 
       {/* Footer */}
-      <div className="flex-shrink-0 p-4 border-t border-white/10 bg-slate-950/80 backdrop-blur">
+      <div className="flex-shrink-0 p-4 border-t border-white/10 bg-slate-950/80 backdrop-blur relative z-10">
         <p className="text-xs text-white/40 text-center">
           CPD records automatically generated from reflections and holodeck sessions
         </p>

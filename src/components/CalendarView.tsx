@@ -124,10 +124,17 @@ export default function CalendarView({ entries, onOpenEntry }: CalendarViewProps
   const selectedEntries = selectedDay ? byDay.get(selectedDay) ?? [] : [];
 
   return (
-    <div className="h-full bg-slate-50 flex flex-col overflow-y-auto custom-scrollbar animate-in fade-in duration-300 nav-safe">
-      <div className="p-4 pt-12 bg-white border-b border-slate-200">
+    <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 flex flex-col overflow-y-auto custom-scrollbar animate-in fade-in duration-300 nav-safe relative">
+      <div className="animated-backdrop-dark overflow-hidden">
+        <div className="orb one" />
+        <div className="orb two" />
+        <div className="orb three" />
+        <div className="grain" />
+      </div>
+
+      <div className="p-4 pt-12 border-b border-white/10 relative z-10">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-slate-800">Calendar</h1>
+          <h1 className="text-2xl font-bold text-white">Calendar</h1>
 
           <div className="flex gap-2">
             <button
@@ -140,7 +147,7 @@ export default function CalendarView({ entries, onOpenEntry }: CalendarViewProps
                   setCursorYear((y) => y - 1);
                 }
               }}
-              className="px-3 py-2 rounded-xl bg-slate-100 text-xs font-bold text-slate-600 hover:bg-slate-200"
+              className="px-3 py-2 rounded-xl bg-white/10 text-xs font-bold text-white hover:bg-white/15 border border-white/15 transition"
             >
               Prev
             </button>
@@ -155,24 +162,24 @@ export default function CalendarView({ entries, onOpenEntry }: CalendarViewProps
                   setCursorYear((y) => y + 1);
                 }
               }}
-              className="px-3 py-2 rounded-xl bg-slate-100 text-xs font-bold text-slate-600 hover:bg-slate-200"
+              className="px-3 py-2 rounded-xl bg-white/10 text-xs font-bold text-white hover:bg-white/15 border border-white/15 transition"
             >
               Next
             </button>
           </div>
         </div>
 
-        <div className="text-xs text-slate-500 font-semibold mt-2">
+        <div className="text-xs text-white/60 font-semibold mt-2">
           {viewMode === "MONTH" ? monthLabel(cursorYear, cursorMonth) : String(cursorYear)}
         </div>
 
-        <div className="mt-4 flex gap-2 justify-center bg-slate-100 p-1 rounded-xl">
+        <div className="mt-4 flex gap-2 justify-center bg-white/5 p-1 rounded-xl border border-white/10">
           {(["MONTH", "YEAR", "DAY"] as ViewMode[]).map((m) => (
             <button
               key={m}
               onClick={() => setViewMode(m)}
               className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
-                viewMode === m ? "bg-white shadow-sm text-indigo-600" : "text-slate-500 hover:text-slate-700"
+                viewMode === m ? "bg-white text-slate-900" : "text-white/60 hover:text-white hover:bg-white/5"
               }`}
             >
               {m}
@@ -180,7 +187,7 @@ export default function CalendarView({ entries, onOpenEntry }: CalendarViewProps
           ))}
         </div>
 
-        <div className="mt-4 flex items-center justify-between text-[10px] text-slate-500 font-bold">
+        <div className="mt-4 flex items-center justify-between text-[10px] text-white/60 font-bold">
           <span>Less</span>
           <div className="flex items-center gap-1">
             {[0, 1, 2, 3, 4, 5].map((lvl) => (
@@ -191,13 +198,13 @@ export default function CalendarView({ entries, onOpenEntry }: CalendarViewProps
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 py-6 pb-40 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto px-6 py-6 pb-40 custom-scrollbar relative z-10">
         {/* MONTH */}
         {viewMode === "MONTH" && (
           <div>
             <div className="grid grid-cols-7 gap-2 mb-2">
               {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-                <div key={i} className="text-center text-xs font-bold text-slate-400 py-2">
+                <div key={i} className="text-center text-xs font-bold text-white/60 py-2">
                   {d}
                 </div>
               ))}
@@ -219,13 +226,13 @@ export default function CalendarView({ entries, onOpenEntry }: CalendarViewProps
                       setSelectedDay(iso);
                       setViewMode("DAY");
                     }}
-                    className="aspect-square bg-white rounded-2xl border border-slate-200 p-2 flex flex-col justify-between text-left hover:border-indigo-500 transition"
+                    className="aspect-square bg-white/10 backdrop-blur-xl rounded-2xl border border-white/15 p-2 flex flex-col justify-between text-left hover:bg-white/15 hover:border-cyan-500/50 transition"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-700">{c.day}</span>
+                      <span className="text-xs font-bold text-white">{c.day}</span>
                       {info && <span className={`w-2 h-2 rounded-full ${levelClass(level)}`} />}
                     </div>
-                    <div className="text-[10px] text-slate-400 font-semibold">{info ? `${info.count}` : ""}</div>
+                    <div className="text-[10px] text-white/60 font-semibold">{info ? `${info.count}` : ""}</div>
                   </button>
                 );
               })}
@@ -240,9 +247,9 @@ export default function CalendarView({ entries, onOpenEntry }: CalendarViewProps
               const cells = buildMonthCells(cursorYear, monthIdx);
 
               return (
-                <div key={monthIdx} className="bg-white rounded-3xl border border-slate-200 p-4">
+                <div key={monthIdx} className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/15 p-4">
                   <div className="flex items-center justify-between mb-3">
-                    <div className="text-sm font-extrabold text-slate-800">
+                    <div className="text-sm font-extrabold text-white">
                       {shortMonthName(cursorYear, monthIdx)}
                     </div>
                     <button
@@ -250,7 +257,7 @@ export default function CalendarView({ entries, onOpenEntry }: CalendarViewProps
                         setCursorMonth(monthIdx);
                         setViewMode("MONTH");
                       }}
-                      className="text-[10px] font-bold text-indigo-600 hover:underline"
+                      className="text-[10px] font-bold text-cyan-400 hover:text-cyan-300 hover:underline transition"
                       title="Open month"
                     >
                       Open
@@ -259,7 +266,7 @@ export default function CalendarView({ entries, onOpenEntry }: CalendarViewProps
 
                   <div className="grid grid-cols-7 gap-1 mb-2">
                     {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-                      <div key={i} className="text-[9px] font-bold text-slate-400 text-center">
+                      <div key={i} className="text-[9px] font-bold text-white/60 text-center">
                         {d}
                       </div>
                     ))}
@@ -296,41 +303,41 @@ export default function CalendarView({ entries, onOpenEntry }: CalendarViewProps
         {viewMode === "DAY" && (
           <div>
             {!selectedDay ? (
-              <div className="text-center py-10 text-slate-400">Select a day from Month or Year.</div>
+              <div className="text-center py-10 text-white/60">Select a day from Month or Year.</div>
             ) : (
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <button
                     onClick={() => setViewMode("MONTH")}
-                    className="px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50"
+                    className="px-3 py-2 rounded-xl bg-white/10 border border-white/15 text-xs font-bold text-white hover:bg-white/15 transition"
                   >
                     Back to Month
                   </button>
-                  <div className="text-xs font-bold text-slate-500">{selectedDay}</div>
+                  <div className="text-xs font-bold text-white/60">{selectedDay}</div>
                 </div>
 
                 {selectedEntries.length === 0 ? (
-                  <div className="p-8 text-center text-slate-400">No entries on this day.</div>
+                  <div className="p-8 text-center text-white/60">No entries on this day.</div>
                 ) : (
                   <div className="space-y-3">
                     {selectedEntries.map((e) => (
                       <button
                         key={e.id}
                         onClick={() => onOpenEntry(e)}
-                        className="w-full text-left p-4 bg-white rounded-2xl border border-slate-200 hover:border-indigo-500 transition"
+                        className="w-full text-left p-4 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/15 hover:bg-white/15 hover:border-cyan-500/50 transition"
                       >
                         <div className="flex items-center justify-between">
-                          <span className={`text-xs font-bold text-slate-700 ${blurEnabled ? 'blur-sm' : ''}`}>
+                          <span className={`text-xs font-bold text-white ${blurEnabled ? 'blur-sm' : ''}`}>
                             {e.type === "INCIDENT" ? "Incident" : (e as any).model}
                           </span>
-                          <span className="text-[10px] text-slate-400 font-semibold">
+                          <span className="text-[10px] text-white/60 font-semibold">
                             {new Date(e.date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                           </span>
                         </div>
 
                         <div className="mt-2 flex items-center gap-2">
                           <span className={`w-2 h-2 rounded-full ${levelClass(daySummary.get(selectedDay)?.level ?? 0)}`} />
-                          <span className="text-[11px] text-slate-500 font-semibold">Tap to open</span>
+                          <span className="text-[11px] text-white/60 font-semibold">Tap to open</span>
                         </div>
                       </button>
                     ))}

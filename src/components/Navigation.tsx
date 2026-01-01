@@ -1,6 +1,6 @@
 import React from "react";
 import {
-  Plus,
+  Home,
   User,
   Archive as ArchiveIcon,
 } from "lucide-react";
@@ -34,12 +34,12 @@ export default function Navigation({ current, onChange }: NavigationProps) {
           </button>
 
           <button
-            onClick={() => onChange("REFLECTION")}
+            onClick={() => onChange("DASHBOARD")}
             className="w-14 h-14 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-xl shadow-slate-300 -mt-7 border-4 border-white"
-            title="Reflect"
-            aria-label="Start new reflection"
+            title="Home"
+            aria-label="Go to dashboard"
           >
-            <Plus size={22} />
+            <Home size={22} />
           </button>
 
           <button

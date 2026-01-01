@@ -238,9 +238,16 @@ export default function Library() {
   };
 
   return (
-    <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col overflow-y-auto custom-scrollbar">
+    <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col overflow-y-auto custom-scrollbar relative nav-safe">
+      <div className="animated-backdrop-dark overflow-hidden">
+        <div className="orb one" />
+        <div className="orb two" />
+        <div className="orb three" />
+        <div className="grain" />
+      </div>
+
       {/* Header */}
-      <div className="flex-shrink-0 p-6 border-b border-white/10">
+      <div className="flex-shrink-0 p-6 border-b border-white/10 relative z-10">
         <h1 className="text-2xl font-bold mb-1">Learning Library</h1>
         <p className="text-white/60 text-sm">
           {filteredResources.length} resource{filteredResources.length !== 1 ? 's' : ''} available
@@ -248,7 +255,7 @@ export default function Library() {
       </div>
 
       {/* Search and Filters */}
-      <div className="flex-shrink-0 p-6 space-y-4 border-b border-white/10">
+      <div className="flex-shrink-0 p-6 space-y-4 border-b border-white/10 relative z-10">
         {/* Search Bar */}
         <div className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" size={18} />
@@ -269,48 +276,30 @@ export default function Library() {
           )}
         </div>
 
-        {/* Category Filter */}
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Filter size={14} className="text-white/60" />
-            <span className="text-xs font-semibold text-white/60 uppercase">Category</span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setSelectedCategory('all')}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${
-                selectedCategory === 'all'
-                  ? 'bg-white text-slate-900'
-                  : 'bg-white/10 text-white/60 hover:bg-white/15'
-              }`}
+        {/* Category, Type, and Difficulty Filters */}
+        <div className="grid grid-cols-3 gap-3">
+          {/* Category Filter */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Filter size={14} className="text-white/60" />
+              <span className="text-xs font-semibold text-white/60 uppercase">Category</span>
+            </div>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value as ResourceCategory | 'all')}
+              className="w-full px-3 py-2 rounded-xl border border-white/15 bg-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
             >
-              All
-            </button>
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${
-                  selectedCategory === cat
-                    ? 'text-white'
-                    : 'bg-white/10 text-white/60 hover:bg-white/15'
-                }`}
-                style={
-                  selectedCategory === cat
-                    ? { backgroundColor: CATEGORY_INFO[cat].color }
-                    : {}
-                }
-              >
-                {CATEGORY_INFO[cat].label}
-              </button>
-            ))}
+              <option value="all">All Categories</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {CATEGORY_INFO[cat].label}
+                </option>
+              ))}
+            </select>
           </div>
-        </div>
 
-        {/* Type and Difficulty Filters */}
-        <div className="flex gap-4">
           {/* Type Filter */}
-          <div className="flex-1">
+          <div>
             <div className="flex items-center gap-2 mb-2">
               <Tag size={14} className="text-white/60" />
               <span className="text-xs font-semibold text-white/60 uppercase">Type</span>
@@ -330,7 +319,7 @@ export default function Library() {
           </div>
 
           {/* Difficulty Filter */}
-          <div className="flex-1">
+          <div>
             <div className="flex items-center gap-2 mb-2">
               <Award size={14} className="text-white/60" />
               <span className="text-xs font-semibold text-white/60 uppercase">Difficulty</span>
@@ -363,7 +352,7 @@ export default function Library() {
       </div>
 
       {/* Resources Grid */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6 relative z-10">
         {filteredResources.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-center">
             <BookOpen size={48} className="text-white/20 mb-4" />
@@ -382,7 +371,7 @@ export default function Library() {
       </div>
 
       {/* Footer Info */}
-      <div className="flex-shrink-0 p-4 border-t border-white/10 bg-slate-950/80 backdrop-blur">
+      <div className="flex-shrink-0 p-4 border-t border-white/10 bg-slate-950/80 backdrop-blur relative z-10">
         <p className="text-xs text-white/40 text-center">
           All resources include offline summaries • Curated for healthcare professionals
         </p>

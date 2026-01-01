@@ -112,8 +112,15 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
     : 0;
 
   return (
-    <div className="h-full text-white flex flex-col overflow-y-auto custom-scrollbar">
-      <div className="p-6 pb-2 pt-10 flex items-center gap-3">
+    <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col overflow-y-auto custom-scrollbar nav-safe relative">
+      <div className="animated-backdrop-dark overflow-hidden">
+        <div className="orb one" />
+        <div className="orb two" />
+        <div className="orb three" />
+        <div className="grain" />
+      </div>
+
+      <div className="p-6 pb-2 pt-10 flex items-center gap-3 relative z-10">
         <div className="w-12 h-12 bg-indigo-600/90 rounded-2xl flex items-center justify-center shadow-lg">
           <Network size={22} />
         </div>
@@ -123,7 +130,7 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 pb-40 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto p-6 space-y-6 pb-40 custom-scrollbar relative z-10">
         {/* Identity */}
         <div className="bg-white/10 backdrop-blur-xl p-6 rounded-2xl border border-white/15">
           <div className="flex justify-between items-start mb-4">
