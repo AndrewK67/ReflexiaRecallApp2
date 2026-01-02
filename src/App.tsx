@@ -38,6 +38,7 @@ const ProfessionalDocExport = lazy(() => import("./components/ProfessionalDocExp
 const Tutorial = lazy(() => import("./components/Tutorial"));
 const RewardsStore = lazy(() => import("./components/RewardsStore"));
 const PackBrowser = lazy(() => import("./components/PackBrowser"));
+const PermissionsHelp = lazy(() => import("./components/PermissionsHelp"));
 
 // Eager load update notification (needs to be available immediately)
 import UpdateNotification from "./components/UpdateNotification";
@@ -469,6 +470,7 @@ export default function App() {
                 onUpdateProfile={handleUpdateProfile}
                 onNavigateToWelcome={() => setView("ONBOARDING")}
                 onStartTutorial={() => setShowTutorial(true)}
+                onShowPermissionsHelp={() => setView("PERMISSIONS_HELP")}
               />
           </Suspense>
         );
@@ -582,6 +584,13 @@ export default function App() {
                 onClose={() => setView("DASHBOARD")}
                 onPacksChanged={() => setPackState(loadPackState())}
               />
+          </Suspense>
+        );
+
+      case "PERMISSIONS_HELP":
+        return (
+          <Suspense fallback={<ComponentLoader />}>
+              <PermissionsHelp onClose={() => setView("NEURAL_LINK")} />
           </Suspense>
         );
 

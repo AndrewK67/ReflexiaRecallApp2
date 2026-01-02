@@ -313,7 +313,8 @@ export type ViewState =
   | "REPORTS"
   | "PRIVACY_LOCK"
   | "PROFESSIONAL_DOC"
-  | "PACK_BROWSER";
+  | "PACK_BROWSER"
+  | "PERMISSIONS_HELP";
 
 export interface UserProfile {
   name: string;

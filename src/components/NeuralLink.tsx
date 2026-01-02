@@ -19,6 +19,8 @@ import {
   Trophy,
   Home,
   Rocket,
+  Camera,
+  HelpCircle,
 } from 'lucide-react';
 
 interface NeuralLinkProps {
@@ -27,9 +29,10 @@ interface NeuralLinkProps {
   onUpdateProfile: (p: UserProfile) => void;
   onNavigateToWelcome: () => void;
   onStartTutorial?: () => void;
+  onShowPermissionsHelp?: () => void;
 }
 
-const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfile, onNavigateToWelcome, onStartTutorial }) => {
+const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfile, onNavigateToWelcome, onStartTutorial, onShowPermissionsHelp }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [newName, setNewName] = useState(profile.name);
   const [stats, setStats] = useState<UserStats | null>(null);
@@ -337,20 +340,30 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
           </div>
         </div>
 
-        {/* Tutorial */}
+        {/* Help & Support */}
         <div className="bg-white/10 backdrop-blur-xl p-6 rounded-2xl border border-white/15">
           <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-            <Rocket size={18} className="text-cyan-300" /> Tutorial
+            <HelpCircle size={18} className="text-cyan-300" /> Help & Support
           </h2>
 
-          <button
-            onClick={handleStartTutorial}
-            className="w-full px-4 py-3 rounded-2xl bg-gradient-to-r from-cyan-500/20 to-purple-500/20 hover:from-cyan-500/30 hover:to-purple-500/30 border border-cyan-500/30 flex items-center justify-center gap-2 transition"
-          >
-            <Rocket size={16} /> Start Gamified Tutorial
-          </button>
+          <div className="space-y-3">
+            <button
+              onClick={handleStartTutorial}
+              className="w-full px-4 py-3 rounded-2xl bg-gradient-to-r from-cyan-500/20 to-purple-500/20 hover:from-cyan-500/30 hover:to-purple-500/30 border border-cyan-500/30 flex items-center justify-center gap-2 transition"
+            >
+              <Rocket size={16} /> Start Gamified Tutorial
+            </button>
+
+            <button
+              onClick={onShowPermissionsHelp}
+              className="w-full px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 flex items-center justify-center gap-2 transition"
+            >
+              <Camera size={16} /> Camera & Mic Permissions
+            </button>
+          </div>
+
           <p className="mt-3 text-xs text-white/50 text-center">
-            Learn all of Reflexia's features and earn XP
+            Get help with using Reflexia
           </p>
         </div>
 
