@@ -344,12 +344,51 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
                         {entry.title || (isReflection ? (entry as any).model : 'Incident')}
                       </h3>
                     </div>
-                    {entry.attachments && entry.attachments.length > 0 && (
-                      <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-500/20 border border-purple-500/30 text-purple-300">
-                        <Camera size={12} />
-                        <span className="text-[10px] font-bold">{entry.attachments.length}</span>
-                      </div>
-                    )}
+
+                    {/* Media Preview/Count */}
+                    {(() => {
+                      const media = (entry as any).media || [];
+                      const hasVideo = media.some((m: any) => m.type === 'VIDEO');
+                      const hasPhoto = media.some((m: any) => m.type === 'PHOTO');
+                      const hasAudio = media.some((m: any) => m.type === 'AUDIO');
+                      const totalMedia = media.length;
+
+                      if (totalMedia === 0 && entry.attachments && entry.attachments.length > 0) {
+                        return (
+                          <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-500/20 border border-purple-500/30 text-purple-300">
+                            <Camera size={12} />
+                            <span className="text-[10px] font-bold">{entry.attachments.length}</span>
+                          </div>
+                        );
+                      }
+
+                      if (totalMedia > 0) {
+                        return (
+                          <div className="flex items-center gap-1">
+                            {hasVideo && (
+                              <div className="px-2 py-1 rounded-lg bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 flex items-center gap-1">
+                                <span className="text-[10px]">🎥</span>
+                                <span className="text-[10px] font-bold">{media.filter((m: any) => m.type === 'VIDEO').length}</span>
+                              </div>
+                            )}
+                            {hasPhoto && (
+                              <div className="px-2 py-1 rounded-lg bg-purple-500/20 border border-purple-500/30 text-purple-300 flex items-center gap-1">
+                                <Camera size={10} />
+                                <span className="text-[10px] font-bold">{media.filter((m: any) => m.type === 'PHOTO').length}</span>
+                              </div>
+                            )}
+                            {hasAudio && (
+                              <div className="px-2 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 flex items-center gap-1">
+                                <span className="text-[10px]">🎵</span>
+                                <span className="text-[10px] font-bold">{media.filter((m: any) => m.type === 'AUDIO').length}</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+
+                      return null;
+                    })()}
                   </div>
 
                   {/* Content Preview */}

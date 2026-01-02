@@ -7,6 +7,10 @@ import type {
 } from "./types";
 import { StageId as S } from "./types";
 
+// ---------- App Version ----------
+export const APP_VERSION = '1.0.0'; // Keep in sync with package.json
+export const APP_BUILD_DATE = __BUILD_DATE__; // Injected at build time
+
 // ---------- Profession presets ----------
 
 export const PROFESSION_CONFIG: Record<string, ProfessionConfig> = {
@@ -901,6 +905,17 @@ export const PROFESSION_CONFIG: Record<string, ProfessionConfig> = {
 // ---------- Reflection model configuration ----------
 
 export const MODEL_CONFIG: Record<ReflectionModelId, ReflectionModelConfig> = {
+  SIMPLE: {
+    id: "SIMPLE",
+    title: "Simple Reflection",
+    description: "Quick 3-question reflection: what happened → what mattered → what next.",
+    stages: [
+      { id: "what_happened", label: "What happened?", prompt: "Describe the situation or event.", placeholder: "Tell the story..." },
+      { id: "what_mattered", label: "What stood out or mattered?", prompt: "What feelings, thoughts, or details caught your attention?", placeholder: "What did you notice?" },
+      { id: "what_forward", label: "What will you carry forward?", prompt: "What insight or action will you take with you?", placeholder: "What's next?" },
+    ],
+  },
+
   GIBBS: {
     id: "GIBBS",
     title: "Gibbs",

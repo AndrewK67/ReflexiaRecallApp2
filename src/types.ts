@@ -17,6 +17,7 @@ export type ThemeMode = "DARK" | "LIGHT";
  * Must be string unions (usable as Record keys).
  */
 export type ReflectionModelId =
+  | "SIMPLE"
   | "GIBBS"
   | "SBAR"
   | "ERA"
@@ -299,6 +300,7 @@ export type ViewState =
   | "LIBRARY"
   | "CPD"
   | "GAMIFICATION"
+  | "REWARDS"
   | "MENTAL_ATLAS"
   | "CALENDAR"
   | "NEURAL_LINK"
@@ -309,7 +311,9 @@ export type ViewState =
   | "CANVAS_BOARD"
   | "CANVAS"
   | "REPORTS"
-  | "PRIVACY_LOCK";
+  | "PRIVACY_LOCK"
+  | "PROFESSIONAL_DOC"
+  | "PACK_BROWSER";
 
 export interface UserProfile {
   name: string;

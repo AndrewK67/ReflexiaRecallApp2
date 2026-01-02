@@ -1,7 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react';
 import type { UserProfile, Entry, UserStats } from '../types';
-import { PROFESSION_CONFIG } from '../constants';
+import { PROFESSION_CONFIG, APP_VERSION, APP_BUILD_DATE } from '../constants';
 import { storageService } from '../services/storageService';
+import { resetTutorial } from '../services/tutorialService';
 import {
   Network,
   Briefcase,
@@ -17,6 +18,7 @@ import {
   RotateCcw,
   Trophy,
   Home,
+  Rocket,
 } from 'lucide-react';
 
 interface NeuralLinkProps {
@@ -24,9 +26,10 @@ interface NeuralLinkProps {
   profile: UserProfile;
   onUpdateProfile: (p: UserProfile) => void;
   onNavigateToWelcome: () => void;
+  onStartTutorial?: () => void;
 }
 
-const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfile, onNavigateToWelcome }) => {
+const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfile, onNavigateToWelcome, onStartTutorial }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [newName, setNewName] = useState(profile.name);
   const [stats, setStats] = useState<UserStats | null>(null);
@@ -103,6 +106,13 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
   const handleResetAI = () => {
     if (confirm('Turn OFF AI features?')) {
       patchProfile({ aiEnabled: false });
+    }
+  };
+
+  const handleStartTutorial = () => {
+    resetTutorial();
+    if (onStartTutorial) {
+      onStartTutorial();
     }
   };
 
@@ -327,6 +337,23 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
           </div>
         </div>
 
+        {/* Tutorial */}
+        <div className="bg-white/10 backdrop-blur-xl p-6 rounded-2xl border border-white/15">
+          <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+            <Rocket size={18} className="text-cyan-300" /> Tutorial
+          </h2>
+
+          <button
+            onClick={handleStartTutorial}
+            className="w-full px-4 py-3 rounded-2xl bg-gradient-to-r from-cyan-500/20 to-purple-500/20 hover:from-cyan-500/30 hover:to-purple-500/30 border border-cyan-500/30 flex items-center justify-center gap-2 transition"
+          >
+            <Rocket size={16} /> Start Gamified Tutorial
+          </button>
+          <p className="mt-3 text-xs text-white/50 text-center">
+            Learn all of Reflexia's features and earn XP
+          </p>
+        </div>
+
         {/* Control Actions */}
         <div className="bg-white/10 backdrop-blur-xl p-6 rounded-2xl border border-white/15">
           <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
@@ -377,6 +404,13 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
           <p className="mt-3 text-xs text-white/50 text-center">
             Return to the login screen to switch accounts or start fresh
           </p>
+        </div>
+
+        {/* App Version Info */}
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-4 text-center">
+          <div className="text-white/40 text-xs mb-1">Reflexia Version</div>
+          <div className="font-mono text-white/70 text-sm font-bold">{APP_VERSION}</div>
+          <div className="text-white/30 text-[10px] mt-1">Built: {APP_BUILD_DATE}</div>
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { X, Sparkles, Loader2 } from "lucide-react";
+import { X, Sparkles, Loader2, AlertTriangle } from "lucide-react";
 import type { Entry } from "../types";
 import { askOracle } from "../services/aiService";
 import { storageService } from "../services/storageService";
@@ -75,6 +75,18 @@ const Oracle: React.FC<OracleProps> = ({ entries, onClose }) => {
         <p className="text-white/70 text-sm leading-relaxed">
           Ask about patterns, themes, or insights from your recent reflections. The Oracle analyzes your entries to help you see the bigger picture.
         </p>
+      </div>
+
+      {/* AI Warning Banner */}
+      <div className="flex-shrink-0 mx-6 mb-4 bg-red-500/10 border border-red-500/30 rounded-xl p-3">
+        <div className="flex items-start gap-3">
+          <AlertTriangle size={18} className="text-red-400 flex-shrink-0 mt-0.5" />
+          <div className="text-xs text-red-300">
+            <strong className="block mb-1">⚠️ AI-GENERATED RESPONSES</strong>
+            Oracle uses AI and may produce errors, inaccuracies, or inappropriate suggestions. AI can hallucinate and make mistakes.
+            <strong> Do NOT rely on Oracle for professional, medical, or clinical decisions.</strong> All responses must be verified before use.
+          </div>
+        </div>
       </div>
 
       {/* Content */}

@@ -19,7 +19,7 @@ export default function VideoCapture({ onCapture, onCancel, maxDuration = 60 }: 
   const previewVideoRef = useRef<HTMLVideoElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
-  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -263,16 +263,27 @@ export default function VideoCapture({ onCapture, onCancel, maxDuration = 60 }: 
       </div>
 
       {/* Bottom controls */}
-      <div className="p-6 bg-slate-900/90 backdrop-blur-xl border-t border-slate-800">
-        <div className="flex items-center justify-between">
-          {/* Flip camera button */}
+      <div className="bg-slate-900/90 backdrop-blur-xl border-t border-slate-800">
+        {/* Smart Toggle: Self/Scene */}
+        <div className="px-6 pt-4 pb-2">
           <button
             onClick={handleFlipCamera}
             disabled={isLoading || !!error || isRecording}
-            className="w-14 h-14 rounded-full bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition"
+            className="w-full py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/15 disabled:opacity-50 disabled:cursor-not-allowed border border-white/20 transition flex items-center justify-center gap-2"
           >
-            <RotateCw size={20} className="text-white" />
+            <RotateCw size={16} className="text-white/80" />
+            <span className="text-white font-semibold text-sm">
+              {facingMode === 'environment' ? '🎬 Scene' : '🤳 Self'}
+            </span>
+            <span className="text-white/50 text-xs">
+              (Tap to switch to {facingMode === 'environment' ? 'Self' : 'Scene'})
+            </span>
           </button>
+        </div>
+
+        <div className="px-6 py-4 flex items-center justify-between">
+          {/* Spacer for symmetry */}
+          <div className="w-14" />
 
           {/* Record/Stop button */}
           {!isRecording ? (
@@ -301,9 +312,14 @@ export default function VideoCapture({ onCapture, onCancel, maxDuration = 60 }: 
           <div className="w-14" />
         </div>
 
-        <p className="text-center text-white/50 text-xs mt-3">
-          {isRecording ? 'Tap to stop recording' : 'Tap to start recording'}
-        </p>
+        <div className="px-6 pb-4 space-y-1">
+          <p className="text-center text-white/50 text-xs">
+            {isRecording ? 'Tap to stop recording' : 'Tap to start recording'}
+          </p>
+          <p className="text-center text-white/40 text-[10px]">
+            🔒 Stored on this device
+          </p>
+        </div>
       </div>
     </div>
   );

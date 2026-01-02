@@ -102,7 +102,27 @@ class AudioEngine {
 
 const audioEngine = new AudioEngine();
 
+// Simple mode stages (3 prompts)
+const SIMPLE_MODE_STAGES = [
+  {
+    id: "what_happened",
+    label: "What happened?",
+    prompt: "Describe the situation or event.",
+  },
+  {
+    id: "what_mattered",
+    label: "What stood out or mattered?",
+    prompt: "What feelings, thoughts, or details caught your attention?",
+  },
+  {
+    id: "what_forward",
+    label: "What will you carry forward?",
+    prompt: "What insight or action will you take with you?",
+  },
+];
+
 export default function ReflectionFlow({ onComplete, onCancel, profession, aiEnabled }: ReflectionFlowProps) {
+  const [useSimpleMode, setUseSimpleMode] = useState(true);
   const [selectedModel, setSelectedModel] = useState<ReflectionModel | null>(null);
   const [currentStageIndex, setCurrentStageIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -149,8 +169,14 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
   const profModels = PROFESSION_CONFIG?.[profession]?.modelsAllowed;
   const models = profModels && profModels.length > 0 ? profModels : allModels;
 
-  const stages = selectedModel ? safeModelStages(selectedModel) : [];
+  // Use simple mode stages or model stages
+  const stages = useSimpleMode
+    ? SIMPLE_MODE_STAGES
+    : (selectedModel ? safeModelStages(selectedModel) : []);
   const stageData = stages[currentStageIndex];
+
+  // Auto-start reflection in simple mode
+  const isReflecting = useSimpleMode || selectedModel !== null;
 
   const currentAnswer = stageData?.id ? answers[stageData.id] ?? "" : "";
 
@@ -276,16 +302,18 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
   };
 
   const handleSave = async () => {
-    if (isSaving || !selectedModel) return;
+    if (isSaving || (!selectedModel && !useSimpleMode)) return;
 
     setIsSaving(true);
+
+    const modelToSave = useSimpleMode ? "SIMPLE" : selectedModel!;
 
     const entry: ReflectionEntry = {
       id: `reflection_${Date.now()}`,
       type: "REFLECTION",
       date: new Date().toISOString(),
-      modelId: selectedModel,
-      model: selectedModel,
+      modelId: modelToSave,
+      model: modelToSave,
       answers,
       mood,
       attachments,
@@ -303,7 +331,7 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
     }
   }, [currentStageIndex, stageData]);
 
-  if (!selectedModel) {
+  if (!selectedModel && !useSimpleMode) {
     return (
       <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 flex flex-col overflow-y-auto custom-scrollbar animate-in fade-in duration-300 nav-safe relative">
         <div className="animated-backdrop-dark overflow-hidden">
@@ -393,6 +421,16 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
               If AI is OFF, the app uses built-in prompts for each stage (no internet required).
               Turn AI ON in <span className="font-bold">Profile → Neural Link</span>.
             </div>
+          </div>
+
+          {/* Back to Simple Mode Button */}
+          <div className="mt-4">
+            <button
+              onClick={() => setUseSimpleMode(true)}
+              className="w-full px-4 py-3 rounded-xl bg-cyan-600/20 hover:bg-cyan-600/30 border border-cyan-500/30 text-cyan-300 font-semibold text-sm transition"
+            >
+              ← Back to Simple Mode (3 questions)
+            </button>
           </div>
         </div>
       </div>
@@ -504,7 +542,7 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
       <div className="p-5 border-b border-white/10 relative z-10">
         <div className="flex items-center justify-between">
           <button
-            onClick={currentStageIndex === 0 ? () => setSelectedModel(null) : handleStagePrev}
+            onClick={currentStageIndex === 0 ? (useSimpleMode ? onCancel : () => setSelectedModel(null)) : handleStagePrev}
             className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center transition"
             title="Back"
           >
@@ -513,7 +551,7 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
 
           <div className="flex-1 text-center">
             <div className="text-xs text-white/60 font-bold uppercase tracking-wide mb-1">
-              {safeModelLabel(selectedModel)} • Stage {currentStageIndex + 1} of {stages.length}
+              {useSimpleMode ? "Simple Mode" : (selectedModel ? safeModelLabel(selectedModel) : "Reflection")} • Step {currentStageIndex + 1} of {stages.length}
             </div>
             <div className="text-sm font-bold text-white">{stageData?.label}</div>
           </div>
@@ -526,6 +564,22 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
             {audioEngine.isMuted ? <VolumeX className="text-white" size={20} /> : <Volume2 className="text-white" size={20} />}
           </button>
         </div>
+
+        {/* Advanced Models Toggle - Only in Simple Mode */}
+        {useSimpleMode && currentStageIndex === 0 && (
+          <div className="mt-3">
+            <button
+              onClick={() => {
+                setUseSimpleMode(false);
+                setCurrentStageIndex(0);
+              }}
+              className="w-full px-3 py-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 text-xs font-semibold transition flex items-center justify-center gap-2"
+            >
+              <Layers size={14} />
+              <span>Switch to Advanced Models</span>
+            </button>
+          </div>
+        )}
 
         <div className="mt-3 text-center">
           <Guide stageId={stageData?.id} state={guideState} />

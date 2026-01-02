@@ -1,15 +1,20 @@
-import { useEffect, useState, lazy, Suspense } from "react";
+import { useEffect, useState, lazy, Suspense, useMemo } from "react";
 import type { Entry, UserProfile, IncidentEntry, ReflectionEntry, ViewState } from "./types";
 import { storageService } from "./services/storageService";
 import { generateDailyPrompt } from "./services/aiService";
 import { offlineDailyPrompt } from "./utils/offlineDailyPrompt";
+import { shouldShowTutorial, completeStep, type TutorialStep } from "./services/tutorialService";
+import { buildGamificationData, getGamificationStats } from "./services/gamificationService";
+import { getGroundingSessions } from "./services/groundingService";
+import { isPackEnabled, getRequiredPack, loadPackState, cleanupExpiredTrials, type PackId } from "./packs";
 
 // Eager load critical components
-import Onboarding from "./components/Onboarding";
+import SimplifiedOnboarding from "./components/SimplifiedOnboarding";
+import SimplifiedDashboard from "./components/SimplifiedDashboard";
 import Navigation from "./components/Navigation";
-import Guide from "./components/Guide";
 import PrivacyLock from "./components/PrivacyLock";
 import LoadingScreen from "./components/LoadingScreen";
+import PackGate from "./components/PackGate";
 
 // Lazy load feature components for better code splitting
 const ReflectionFlow = lazy(() => import("./components/ReflectionFlow"));
@@ -29,6 +34,13 @@ const Library = lazy(() => import("./components/Library"));
 const CanvasBoard = lazy(() => import("./components/CanvasBoard"));
 const MentalAtlas = lazy(() => import("./components/MentalAtlas"));
 const Reports = lazy(() => import("./components/Reports"));
+const ProfessionalDocExport = lazy(() => import("./components/ProfessionalDocExport"));
+const Tutorial = lazy(() => import("./components/Tutorial"));
+const RewardsStore = lazy(() => import("./components/RewardsStore"));
+const PackBrowser = lazy(() => import("./components/PackBrowser"));
+
+// Eager load update notification (needs to be available immediately)
+import UpdateNotification from "./components/UpdateNotification";
 
 function formatReflection(entry: ReflectionEntry) {
   const lines: string[] = [];
@@ -96,9 +108,30 @@ export default function App() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [dailyPrompt, setDailyPrompt] = useState("Space for your thoughts.");
   const [openEntry, setOpenEntry] = useState<Entry | null>(null);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [currentXP, setCurrentXP] = useState(0);
+  const [packState, setPackState] = useState(loadPackState());
+  const [showPackGate, setShowPackGate] = useState<{ packId: PackId; featureName: string } | null>(null);
+
+  // Calculate current XP from gamification data
+  const gamificationData = useMemo(() => {
+    const groundingSessions = getGroundingSessions().filter((s) => s.completed).length;
+    const holodeckSessions = 0;
+    return buildGamificationData(entries, groundingSessions, holodeckSessions);
+  }, [entries]);
+
+  const stats = useMemo(() => getGamificationStats(gamificationData), [gamificationData]);
+
+  // Update XP when stats change
+  useEffect(() => {
+    setCurrentXP(stats.totalPoints);
+  }, [stats.totalPoints]);
 
   useEffect(() => {
     const load = async () => {
+      // Clean up expired pack trials
+      cleanupExpiredTrials();
+
       const profile = storageService.loadProfile();
       const loadedEntries = storageService.loadEntries();
 
@@ -137,13 +170,52 @@ export default function App() {
 
       setIsLoaded(true);
 
-      // Keep login-first behaviour. If you later want “auto-skip” when onboarded,
+      // Keep login-first behaviour. If you later want "auto-skip" when onboarded,
       // we can add it as an optional setting.
       setView("ONBOARDING");
     };
 
     load();
   }, []);
+
+  // Tutorial is now opt-in only - user must manually start it from settings
+
+  // Auto-detect tutorial step completions based on view changes
+  useEffect(() => {
+    if (!showTutorial) return;
+
+    const viewToStepMap: Record<string, TutorialStep> = {
+      'REFLECTION': 'FIRST_REFLECTION',
+      'QUICK_CAPTURE': 'QUICK_CAPTURE',
+      'DRIVE_MODE': 'DRIVE_MODE',
+      'ORACLE': 'ORACLE_CHAT',
+      'HOLODECK': 'HOLODECK',
+      'MENTAL_ATLAS': 'MENTAL_ATLAS',
+      'CPD': 'CPD_TRACKING',
+      'PROFESSIONAL_DOC': 'PROFESSIONAL_DOCS',
+      'GAMIFICATION': 'GAMIFICATION',
+      'REWARDS': 'GAMIFICATION', // Use same tutorial step as gamification
+      'BIO_RHYTHM': 'BIO_RHYTHM',
+      'GROUNDING': 'GROUNDING',
+      'CRISIS_PROTOCOLS': 'CRISIS_PROTOCOLS',
+      'CALENDAR': 'CALENDAR_VIEW',
+      'CANVAS': 'CANVAS_BOARD',
+      'LIBRARY': 'LIBRARY',
+      'REPORTS': 'REPORTS',
+      'ARCHIVE': 'ARCHIVE',
+      'NEURAL_LINK': 'NEURAL_LINK',
+    };
+
+    const tutorialStep = viewToStepMap[view];
+    if (tutorialStep) {
+      // Give user a moment to explore before marking complete
+      const timer = setTimeout(() => {
+        completeStep(tutorialStep);
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [view, showTutorial]);
 
   // Close entry modal on Escape key
   useEffect(() => {
@@ -192,6 +264,10 @@ export default function App() {
     }
   };
 
+  const handleXPChange = (newXP: number) => {
+    setCurrentXP(newXP);
+  };
+
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return "Good morning";
@@ -205,139 +281,33 @@ export default function App() {
   };
 
   const renderDashboard = () => (
-    <div className="h-full overflow-y-auto flex flex-col items-center p-6 pt-8 nav-safe relative">
-      <div className="animated-backdrop-dark overflow-hidden">
-        <div className="orb one" />
-        <div className="orb two" />
-        <div className="orb three" />
-        <div className="grain" />
-      </div>
-
-      <div className="text-center mb-4 max-w-xs mx-auto relative z-10">
-        <h1 className="text-2xl font-light text-white tracking-tight mb-1">
-          {getGreeting()}, {getFirstName()}.
-        </h1>
-        <p className="text-white/70 font-medium text-sm leading-relaxed">{dailyPrompt ? `"${dailyPrompt}"` : ""}</p>
-      </div>
-
-      <div className="mb-6 transform scale-100 transition-transform duration-1000 hover:scale-105 relative z-10">
-        <Guide stageId={null} state="idle" />
-      </div>
-
-      <div className="w-full max-w-xs space-y-2.5 relative z-10">
-        {/* Quick Capture + AI Features */}
-        <div className="flex gap-2">
-          <button
-            onClick={() => setView("QUICK_CAPTURE")}
-            className="flex-1 bg-gradient-to-r from-cyan-600 to-indigo-600 text-white h-14 rounded-full font-bold text-base shadow-xl hover:shadow-2xl hover:from-cyan-500 hover:to-indigo-500 active:scale-95 transition-all"
-          >
-            Quick Capture
-          </button>
-          <button
-            onClick={() => handleUpdateProfile({ ...userProfile, aiEnabled: !userProfile.aiEnabled })}
-            className="w-[30%] flex flex-col items-center justify-center h-14 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 transition"
-          >
-            <span className="text-white text-[10px] font-semibold">AI</span>
-            <span
-              className={`text-[9px] font-mono px-1.5 py-0.5 rounded-full mt-0.5 ${
-                userProfile.aiEnabled ? 'bg-emerald-500/20 text-emerald-300' : 'bg-white/10 text-white/60'
-              }`}
-            >
-              {userProfile.aiEnabled ? 'ON' : 'OFF'}
-            </span>
-          </button>
-        </div>
-
-        {/* Full Reflection + Gamification */}
-        <div className="flex gap-2">
-          <button
-            onClick={() => setView("REFLECTION")}
-            className="flex-1 bg-white/10 text-white h-12 rounded-full font-semibold text-sm border border-white/20 shadow-lg hover:bg-white/15 active:scale-95 transition-all"
-          >
-            Full Reflection
-          </button>
-          <button
-            onClick={() => handleUpdateProfile({ ...userProfile, gamificationEnabled: !userProfile.gamificationEnabled })}
-            className="w-[30%] flex flex-col items-center justify-center h-12 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 transition"
-          >
-            <span className="text-white text-[10px] font-semibold">Gamify</span>
-            <span
-              className={`text-[9px] font-mono px-1.5 py-0.5 rounded-full mt-0.5 ${
-                userProfile.gamificationEnabled ? 'bg-emerald-500/20 text-emerald-300' : 'bg-white/10 text-white/60'
-              }`}
-            >
-              {userProfile.gamificationEnabled ? 'ON' : 'OFF'}
-            </span>
-          </button>
-        </div>
-
-        {/* Tools Menu */}
-        <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-3">
-          <div className="text-xs font-bold text-white/90 mb-2">Tools</div>
-          <div className="grid grid-cols-3 gap-2">
-            <button onClick={() => setView("DRIVE_MODE")} className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-2 transition flex flex-col items-center gap-1">
-              <span className="text-xl">🚗</span>
-              <span className="text-[9px] font-semibold text-white/80">Drive</span>
-            </button>
-            <button onClick={() => setView("CANVAS")} className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-2 transition flex flex-col items-center gap-1">
-              <span className="text-xl">🎨</span>
-              <span className="text-[9px] font-semibold text-white/80">Canvas</span>
-            </button>
-            <button onClick={() => setView("HOLODECK")} className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-2 transition flex flex-col items-center gap-1">
-              <span className="text-xl">🎭</span>
-              <span className="text-[9px] font-semibold text-white/80">Holodeck</span>
-            </button>
-            <button onClick={() => setView("ORACLE")} className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-2 transition flex flex-col items-center gap-1">
-              <span className="text-xl">💬</span>
-              <span className="text-[9px] font-semibold text-white/80">Oracle</span>
-            </button>
-            <button onClick={() => setView("BIO_RHYTHM")} className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-2 transition flex flex-col items-center gap-1">
-              <span className="text-xl">🫁</span>
-              <span className="text-[9px] font-semibold text-white/80">BioRhythm</span>
-            </button>
-            <button onClick={() => setView("GROUNDING")} className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-2 transition flex flex-col items-center gap-1">
-              <span className="text-xl">🌊</span>
-              <span className="text-[9px] font-semibold text-white/80">Grounding</span>
-            </button>
-            <button onClick={() => setView("CRISIS_PROTOCOLS")} className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-2 transition flex flex-col items-center gap-1">
-              <span className="text-xl">🚨</span>
-              <span className="text-[9px] font-semibold text-white/80">Crisis</span>
-            </button>
-            <button onClick={() => setView("CALENDAR")} className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-2 transition flex flex-col items-center gap-1">
-              <span className="text-xl">📅</span>
-              <span className="text-[9px] font-semibold text-white/80">Calendar</span>
-            </button>
-            <button onClick={() => setView("MENTAL_ATLAS")} className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-2 transition flex flex-col items-center gap-1">
-              <span className="text-xl">🗺️</span>
-              <span className="text-[9px] font-semibold text-white/80">Atlas</span>
-            </button>
-            <button onClick={() => setView("LIBRARY")} className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-2 transition flex flex-col items-center gap-1">
-              <span className="text-xl">📚</span>
-              <span className="text-[9px] font-semibold text-white/80">Library</span>
-            </button>
-            <button onClick={() => setView("CPD")} className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-2 transition flex flex-col items-center gap-1">
-              <span className="text-xl">📋</span>
-              <span className="text-[9px] font-semibold text-white/80">CPD</span>
-            </button>
-            <button onClick={() => setView("REPORTS")} className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-2 transition flex flex-col items-center gap-1">
-              <span className="text-xl">📊</span>
-              <span className="text-[9px] font-semibold text-white/80">Reports</span>
-            </button>
-            <button onClick={() => setView("GAMIFICATION")} className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-2 transition flex flex-col items-center gap-1">
-              <span className="text-xl">🏆</span>
-              <span className="text-[9px] font-semibold text-white/80">Achievements</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <SimplifiedDashboard
+      userName={userProfile.name || ""}
+      dailyPrompt={dailyPrompt}
+      onNavigate={(viewName) => handleNavigateWithGating(viewName)}
+      onShowPackSettings={() => setView("PACK_BROWSER")}
+    />
   );
+
+  // Navigation with pack gating
+  const handleNavigateWithGating = (viewName: string) => {
+    const requiredPack = getRequiredPack(viewName);
+    if (requiredPack && !isPackEnabled(requiredPack)) {
+      setShowPackGate({ packId: requiredPack, featureName: viewName });
+      return;
+    }
+    setView(viewName as ViewState);
+  };
 
   const renderEntryModal = () => {
     if (!openEntry) return null;
 
     const title = openEntry.type === "INCIDENT" ? "Incident" : `Reflection • ${(openEntry as ReflectionEntry).model}`;
     const body = openEntry.type === "INCIDENT" ? formatIncident(openEntry as IncidentEntry) : formatReflection(openEntry as ReflectionEntry);
+
+    // Get media attachments from entry
+    const media = (openEntry as IncidentEntry).media || [];
+    const hasMedia = media.length > 0;
 
     return (
       <div
@@ -346,7 +316,7 @@ export default function App() {
         aria-modal="true"
         aria-labelledby="entry-modal-title"
       >
-        <div className="w-full max-w-md bg-white rounded-t-3xl border border-slate-200 shadow-2xl p-5">
+        <div className="w-full max-w-md bg-white rounded-t-3xl border border-slate-200 shadow-2xl p-5 max-h-[90vh] flex flex-col">
           <div className="flex items-start justify-between gap-3 mb-2">
             <div>
               <div className="text-xs text-slate-500 font-bold">{new Date(openEntry.date).toLocaleString()}</div>
@@ -361,8 +331,63 @@ export default function App() {
             </button>
           </div>
 
-          <div className="mt-3 max-h-[60vh] overflow-y-auto custom-scrollbar whitespace-pre-line text-sm text-slate-700 leading-relaxed border border-slate-200 rounded-2xl p-4 bg-slate-50">
-            {body}
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
+            {/* Media Attachments */}
+            {hasMedia && (
+              <div className="mb-4 space-y-3">
+                {media.map((item) => (
+                  <div key={item.id} className="rounded-xl border border-slate-200 overflow-hidden bg-slate-50">
+                    {item.type === 'PHOTO' && (
+                      <img
+                        src={item.url}
+                        alt="Captured photo"
+                        className="w-full h-auto max-h-96 object-contain"
+                      />
+                    )}
+
+                    {item.type === 'VIDEO' && (
+                      <div className="relative bg-black">
+                        <video
+                          src={item.url}
+                          controls
+                          playsInline
+                          className="w-full h-auto max-h-96"
+                          preload="metadata"
+                        >
+                          Your browser does not support video playback.
+                        </video>
+                      </div>
+                    )}
+
+                    {item.type === 'AUDIO' && (
+                      <div className="p-4">
+                        <audio
+                          src={item.url}
+                          controls
+                          className="w-full"
+                          preload="metadata"
+                        >
+                          Your browser does not support audio playback.
+                        </audio>
+                      </div>
+                    )}
+
+                    {item.type === 'DRAWING' && (
+                      <img
+                        src={item.url}
+                        alt="Drawing"
+                        className="w-full h-auto max-h-96 object-contain"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Text Content */}
+            <div className="whitespace-pre-line text-sm text-slate-700 leading-relaxed border border-slate-200 rounded-2xl p-4 bg-slate-50">
+              {body}
+            </div>
           </div>
         </div>
       </div>
@@ -378,10 +403,25 @@ export default function App() {
     </div>
   );
 
+  // Show PackGate if trying to access gated feature
+  if (showPackGate) {
+    return (
+      <PackGate
+        requiredPack={showPackGate.packId}
+        featureName={showPackGate.featureName}
+        onClose={() => setShowPackGate(null)}
+        onEnable={() => {
+          setPackState(loadPackState());
+          setShowPackGate(null);
+        }}
+      />
+    );
+  }
+
   const renderScreen = () => {
     switch (view) {
       case "ONBOARDING":
-        return <Onboarding onComplete={handleOnboardingComplete} />;
+        return <SimplifiedOnboarding onComplete={handleOnboardingComplete} />;
 
       case "REFLECTION":
         return (
@@ -428,6 +468,7 @@ export default function App() {
                 profile={userProfile}
                 onUpdateProfile={handleUpdateProfile}
                 onNavigateToWelcome={() => setView("ONBOARDING")}
+                onStartTutorial={() => setShowTutorial(true)}
               />
           </Suspense>
         );
@@ -481,6 +522,17 @@ export default function App() {
           </Suspense>
         );
 
+      case "REWARDS":
+        return (
+          <Suspense fallback={<ComponentLoader />}>
+              <RewardsStore
+                currentXP={currentXP}
+                onXPChange={handleXPChange}
+                userEmail={userProfile.name || undefined}
+              />
+          </Suspense>
+        );
+
       case "CPD":
         return (
           <Suspense fallback={<ComponentLoader />}>
@@ -516,6 +568,23 @@ export default function App() {
           </Suspense>
         );
 
+      case "PROFESSIONAL_DOC":
+        return (
+          <Suspense fallback={<ComponentLoader />}>
+              <ProfessionalDocExport entries={entries} onClose={() => setView("DASHBOARD")} />
+          </Suspense>
+        );
+
+      case "PACK_BROWSER":
+        return (
+          <Suspense fallback={<ComponentLoader />}>
+              <PackBrowser
+                onClose={() => setView("DASHBOARD")}
+                onPacksChanged={() => setPackState(loadPackState())}
+              />
+          </Suspense>
+        );
+
       case "DASHBOARD":
       default:
         return renderDashboard();
@@ -526,6 +595,7 @@ export default function App() {
 
   return (
     <>
+      <UpdateNotification />
       <div className={bgMode} />
 
       <div className="app-shell">
@@ -554,6 +624,20 @@ export default function App() {
           )}
         </div>
       </div>
+
+      {/* Gamified Tutorial */}
+      {showTutorial && isLoaded && !isLocked && (
+        <Suspense fallback={null}>
+          <Tutorial
+            onClose={() => setShowTutorial(false)}
+            onNavigate={(targetView) => setView(targetView)}
+            onAwardXP={(amount, reason) => {
+              // TODO: Integrate with gamification service when enabled
+              console.log(`Tutorial awarded ${amount} XP: ${reason}`);
+            }}
+          />
+        </Suspense>
+      )}
     </>
   );
 }
