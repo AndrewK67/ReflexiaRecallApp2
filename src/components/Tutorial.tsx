@@ -93,6 +93,11 @@ export default function Tutorial({ onClose, onNavigate, onAwardXP }: TutorialPro
     }
   };
 
+  const handleClose = () => {
+    // Just close without confirmation - user can restart anytime
+    onClose();
+  };
+
   const handleSkip = () => {
     if (confirm('Are you sure you want to skip the tutorial? You can restart it anytime from settings.')) {
       skipTutorial();
@@ -165,14 +170,14 @@ export default function Tutorial({ onClose, onNavigate, onAwardXP }: TutorialPro
                   <h2 className="text-2xl font-bold text-white">{currentStep.title}</h2>
                 </div>
               </div>
-              {!isWelcome && !isCompleted && (
-                <button
-                  onClick={handleSkip}
-                  className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition text-white/60 hover:text-white"
-                >
-                  <X size={20} />
-                </button>
-              )}
+              {/* Always show close button */}
+              <button
+                onClick={handleClose}
+                className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition text-white/60 hover:text-white"
+                title="Close tutorial (you can restart anytime)"
+              >
+                <X size={20} />
+              </button>
             </div>
 
             {/* Progress Bar */}
