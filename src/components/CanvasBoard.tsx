@@ -2264,17 +2264,20 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
           <div
             className="flex-1 rounded-lg border border-slate-800 bg-slate-950 p-1 overflow-hidden relative"
             onWheel={handleWheel}
+            style={{ touchAction: 'none' }}
           >
             <div
               style={{
                 transform: `scale(${zoom}) translate(${panOffset.x / zoom}px, ${panOffset.y / zoom}px)`,
                 transformOrigin: "0 0",
                 cursor: isDraggingSelection ? "grabbing" : tool === "hand" ? "grab" : selection ? "move" : "crosshair",
+                touchAction: 'none',
               }}
             >
               <canvas
                 ref={canvasRef}
                 className="rounded border border-slate-800"
+                style={{ touchAction: 'none' }}
                 onPointerDown={start}
                 onPointerMove={move}
                 onPointerUp={end}
