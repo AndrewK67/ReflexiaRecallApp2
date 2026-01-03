@@ -3,7 +3,6 @@
  * Focus: Capture → Reflect → Retrieve
  */
 
-import Guide from './Guide';
 import { isPackEnabled } from '../packs';
 
 interface SimplifiedDashboardProps {
@@ -46,20 +45,15 @@ export default function SimplifiedDashboard({
       </div>
 
       {/* Greeting */}
-      <div className="text-center mb-4 max-w-xs mx-auto relative z-10">
+      <div className="text-center mb-8 max-w-xs mx-auto relative z-10">
         <h1 className="text-2xl font-light text-white tracking-tight mb-1">
           {getGreeting()}, {getFirstName()}.
         </h1>
         {dailyPrompt && (
-          <p className="text-white/70 font-medium text-sm leading-relaxed">
+          <p className="text-white/70 font-medium text-sm leading-relaxed mt-2">
             "{dailyPrompt}"
           </p>
         )}
-      </div>
-
-      {/* Guide Character */}
-      <div className="mb-6 transform scale-100 transition-transform duration-1000 hover:scale-105 relative z-10">
-        <Guide stageId={null} state="idle" />
       </div>
 
       {/* Core Actions */}
