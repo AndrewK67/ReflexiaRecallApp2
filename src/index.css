@@ -54,11 +54,34 @@ body {
     0 26px 90px rgba(0, 0, 0, 0.65),
     inset 0 1px 0 rgba(255, 255, 255, 0.10);
   backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Landscape mode: use more screen width and height */
+@media (orientation: landscape) {
+  .app-shell {
+    padding: 8px;
+  }
+  
+  .phone {
+    width: min(98vw, 1200px);
+    height: 98vh;
+    border-radius: 12px;
+    max-height: 98vh;
+  }
 }
 
 /* Safe area for bottom navigation - prevents content from being hidden */
 .nav-safe {
   padding-bottom: 100px;
+}
+
+@media (orientation: landscape) {
+  .nav-safe {
+    padding-bottom: 5px;
+    padding-left: 70px;
+  }
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -289,5 +312,142 @@ body {
   .animate-in,
   .fade-in {
     animation: none !important;
+  }
+}
+
+/* ========================================
+   LANDSCAPE MODE RESPONSIVE UTILITIES
+   ======================================== */
+
+/* Landscape-specific layout adjustments for better space usage */
+@media (orientation: landscape) {
+  /* Reduce vertical padding for screens in landscape */
+  .nav-safe {
+    padding-bottom: 50px;
+  }
+  
+  /* More compact headers in landscape */
+  .landscape-compact-header {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+  
+  /* Reduce all text sizes in landscape for more content */
+  h1, .text-4xl, .text-3xl {
+    font-size: 1.25rem !important;
+    line-height: 1.5 !important;
+  }
+  
+  h2, .text-2xl {
+    font-size: 1.125rem !important;
+    line-height: 1.4 !important;
+  }
+  
+  h3, .text-xl {
+    font-size: 1rem !important;
+    line-height: 1.3 !important;
+  }
+  
+  .text-lg {
+    font-size: 0.9375rem !important;
+  }
+  
+  .text-base {
+    font-size: 0.875rem !important;
+  }
+  
+  /* Reduce padding everywhere in landscape */
+  .p-6 { padding: 0.75rem !important; }
+  .p-5 { padding: 0.625rem !important; }
+  .p-4 { padding: 0.5rem !important; }
+  .p-3 { padding: 0.375rem !important; }
+  
+  .px-6 { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
+  .px-5 { padding-left: 0.625rem !important; padding-right: 0.625rem !important; }
+  .px-4 { padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
+  
+  .py-6 { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
+  .py-5 { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
+  .py-4 { padding-top: 0.375rem !important; padding-bottom: 0.375rem !important; }
+  .py-3 { padding-top: 0.25rem !important; padding-bottom: 0.25rem !important; }
+  
+  /* Reduce margins in landscape */
+  .mb-6 { margin-bottom: 0.75rem !important; }
+  .mb-5 { margin-bottom: 0.625rem !important; }
+  .mb-4 { margin-bottom: 0.5rem !important; }
+  .mb-3 { margin-bottom: 0.375rem !important; }
+  
+  .mt-6 { margin-top: 0.75rem !important; }
+  .mt-5 { margin-top: 0.625rem !important; }
+  .mt-4 { margin-top: 0.5rem !important; }
+  .mt-3 { margin-top: 0.375rem !important; }
+  
+  /* Reduce gaps in flex/grid layouts */
+  .gap-6 { gap: 0.75rem !important; }
+  .gap-5 { gap: 0.625rem !important; }
+  .gap-4 { gap: 0.5rem !important; }
+  .gap-3 { gap: 0.375rem !important; }
+  
+  /* Make buttons more compact */
+  button {
+    padding-top: 0.375rem !important;
+    padding-bottom: 0.375rem !important;
+  }
+  
+  /* Two-column layouts for landscape when appropriate */
+  .landscape-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  
+  /* Horizontal scrolling sections for wide content */
+  .landscape-scroll-x {
+    overflow-x: auto;
+    overflow-y: visible;
+    display: flex;
+    gap: 1rem;
+  }
+  
+  /* Reduce excessive vertical spacing in landscape */
+  .landscape-compact-spacing > * + * {
+    margin-top: 0.75rem !important;
+  }
+  
+  /* Make modals/dialogs wider in landscape */
+  .landscape-modal {
+    max-width: min(90vw, 800px) !important;
+  }
+  
+  /* Optimize flex layouts for landscape */
+  .landscape-flex-row {
+    flex-direction: row !important;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  /* Better button layouts in landscape */
+  .landscape-button-row {
+    display: flex;
+    flex-direction: row;
+    gap: 0.75rem;
+  }
+  
+  /* Reduce font sizes slightly for landscape to fit more content */
+  .landscape-text-compact h1,
+  .landscape-text-compact .text-4xl {
+    font-size: 1.875rem !important;
+  }
+  
+  .landscape-text-compact h2,
+  .landscape-text-compact .text-3xl {
+    font-size: 1.5rem !important;
+  }
+  
+  /* Optimize form layouts for landscape */
+  .landscape-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
   }
 }

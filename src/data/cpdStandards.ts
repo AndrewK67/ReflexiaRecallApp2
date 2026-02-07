@@ -68,6 +68,7 @@ export interface CPDStandard {
   annualRequirement: {
     totalHours: number;
     minimumReflection?: number;
+    minimumParticipatoryHours?: number;
     categories?: {
       category: CPDCategoryType;
       minimumHours: number;
@@ -89,6 +90,7 @@ export interface CPDRecord {
   learningOutcomes?: string[];
   linkedEntryId?: string; // Link to reflection or holodeck entry
   evidenceType: 'reflection' | 'course' | 'conference' | 'reading' | 'teaching' | 'audit' | 'other';
+  participatory?: boolean; // NMC requires 20 of 35 hours to be participatory learning
   verified: boolean;
   tags: string[];
   createdAt: string;
@@ -99,6 +101,7 @@ export interface CPDSummary {
   cycleStartDate: string;
   cycleEndDate: string;
   totalHours: number;
+  participatoryHours: number;
   categoryBreakdown: {
     category: CPDCategoryType;
     hours: number;
@@ -262,6 +265,7 @@ export const CPD_STANDARDS: Record<CPDCountry, CPDStandard> = {
     annualRequirement: {
       totalHours: 35,
       minimumReflection: 5,
+      minimumParticipatoryHours: 20,
       categories: [
         { category: 'reflection', minimumHours: 5 },
         { category: 'clinical-practice', minimumHours: 20 },
@@ -855,7 +859,7 @@ export function meetsRequirements(summary: CPDSummary): {
   meets: boolean;
   gaps: string[];
 } {
-  const { standard, totalHours, categoryBreakdown } = summary;
+  const { standard, totalHours, participatoryHours, categoryBreakdown } = summary;
   const gaps: string[] = [];
 
   // Check total hours
@@ -864,6 +868,17 @@ export function meetsRequirements(summary: CPDSummary): {
     gaps.push(
       `Need ${shortfall.toFixed(1)} more hours to meet total requirement of ${standard.annualRequirement.totalHours} hours`
     );
+  }
+
+  // Check minimum participatory hours
+  if (standard.annualRequirement.minimumParticipatoryHours) {
+    const actual = participatoryHours || 0;
+    if (actual < standard.annualRequirement.minimumParticipatoryHours) {
+      const shortfall = standard.annualRequirement.minimumParticipatoryHours - actual;
+      gaps.push(
+        `Need ${shortfall.toFixed(1)} more participatory hours (minimum ${standard.annualRequirement.minimumParticipatoryHours} required)`
+      );
+    }
   }
 
   // Check minimum reflection hours

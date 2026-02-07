@@ -54,7 +54,7 @@ const Grounding: React.FC<GroundingProps> = ({ onClose }) => {
   const isComplete = step >= steps.length;
 
   return (
-    <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col relative overflow-y-auto custom-scrollbar animate-in fade-in duration-500">
+    <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col relative overflow-y-auto custom-scrollbar animate-in fade-in duration-500 nav-safe">
       {/* Background Decor */}
       <div
         className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden"

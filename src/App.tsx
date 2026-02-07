@@ -4,9 +4,11 @@ import { storageService } from "./services/storageService";
 import { generateDailyPrompt } from "./services/aiService";
 import { offlineDailyPrompt } from "./utils/offlineDailyPrompt";
 import { shouldShowTutorial, completeStep, type TutorialStep } from "./services/tutorialService";
-import { buildGamificationData, getGamificationStats } from "./services/gamificationService";
+import { buildGamificationData, getGamificationStats, getHolodeckSessionCount, awardBonusXP } from "./services/gamificationService";
 import { getGroundingSessions } from "./services/groundingService";
 import { isPackEnabled, getRequiredPack, loadPackState, cleanupExpiredTrials, type PackId } from "./packs";
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
 
 // Eager load critical components
 import SimplifiedOnboarding from "./components/SimplifiedOnboarding";
@@ -42,6 +44,125 @@ const PermissionsHelp = lazy(() => import("./components/PermissionsHelp"));
 
 // Eager load update notification (needs to be available immediately)
 import UpdateNotification from "./components/UpdateNotification";
+
+// Helper function to open Documents folder
+async function openDocumentsFolder() {
+  try {
+    if (Capacitor.getPlatform() === 'android') {
+      // Try multiple methods to open file manager
+      
+      // Method 1: Try to open Samsung My Files app specifically
+      try {
+        window.location.href = 'content://com.android.externalstorage.documents/document/primary%3ADocuments';
+      } catch (e) {
+        // silently ignore - fallback methods below
+      }
+      
+      // Method 2: Generic file manager with GET_CONTENT action
+      setTimeout(() => {
+        try {
+          const intent = 'intent:#Intent;' +
+            'action=android.intent.action.GET_CONTENT;' +
+            'type=*/*;' +
+            'end';
+          window.open(intent, '_system');
+        } catch (e) {
+          // silently ignore - fallback methods below
+        }
+      }, 500);
+      
+      // Method 3: Try to open file manager app
+      setTimeout(() => {
+        try {
+          // Try to launch file manager
+          window.location.href = 'intent:#Intent;action=android.intent.action.VIEW;end';
+        } catch (e) {
+          alert('Could not open file manager. Please open My Files app and go to Documents folder manually.');
+        }
+      }, 1000);
+    } else {
+      alert('Please open your Files app and navigate to the Documents folder.');
+    }
+  } catch (error) {
+    console.error('Error opening folder:', error);
+    alert('Please open your Files/My Files app manually and go to Documents folder.');
+  }
+}
+
+// Helper function to save audio to Downloads folder
+async function saveAudioToDownloads(audioUrl: string) {
+  try {
+    if (audioUrl.startsWith('file://')) {
+      if (Capacitor.getPlatform() === 'android') {
+        try {
+          // Read the file from app's data directory
+          // Don't remove the leading slash - Capacitor needs the full path
+          const originalPath = audioUrl.replace('file://', '');
+
+          const fileData = await Filesystem.readFile({
+            path: originalPath,
+          });
+          
+          const dataSize = typeof fileData.data === 'string' ? fileData.data.length : fileData.data.size;
+
+          if (!fileData.data || dataSize === 0) {
+            alert('Error: Audio file is empty or could not be read.');
+            return;
+          }
+          
+          // Create a timestamp-based filename
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+          const publicFileName = `Reflexia_Audio_${timestamp}.webm`;
+          
+          // Write to Documents directory (Downloads not always accessible)
+          await Filesystem.writeFile({
+            path: publicFileName,
+            data: fileData.data,
+            directory: Directory.Documents,
+          });
+
+          // Verify the file was written by reading it back
+          const verification = await Filesystem.readFile({
+            path: publicFileName,
+            directory: Directory.Documents,
+          });
+          const verifySize = typeof verification.data === 'string' ? verification.data.length : verification.data.size;
+
+          // Show detailed success message with clear instructions
+          alert(
+            `✅ Audio saved successfully!\n\n` +
+            `📂 Location: Documents folder\n` +
+            `📄 File: ${publicFileName}\n` +
+            `File size: ${Math.round(verifySize / 1024)}KB\n\n` +
+            `🎵 How to play:\n` +
+            `1. Open "My Files" or "Files" app on your phone\n` +
+            `2. Tap "Documents" folder\n` +
+            `3. Look for file: ${publicFileName}\n` +
+            `4. Tap the file to play\n\n` +
+            `📱 Recommended players:\n` +
+            `• VLC for Android (free from Play Store)\n` +
+            `• Chrome browser\n` +
+            `• MX Player\n\n` +
+            `💡 Tip: All Reflexia audio files start with "Reflexia_Audio_"`
+          );
+          
+        } catch (err) {
+          console.error('Error saving file:', err);
+          alert(`Error saving audio: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        }
+      } else {
+        window.open(audioUrl, '_system');
+      }
+    } else if (audioUrl.startsWith('blob:')) {
+      alert('This audio is not yet saved. Please use the "Save to Device" button in the capture screen first.');
+    } else {
+      window.open(audioUrl, '_system');
+    }
+  } catch (error) {
+    console.error('Error saving audio file:', error);
+    alert('Could not save audio file. Please try again.');
+  }
+}
 
 function formatReflection(entry: ReflectionEntry) {
   const lines: string[] = [];
@@ -117,7 +238,7 @@ export default function App() {
   // Calculate current XP from gamification data
   const gamificationData = useMemo(() => {
     const groundingSessions = getGroundingSessions().filter((s) => s.completed).length;
-    const holodeckSessions = 0;
+    const holodeckSessions = getHolodeckSessionCount();
     return buildGamificationData(entries, groundingSessions, holodeckSessions);
   }, [entries]);
 
@@ -287,6 +408,8 @@ export default function App() {
       dailyPrompt={dailyPrompt}
       onNavigate={(viewName) => handleNavigateWithGating(viewName)}
       onShowPackSettings={() => setView("PACK_BROWSER")}
+      totalEntries={entries.length}
+      currentStreak={stats.currentStreak ?? 0}
     />
   );
 
@@ -361,15 +484,27 @@ export default function App() {
                     )}
 
                     {item.type === 'AUDIO' && (
-                      <div className="p-4">
-                        <audio
-                          src={item.url}
-                          controls
-                          className="w-full"
-                          preload="metadata"
+                      <div className="p-4 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 flex flex-col items-center gap-3">
+                        <div className="text-4xl">🎵</div>
+                        <div className="text-center">
+                          <p className="text-sm font-semibold text-slate-700 mb-1">Audio Recording</p>
+                          <p className="text-xs text-slate-500">Click to save to your Documents folder</p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            if (item.url) {
+                              saveAudioToDownloads(item.url);
+                            } else {
+                              alert('No audio file URL available.');
+                            }
+                          }}
+                          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold flex items-center gap-2 transition shadow-lg"
                         >
-                          Your browser does not support audio playback.
-                        </audio>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                          Save to Documents
+                        </button>
                       </div>
                     )}
 
@@ -641,8 +776,8 @@ export default function App() {
             onClose={() => setShowTutorial(false)}
             onNavigate={(targetView) => setView(targetView)}
             onAwardXP={(amount, reason) => {
-              // TODO: Integrate with gamification service when enabled
-              console.log(`Tutorial awarded ${amount} XP: ${reason}`);
+              awardBonusXP(amount);
+              setCurrentXP((prev) => prev + amount);
             }}
           />
         </Suspense>

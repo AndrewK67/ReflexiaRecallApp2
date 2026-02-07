@@ -11,6 +11,7 @@ import {
   Download, Minimize2, Maximize2, RotateCw, FlipHorizontal, FlipVertical,
   Triangle, Star, Heart, Pentagon, Spline, Info
 } from "lucide-react";
+import CanvasSizeSelector, { CanvasSize, CANVAS_PRESETS } from "./CanvasSizeSelector";
 
 interface Layer {
   id: string;
@@ -28,6 +29,7 @@ interface CanvasBoardProps {
   width?: number;
   height?: number;
   initialDataUrl?: string;
+  showSizeSelector?: boolean; // New prop to show size selector on mount
 }
 
 type Tool =
@@ -56,6 +58,7 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
   width = 400,
   height = 780,
   initialDataUrl,
+  showSizeSelector = false,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const drawing = useRef(false);
@@ -64,21 +67,31 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
   const tempCanvas = useRef<HTMLCanvasElement | null>(null);
   const lastTouchDistance = useRef<number>(0);
   const lastTouchMidpoint = useRef<{ x: number; y: number } | null>(null);
+  const activeTouchCount = useRef<number>(0);
+  const isMultiTouchGesture = useRef<boolean>(false);
+  const activePointers = useRef<Set<number>>(new Set());
+  const pointBuffer = useRef<Array<{ x: number; y: number; pressure?: number }>>([]);
 
+  const [canvasWidth, setCanvasWidth] = useState(width);
+  const [canvasHeight, setCanvasHeight] = useState(height);
+  const [showingSizeSelector, setShowingSizeSelector] = useState(showSizeSelector && !initialDataUrl);
   const [tool, setTool] = useState<Tool>("pen");
-  const [strokeWidth, setStrokeWidth] = useState<number>(4);
-  const [strokeColor, setStrokeColor] = useState<string>("#e5e7eb");
+  const [strokeWidth, setStrokeWidth] = useState<number>(8);
+  const [strokeColor, setStrokeColor] = useState<string>("#ffffff");
   const [fillColor, setFillColor] = useState<string>("#3b82f6");
   const [history, setHistory] = useState<ImageData[]>([]);
   const [historyStep, setHistoryStep] = useState<number>(0);
   const [showStrokeColorPicker, setShowStrokeColorPicker] = useState(false);
   const [showFillColorPicker, setShowFillColorPicker] = useState(false);
   const [showTextInput, setShowTextInput] = useState(false);
+  const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null);
   const [textInputPos, setTextInputPos] = useState<{ x: number; y: number } | null>(null);
   const [textValue, setTextValue] = useState("");
   const [showToolMenu, setShowToolMenu] = useState(false);
   const [zoom, setZoom] = useState<number>(1);
   const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isLandscape, setIsLandscape] = useState(window.innerHeight < window.innerWidth);
+  const [smoothStrokes, setSmoothStrokes] = useState<boolean>(true); // Enable/disable stroke smoothing
   const [selection, setSelection] = useState<{
     x: number;
     y: number;
@@ -150,12 +163,12 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
   // Create a new layer
   const createLayer = (name: string): Layer => {
     const canvas = document.createElement("canvas");
-    canvas.width = Math.floor(width * dpr);
-    canvas.height = Math.floor(height * dpr);
+    canvas.width = Math.floor(canvasWidth * dpr);
+    canvas.height = Math.floor(canvasHeight * dpr);
     const ctx = canvas.getContext("2d")!;
     ctx.scale(dpr, dpr);
     // Transparent background for layers
-    ctx.clearRect(0, 0, width, height);
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
     return {
       id: `layer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -185,14 +198,14 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
 
     // Clear main canvas
     ctx.fillStyle = "#0b1220";
-    ctx.fillRect(0, 0, width, height);
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
     // Draw each visible layer
     for (const layer of layers) {
       if (!layer.visible) continue;
 
       ctx.globalAlpha = layer.opacity;
-      ctx.drawImage(layer.canvas, 0, 0, width, height);
+      ctx.drawImage(layer.canvas, 0, 0, canvasWidth, canvasHeight);
     }
     ctx.globalAlpha = 1.0;
   };
@@ -468,56 +481,153 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
     }
   };
 
+  // Interpolate points between from and to for smoother lines
+  const interpolatePoints = (from: { x: number; y: number }, to: { x: number; y: number }) => {
+    const points: Array<{ x: number; y: number }> = [];
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    // Add points every 1-2 pixels for smooth interpolation
+    const steps = Math.max(Math.ceil(distance / 2), 1);
+    
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      points.push({
+        x: from.x + dx * t,
+        y: from.y + dy * t
+      });
+    }
+    
+    return points;
+  };
+
+  // Catmull-Rom spline smoothing for natural curves
+  const getSplinePoint = (
+    p0: { x: number; y: number },
+    p1: { x: number; y: number },
+    p2: { x: number; y: number },
+    p3: { x: number; y: number },
+    t: number
+  ) => {
+    const t2 = t * t;
+    const t3 = t2 * t;
+    
+    // Catmull-Rom matrix coefficients
+    const x = 0.5 * (
+      (2 * p1.x) +
+      (-p0.x + p2.x) * t +
+      (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 +
+      (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3
+    );
+    
+    const y = 0.5 * (
+      (2 * p1.y) +
+      (-p0.y + p2.y) * t +
+      (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
+      (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3
+    );
+    
+    return { x, y };
+  };
+
+  // Apply smoothing to buffered points
+  const getSmoothPoints = (points: Array<{ x: number; y: number }>) => {
+    if (points.length < 4) return points;
+    
+    const smoothed: Array<{ x: number; y: number }> = [];
+    const segments = 8; // Points per segment for smoothness
+    
+    for (let i = 1; i < points.length - 2; i++) {
+      const p0 = points[i - 1];
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      const p3 = points[i + 2];
+      
+      for (let s = 0; s < segments; s++) {
+        const t = s / segments;
+        smoothed.push(getSplinePoint(p0, p1, p2, p3, t));
+      }
+    }
+    
+    return smoothed.length > 0 ? smoothed : points;
+  };
+
   // Draw with different brush types
   const drawBrush = (ctx: CanvasRenderingContext2D, from: { x: number; y: number }, to: { x: number; y: number }) => {
+    if (!ctx) return;
+    
+    // Enable high-quality rendering
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
 
+    // Interpolate points to ensure continuous line drawing
+    const points = interpolatePoints(from, to);
+
     if (tool === "pen") {
+      ctx.save();
       ctx.lineWidth = strokeWidth;
       ctx.strokeStyle = strokeColor;
       ctx.globalAlpha = 1.0;
+      ctx.globalCompositeOperation = 'source-over';
       ctx.beginPath();
-      ctx.moveTo(from.x, from.y);
-      ctx.lineTo(to.x, to.y);
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(points[i].x, points[i].y);
+      }
       ctx.stroke();
+      ctx.restore();
     } else if (tool === "marker") {
       ctx.lineWidth = strokeWidth * 2;
       ctx.strokeStyle = strokeColor;
       ctx.globalAlpha = 1.0;
       ctx.beginPath();
-      ctx.moveTo(from.x, from.y);
-      ctx.lineTo(to.x, to.y);
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(points[i].x, points[i].y);
+      }
       ctx.stroke();
     } else if (tool === "highlighter") {
       ctx.lineWidth = strokeWidth * 3;
       ctx.strokeStyle = strokeColor;
       ctx.globalAlpha = 0.3;
       ctx.beginPath();
-      ctx.moveTo(from.x, from.y);
-      ctx.lineTo(to.x, to.y);
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(points[i].x, points[i].y);
+      }
       ctx.stroke();
       ctx.globalAlpha = 1.0;
     } else if (tool === "spray") {
-      // Spray paint effect
+      // Spray paint effect - apply at each interpolated point
       const density = 20;
       const radius = strokeWidth * 2;
-      for (let i = 0; i < density; i++) {
-        const offsetX = (Math.random() - 0.5) * radius;
-        const offsetY = (Math.random() - 0.5) * radius;
-        ctx.fillStyle = strokeColor;
-        ctx.globalAlpha = 0.6;
-        ctx.fillRect(to.x + offsetX, to.y + offsetY, 1, 1);
+      for (const point of points) {
+        for (let i = 0; i < density / points.length; i++) {
+          const offsetX = (Math.random() - 0.5) * radius;
+          const offsetY = (Math.random() - 0.5) * radius;
+          ctx.fillStyle = strokeColor;
+          ctx.globalAlpha = 0.6;
+          ctx.fillRect(point.x + offsetX, point.y + offsetY, 1, 1);
+        }
       }
       ctx.globalAlpha = 1.0;
     } else if (tool === "eraser") {
+      // Use destination-out to actually erase pixels (make transparent)
+      const prevComposite = ctx.globalCompositeOperation;
+      ctx.globalCompositeOperation = 'destination-out';
       ctx.lineWidth = strokeWidth;
-      ctx.strokeStyle = "#0b1220";
+      ctx.strokeStyle = 'rgba(0,0,0,1)'; // Color doesn't matter with destination-out
       ctx.globalAlpha = 1.0;
       ctx.beginPath();
-      ctx.moveTo(from.x, from.y);
-      ctx.lineTo(to.x, to.y);
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(points[i].x, points[i].y);
+      }
       ctx.stroke();
+      ctx.globalCompositeOperation = prevComposite; // Restore composite operation
     }
   };
 
@@ -544,16 +654,16 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
     if (!canvas || !ctx) return;
 
     // HiDPI
-    canvas.width = Math.floor(width * dpr);
-    canvas.height = Math.floor(height * dpr);
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
+    canvas.width = Math.floor(canvasWidth * dpr);
+    canvas.height = Math.floor(canvasHeight * dpr);
+    canvas.style.width = `${canvasWidth}px`;
+    canvas.style.height = `${canvasHeight}px`;
 
     ctx.scale(dpr, dpr);
 
     // background
     ctx.fillStyle = "#0b1220";
-    ctx.fillRect(0, 0, width, height);
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
     // Initialize first layer if no layers exist
     if (layers.length === 0) {
@@ -565,7 +675,7 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
         img.onload = () => {
           try {
             const layerCtx = initialLayer.canvas.getContext("2d")!;
-            layerCtx.drawImage(img, 0, 0, width, height);
+            layerCtx.drawImage(img, 0, 0, canvasWidth, canvasHeight);
             setLayers([initialLayer]);
             setActiveLayerId(initialLayer.id);
             pushHistory();
@@ -581,7 +691,7 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [width, height, dpr]);
+  }, [canvasWidth, canvasHeight, dpr]);
 
   // Composite layers whenever they change
   useEffect(() => {
@@ -590,6 +700,21 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [layers]);
+
+  // Handle orientation changes
+  useEffect(() => {
+    const handleResize = () => {
+      setIsLandscape(window.innerHeight < window.innerWidth);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+    };
+  }, []);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -622,8 +747,8 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
       else if ((e.ctrlKey || e.metaKey) && e.key === "v" && copiedSelection) {
         e.preventDefault();
         // Paste at center of canvas
-        const centerX = width / 2 - (copiedSelection.width / dpr) / 2;
-        const centerY = height / 2 - (copiedSelection.height / dpr) / 2;
+        const centerX = canvasWidth / 2 - (copiedSelection.width / dpr) / 2;
+        const centerY = canvasHeight / 2 - (copiedSelection.height / dpr) / 2;
         pasteSelection({ x: centerX, y: centerY });
       }
       // Cut: Ctrl+X or Cmd+X
@@ -758,9 +883,21 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
   const toLocalPoint = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current!;
     const rect = canvas.getBoundingClientRect();
-    // Account for zoom and pan
-    const x = ((e.clientX - rect.left) - panOffset.x) / zoom;
-    const y = ((e.clientY - rect.top) - panOffset.y) / zoom;
+    
+    // Get mouse position relative to canvas (in CSS pixels)
+    const clientX = e.clientX - rect.left;
+    const clientY = e.clientY - rect.top;
+    
+    // Account for zoom and pan (still in CSS pixel space)
+    const canvasX = (clientX - panOffset.x) / zoom;
+    const canvasY = (clientY - panOffset.y) / zoom;
+    
+    // Convert to logical canvas coordinates
+    // The canvas context is already scaled by dpr, so we return logical coordinates
+    // CSS display size is canvasWidth/canvasHeight props, physical canvas is canvasWidth*dpr x canvasHeight*dpr
+    const x = (canvasX / rect.width) * canvasWidth;
+    const y = (canvasY / rect.height) * canvasHeight;
+    
     return { x, y };
   };
 
@@ -1066,6 +1203,20 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
   };
 
   const start = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    // Track active pointers
+    activePointers.current.add(e.pointerId);
+    
+    // Prevent drawing during multi-touch gestures
+    if (e.pointerType === 'touch' && activePointers.current.size > 1) {
+      e.preventDefault();
+      return;
+    }
+    
+    if (isMultiTouchGesture.current || activeTouchCount.current > 1) {
+      e.preventDefault();
+      return;
+    }
+
     // Handle pan/hand tool
     if (tool === "hand") {
       drawing.current = true;
@@ -1176,10 +1327,26 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
     // Handle brush tools
     drawing.current = true;
     lastPoint.current = point;
+    
+    // Store initial point with pressure if available
+    const pressure = e.pressure || 0.5;
+    pointBuffer.current = [{ ...point, pressure }];
+    
     pushHistory();
   };
 
   const move = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    // The crosshair should appear exactly where the pointer is
+    setCursorPos({
+      x: e.clientX,
+      y: e.clientY,
+    });
+
+    // Ignore if multi-touch gesture in progress
+    if (e.pointerType === 'touch' && activePointers.current.size > 1) {
+      return;
+    }
+
     // Skip if dragging a handle (global listeners handle it)
     if (activeHandle) return;
 
@@ -1276,15 +1443,31 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
       return;
     }
 
-    // Handle brush tools
+    // Handle brush tools with smoothing
     const last = lastPoint.current;
     if (!last) {
       lastPoint.current = p;
+      const pressure = e.pressure || 0.5;
+      pointBuffer.current = [{ ...p, pressure }];
       return;
     }
 
+    // Add point to buffer with pressure
+    const pressure = e.pressure || 0.5;
+    pointBuffer.current.push({ ...p, pressure });
+
+    // Always draw from last point to current point for immediate feedback
     drawBrush(layerCtx, last, p);
     lastPoint.current = p;
+
+    // Apply additional smoothing pass if enabled and we have enough points
+    if (smoothStrokes && pointBuffer.current.length >= 4) {
+      // Keep last 4 points in buffer for smoothing calculations
+      if (pointBuffer.current.length > 6) {
+        pointBuffer.current = pointBuffer.current.slice(-4);
+      }
+    }
+    
     compositeAllLayers();
   };
 
@@ -1325,6 +1508,11 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
   };
 
   const end = (e?: React.PointerEvent<HTMLCanvasElement>) => {
+    // Remove pointer from active set
+    if (e) {
+      activePointers.current.delete(e.pointerId);
+    }
+    
     // Skip if dragging a handle (global listener handles it)
     if (activeHandle) return;
 
@@ -1368,6 +1556,12 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
           const hasContent = checkImageDataHasContent(imageData);
 
           if (hasContent) {
+            // CRITICAL: Save a snapshot of the current layer BEFORE clearing
+            // We'll need this to restore the layer during transforms
+            const canvasWidth = layerCtx.canvas.width;
+            const canvasHeight = layerCtx.canvas.height;
+            const layerSnapshot = layerCtx.getImageData(0, 0, canvasWidth, canvasHeight);
+
             pushHistory(); // Push history before clearing
 
             // Clear the selected area from the layer (cut it out)
@@ -1376,6 +1570,7 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
 
             setSelectionImage(imageData);
             setSelection({ x, y, width, height });
+            setSelectionLayerSnapshot(layerSnapshot); // Save snapshot to restore during transforms
           } else {
             // Don't create selection if it's just empty/transparent background
             setSelection(null);
@@ -1400,6 +1595,7 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
     // Finalize brush drawing
     if (["pen", "marker", "highlighter", "spray", "eraser"].includes(tool) && drawing.current) {
       pushHistory();
+      pointBuffer.current = []; // Clear the smoothing buffer
     }
 
     drawing.current = false;
@@ -1722,6 +1918,13 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
 
   // Touch gesture handlers for pinch-to-zoom and two-finger pan
   const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    // Update active touch count
+    activeTouchCount.current = e.touches.length;
+    isMultiTouchGesture.current = e.touches.length > 1;
+    
+    // Store touch count directly on the canvas element for immediate access by pointer events
+    (e.currentTarget as any).__touchCount = e.touches.length;
+
     if (e.touches.length === 2) {
       // Two-finger gesture - prevent default drawing behavior
       e.preventDefault();
@@ -1742,6 +1945,13 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
   };
 
   const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    // Update active touch count
+    activeTouchCount.current = e.touches.length;
+    isMultiTouchGesture.current = e.touches.length > 1;
+    
+    // Store touch count directly on the canvas element
+    (e.currentTarget as any).__touchCount = e.touches.length;
+
     if (e.touches.length === 2) {
       e.preventDefault();
       const touch1 = e.touches[0];
@@ -1768,33 +1978,46 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
         const zoomDelta = distanceDelta * 0.005; // Scale factor (reduced for smoother zoom)
         const newZoom = Math.max(0.1, Math.min(5, zoom + zoomDelta));
 
-        // Get midpoint position relative to canvas
-        const midpointX = currentMidpoint.x - rect.left;
-        const midpointY = currentMidpoint.y - rect.top;
+        if (newZoom !== zoom) {
+          // Get midpoint position relative to canvas viewport
+          const midpointX = currentMidpoint.x - rect.left;
+          const midpointY = currentMidpoint.y - rect.top;
 
-        // Calculate canvas position at midpoint
-        const canvasX = (midpointX - panOffset.x) / zoom;
-        const canvasY = (midpointY - panOffset.y) / zoom;
+          // Calculate the canvas coordinate at the midpoint before zoom
+          const canvasXBeforeZoom = (midpointX - panOffset.x) / zoom;
+          const canvasYBeforeZoom = (midpointY - panOffset.y) / zoom;
 
-        // Adjust pan offset to keep midpoint position fixed during zoom
-        const newPanOffsetX = midpointX - canvasX * newZoom;
-        const newPanOffsetY = midpointY - canvasY * newZoom;
+          // Calculate new pan offset to keep the same canvas point under the midpoint
+          const newPanOffsetX = midpointX - canvasXBeforeZoom * newZoom;
+          const newPanOffsetY = midpointY - canvasYBeforeZoom * newZoom;
 
-        // Also apply pan from finger movement
-        const panDeltaX = currentMidpoint.x - lastTouchMidpoint.current.x;
-        const panDeltaY = currentMidpoint.y - lastTouchMidpoint.current.y;
+          // Apply pan from finger movement
+          const panDeltaX = currentMidpoint.x - lastTouchMidpoint.current.x;
+          const panDeltaY = currentMidpoint.y - lastTouchMidpoint.current.y;
 
-        setPanOffset({
-          x: newPanOffsetX + panDeltaX,
-          y: newPanOffsetY + panDeltaY,
-        });
+          setZoom(newZoom);
+          setPanOffset({
+            x: newPanOffsetX + panDeltaX,
+            y: newPanOffsetY + panDeltaY,
+          });
+        } else {
+          // No zoom change, just pan
+          const panDeltaX = currentMidpoint.x - lastTouchMidpoint.current.x;
+          const panDeltaY = currentMidpoint.y - lastTouchMidpoint.current.y;
 
-        setZoom(newZoom);
+          setPanOffset({
+            x: panOffset.x + panDeltaX,
+            y: panOffset.y + panDeltaY,
+          });
+        }
+
+        // Update for next frame
+        lastTouchDistance.current = currentDistance;
+        lastTouchMidpoint.current = currentMidpoint;
       }
-
-      lastTouchDistance.current = currentDistance;
-      lastTouchMidpoint.current = currentMidpoint;
     }
+
+    // Otherwise, allow normal scroll behavior
   };
 
   // Mouse wheel and trackpad zoom handler
@@ -1849,6 +2072,21 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
   };
 
   const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    // Update active touch count
+    activeTouchCount.current = e.touches.length;
+    isMultiTouchGesture.current = e.touches.length > 1;
+    
+    // Store touch count directly on the canvas element
+    (e.currentTarget as any).__touchCount = e.touches.length;
+    
+    // Clear the flag when all touches are lifted
+    if (e.touches.length === 0) {
+      setTimeout(() => {
+        isMultiTouchGesture.current = false;
+        (e.currentTarget as any).__touchCount = 0;
+      }, 50);
+    }
+
     // Detect two-finger tap for undo
     if (e.changedTouches.length === 2 && e.touches.length === 0) {
       const now = Date.now();
@@ -1867,9 +2105,32 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
     }
   };
 
+  const handleSizeSelect = (size: CanvasSize) => {
+    setCanvasWidth(size.width);
+    setCanvasHeight(size.height);
+    setShowingSizeSelector(false);
+    // Clear existing layers to start fresh with new dimensions
+    setLayers([]);
+    setActiveLayerId("");
+    setHistory([]);
+    setHistoryStep(-1);
+  };
+
   const content = (
     <div className="absolute inset-0 z-[100] bg-slate-950 flex flex-col">
-      <div className="w-full h-full flex flex-col overflow-hidden">
+      {/* Canvas Size Selector Modal */}
+      {showingSizeSelector && (
+        <CanvasSizeSelector
+          onSelect={handleSizeSelect}
+          onCancel={() => {
+            setShowingSizeSelector(false);
+            if (onCancel) onCancel();
+          }}
+        />
+      )}
+
+      {/* Header - Always at top */}
+      {!isLandscape && (
         <div className="flex items-center justify-between px-3 py-2 border-b border-slate-800 bg-slate-900/80 flex-shrink-0">
           <div className="text-slate-100 font-semibold">Canvas</div>
           <button
@@ -1881,10 +2142,187 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
             Exit
           </button>
         </div>
+      )}
 
-        <div className="flex-1 flex flex-col p-2 space-y-2 overflow-hidden">
-          {/* Compact Controls Row */}
-          {!uiMinimized && (
+      {/* Landscape Compact Header - Full width at top */}
+      {isLandscape && (
+        <div className="w-full flex items-center justify-between px-2 py-1.5 border-b border-slate-800 bg-slate-900/80 flex-shrink-0 gap-2">
+          <div className="flex items-center gap-2">
+            <div className="text-slate-100 font-semibold text-sm">Canvas</div>
+            <button
+              onClick={onCancel}
+              className="px-2 py-1 rounded bg-red-600 hover:bg-red-700 text-white text-xs font-semibold flex items-center gap-1 transition-colors"
+              aria-label="Close and exit canvas"
+            >
+              <X className="w-3 h-3" />
+              Exit
+            </button>
+          </div>
+
+          {/* Zoom Controls */}
+          <div className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-900/60 rounded border border-slate-700">
+            <button
+              onClick={() => handleZoom(-0.25)}
+              disabled={zoom <= 0.1}
+              className="p-0.5 rounded border border-slate-700 text-slate-300 hover:bg-slate-800 disabled:opacity-40"
+              title="Zoom out"
+            >
+              <ZoomOut className="w-3 h-3" />
+            </button>
+            <span className="text-slate-400 text-[9px] min-w-[2rem] text-center font-mono">
+              {Math.round(zoom * 100)}%
+            </span>
+            <button
+              onClick={() => handleZoom(0.25)}
+              disabled={zoom >= 5}
+              className="p-0.5 rounded border border-slate-700 text-slate-300 hover:bg-slate-800 disabled:opacity-40"
+              title="Zoom in"
+            >
+              <ZoomIn className="w-3 h-3" />
+            </button>
+            <button
+              onClick={resetView}
+              className="px-1 py-0.5 rounded border border-slate-700 text-slate-300 hover:bg-slate-800 text-[9px]"
+              title="Reset zoom"
+            >
+              1:1
+            </button>
+          </div>
+
+          {/* Shape Mode Toggle */}
+          <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-900/20 border border-emerald-700/50">
+            <span className="text-[9px] font-bold text-emerald-300">Draw:</span>
+            <div className="flex gap-0.5">
+              <button
+                onClick={() => setShapeMode('stroke')}
+                className={`px-1.5 py-0.5 text-[9px] font-semibold rounded transition-all ${
+                  shapeMode === 'stroke'
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                }`}
+                title="Outline only"
+              >
+                Stroke
+              </button>
+              <button
+                onClick={() => setShapeMode('fill')}
+                className={`px-1.5 py-0.5 text-[9px] font-semibold rounded transition-all ${
+                  shapeMode === 'fill'
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                }`}
+                title="Filled only"
+              >
+                Fill
+              </button>
+              <button
+                onClick={() => setShapeMode('both')}
+                className={`px-1.5 py-0.5 text-[9px] font-semibold rounded transition-all ${
+                  shapeMode === 'both'
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                }`}
+                title="Fill and outline"
+              >
+                Both
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Content area - sidebar and canvas */}
+      <div className="flex-1 flex flex-col landscape:flex-row overflow-hidden">
+
+        {/* Left Tools Sidebar (landscape only) - All Tools Visible */}
+        {isLandscape && (
+          <div 
+            className="flex-shrink-0 overflow-y-auto border-r border-slate-800 bg-slate-900/40"
+            style={{ width: '150px' }}
+          >
+            <div className="p-1.5 space-y-1.5">
+              {/* Brush Tools */}
+              <div>
+                <div className="text-xs text-slate-500 font-bold px-2 py-1">Brushes</div>
+                {(Object.keys(toolDefs) as Tool[])
+                  .filter((t) => toolDefs[t].category === "brush")
+                  .map((t) => {
+                    const Icon = toolDefs[t].icon;
+                    return (
+                      <button
+                        key={t}
+                        onClick={() => setTool(t)}
+                        className={[
+                          "w-full px-2 py-1.5 rounded flex items-center gap-1.5 text-xs",
+                          t === tool
+                            ? "bg-slate-800 text-slate-100"
+                            : "text-slate-300 hover:bg-slate-800/50",
+                        ].join(" ")}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                        {toolDefs[t].label}
+                      </button>
+                    );
+                  })}
+              </div>
+
+              {/* Shape Tools */}
+              <div>
+                <div className="text-xs text-slate-500 font-bold px-2 py-1">Shapes</div>
+                {(Object.keys(toolDefs) as Tool[])
+                  .filter((t) => toolDefs[t].category === "shape")
+                  .map((t) => {
+                    const Icon = toolDefs[t].icon;
+                    return (
+                      <button
+                        key={t}
+                        onClick={() => setTool(t)}
+                        className={[
+                          "w-full px-2 py-1.5 rounded flex items-center gap-1.5 text-xs",
+                          t === tool
+                            ? "bg-slate-800 text-slate-100"
+                            : "text-slate-300 hover:bg-slate-800/50",
+                        ].join(" ")}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                        {toolDefs[t].label}
+                      </button>
+                    );
+                  })}
+              </div>
+
+              {/* Other Tools */}
+              <div>
+                <div className="text-xs text-slate-500 font-bold px-2 py-1">Other</div>
+                {(Object.keys(toolDefs) as Tool[])
+                  .filter((t) => toolDefs[t].category === "other")
+                  .map((t) => {
+                    const Icon = toolDefs[t].icon;
+                    return (
+                      <button
+                        key={t}
+                        onClick={() => setTool(t)}
+                        className={[
+                          "w-full px-2 py-1.5 rounded flex items-center gap-1.5 text-xs",
+                          t === tool
+                            ? "bg-slate-800 text-slate-100"
+                            : "text-slate-300 hover:bg-slate-800/50",
+                        ].join(" ")}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                        {toolDefs[t].label}
+                      </button>
+                    );
+                  })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Canvas Area */}
+        <div className="flex-1 flex flex-col p-1 space-y-1 overflow-hidden">
+          {/* Compact Controls Row (Portrait Only) */}
+          {!isLandscape && !uiMinimized && (
             <div className="flex items-center gap-1.5 flex-shrink-0">
               {/* Tool Selector */}
               <div className="relative flex-1">
@@ -2036,45 +2474,6 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
                 <span className="text-slate-400 text-xs w-5">{strokeWidth}</span>
               </div>
 
-              {/* Shape Mode Toggle (for shape tools) */}
-              {['rectangle', 'circle', 'triangle', 'star', 'heart', 'path'].includes(tool) && (
-                <div className="flex gap-0.5 border border-slate-800 rounded overflow-hidden">
-                  <button
-                    onClick={() => setShapeMode('stroke')}
-                    className={`px-2 py-1.5 text-xs font-semibold transition-colors ${
-                      shapeMode === 'stroke'
-                        ? 'bg-slate-700 text-slate-100'
-                        : 'bg-transparent text-slate-400 hover:bg-slate-800/50'
-                    }`}
-                    title="Outline only"
-                  >
-                    Stroke
-                  </button>
-                  <button
-                    onClick={() => setShapeMode('fill')}
-                    className={`px-2 py-1.5 text-xs font-semibold transition-colors ${
-                      shapeMode === 'fill'
-                        ? 'bg-slate-700 text-slate-100'
-                        : 'bg-transparent text-slate-400 hover:bg-slate-800/50'
-                    }`}
-                    title="Filled only"
-                  >
-                    Fill
-                  </button>
-                  <button
-                    onClick={() => setShapeMode('both')}
-                    className={`px-2 py-1.5 text-xs font-semibold transition-colors ${
-                      shapeMode === 'both'
-                        ? 'bg-slate-700 text-slate-100'
-                        : 'bg-transparent text-slate-400 hover:bg-slate-800/50'
-                    }`}
-                    title="Fill and outline"
-                  >
-                    Both
-                  </button>
-                </div>
-              )}
-
               {/* Tips Toggle */}
               <button
                 onClick={() => setShowTips(!showTips)}
@@ -2090,8 +2489,8 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
             </div>
           )}
 
-          {/* Stroke Color Picker */}
-          {!uiMinimized && showStrokeColorPicker && (
+          {/* Stroke Color Picker (Portrait Only) */}
+          {!isLandscape && !uiMinimized && showStrokeColorPicker && (
             <div className="p-2 bg-slate-900/60 rounded border border-slate-800 space-y-2 flex-shrink-0">
               <div className="text-xs font-semibold text-slate-300 flex items-center gap-1">
                 <Droplet className="w-3 h-3" />
@@ -2126,8 +2525,8 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
             </div>
           )}
 
-          {/* Fill Color Picker */}
-          {!uiMinimized && showFillColorPicker && (
+          {/* Fill Color Picker (Portrait Only) */}
+          {!isLandscape && !uiMinimized && showFillColorPicker && (
             <div className="p-2 bg-slate-900/60 rounded border border-slate-800 space-y-2 flex-shrink-0">
               <div className="text-xs font-semibold text-slate-300 flex items-center gap-1">
                 <Droplet className="w-3 h-3" />
@@ -2162,8 +2561,8 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
             </div>
           )}
 
-          {/* Zoom Controls */}
-          {!uiMinimized && (
+          {/* Zoom Controls (Portrait Only) */}
+          {!isLandscape && !uiMinimized && (
             <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-900/40 rounded border border-slate-800 flex-shrink-0">
             <button
               onClick={() => handleZoom(-0.25)}
@@ -2194,75 +2593,128 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
             </div>
           )}
 
-          {/* Bottom row - Actions */}
-          <div className="flex flex-wrap items-center gap-1.5 flex-shrink-0">
-            <button
-              onClick={undo}
-              disabled={historyStep <= 0}
-              className="px-2 py-1 rounded border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed text-xs"
-              title="Undo (or two-finger tap)"
-            >
-              <Undo2 className="w-3.5 h-3.5" />
-              Undo
-            </button>
+          {/* Shape Mode Toggle (Portrait Only) */}
+          {!isLandscape && !uiMinimized && (
+            <div className="flex flex-col gap-0.5 px-2 py-1.5 rounded-lg bg-emerald-900/20 border border-emerald-700/50 flex-shrink-0">
+              <span className="text-[10px] font-bold text-emerald-300 text-center">Draw</span>
+              <div className="flex gap-0.5 rounded overflow-hidden">
+                <button
+                  onClick={() => setShapeMode('stroke')}
+                  className={`px-2 py-1 text-xs font-semibold transition-all ${
+                    shapeMode === 'stroke'
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  }`}
+                  title="Outline only"
+                >
+                  Stroke
+                </button>
+                <button
+                  onClick={() => setShapeMode('fill')}
+                  className={`px-2 py-1 text-xs font-semibold transition-all ${
+                    shapeMode === 'fill'
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  }`}
+                  title="Filled only"
+                >
+                  Fill
+                </button>
+                <button
+                  onClick={() => setShapeMode('both')}
+                  className={`px-2 py-1 text-xs font-semibold transition-all ${
+                    shapeMode === 'both'
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  }`}
+                  title="Fill and outline"
+                >
+                  Both
+                </button>
+              </div>
+            </div>
+          )}
 
-            <button
-              onClick={redo}
-              disabled={historyStep >= history.length - 1}
-              className="px-2 py-1 rounded border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed text-xs"
-              title="Redo"
-            >
-              <Redo2 className="w-3.5 h-3.5" />
-              Redo
-            </button>
+          {/* Bottom row - Actions (Portrait Only) */}
+          {!isLandscape && (
+            <div className="flex flex-wrap items-center gap-1.5 flex-shrink-0">
+              <button
+                onClick={undo}
+                disabled={historyStep <= 0}
+                className="px-2 py-1 rounded border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed text-xs"
+                title="Undo (or two-finger tap)"
+              >
+                <Undo2 className="w-3.5 h-3.5" />
+                Undo
+              </button>
 
-            <button
-              onClick={clear}
-              className="px-2 py-1 rounded border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-1 text-xs"
-              title="Clear active layer"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              Clear
-            </button>
+              <button
+                onClick={redo}
+                disabled={historyStep >= history.length - 1}
+                className="px-2 py-1 rounded border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed text-xs"
+                title="Redo"
+              >
+                <Redo2 className="w-3.5 h-3.5" />
+                Redo
+              </button>
 
-            <button
-              onClick={() => setShowLayersPanel(!showLayersPanel)}
-              className={`px-2 py-1 rounded border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-1 text-xs ${showLayersPanel ? 'bg-slate-800' : ''}`}
-              title="Layers"
-            >
-              <Layers className="w-3.5 h-3.5" />
-              Layers
-            </button>
+              <button
+                onClick={clear}
+                className="px-2 py-1 rounded border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-1 text-xs"
+                title="Clear active layer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Clear
+              </button>
 
-            <button
-              onClick={() => setUiMinimized(!uiMinimized)}
-              className="px-2 py-1 rounded border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-1 text-xs"
-              title={uiMinimized ? "Maximize toolbar" : "Minimize toolbar"}
-            >
-              {uiMinimized ? <Maximize2 className="w-3.5 h-3.5" /> : <Minimize2 className="w-3.5 h-3.5" />}
-            </button>
+              <button
+                onClick={() => setShowLayersPanel(!showLayersPanel)}
+                className={`px-2 py-1 rounded border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-1 text-xs ${showLayersPanel ? 'bg-slate-800' : ''}`}
+                title="Layers"
+              >
+                <Layers className="w-3.5 h-3.5" />
+                Layers
+              </button>
 
-            <button
-              onClick={exportToPNG}
-              className="px-2 py-1 rounded border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-1 text-xs"
-              title="Export canvas as PNG"
-            >
-              <Download className="w-3.5 h-3.5" />
-              Export
-            </button>
+              <button
+                onClick={() => setSmoothStrokes(!smoothStrokes)}
+                className={`px-2 py-1 rounded border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-1 text-xs ${smoothStrokes ? 'bg-emerald-900/40 border-emerald-700' : ''}`}
+                title={smoothStrokes ? "Disable stroke smoothing" : "Enable stroke smoothing"}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                {smoothStrokes ? "Smooth" : "Direct"}
+              </button>
 
-            <button
-              onClick={save}
-              className="px-2 py-1 rounded bg-slate-100 text-slate-950 font-semibold hover:bg-white flex items-center gap-1 ml-auto text-xs"
-              title="Save drawing"
-            >
-              <Save className="w-3.5 h-3.5" />
-              Save
-            </button>
-          </div>
+              <button
+                onClick={() => setUiMinimized(!uiMinimized)}
+                className="px-2 py-1 rounded border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-1 text-xs"
+                title={uiMinimized ? "Maximize toolbar" : "Minimize toolbar"}
+              >
+                {uiMinimized ? <Maximize2 className="w-3.5 h-3.5" /> : <Minimize2 className="w-3.5 h-3.5" />}
+              </button>
+
+              <button
+                onClick={exportToPNG}
+                className="px-2 py-1 rounded border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-1 text-xs"
+                title="Export canvas as PNG"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Export
+              </button>
+
+              <button
+                onClick={save}
+                className="px-2 py-1 rounded bg-slate-100 text-slate-950 font-semibold hover:bg-white flex items-center gap-1 ml-auto text-xs"
+                title="Save drawing"
+              >
+                <Save className="w-3.5 h-3.5" />
+                Save
+              </button>
+            </div>
+          )}
 
           <div
-            className="flex-1 rounded-lg border border-slate-800 bg-slate-950 p-1 overflow-hidden relative"
+            className="flex-1 rounded-lg border border-slate-800 bg-slate-950 p-1 overflow-auto relative"
             onWheel={handleWheel}
             style={{ touchAction: 'none' }}
           >
@@ -2282,7 +2734,10 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
                 onPointerMove={move}
                 onPointerUp={end}
                 onPointerCancel={end}
-                onPointerLeave={end}
+                onPointerLeave={(e) => {
+                  end(e);
+                  setCursorPos(null);
+                }}
                 onDoubleClick={handleDoubleClick}
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
@@ -2397,10 +2852,55 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
                 </>
               )}
             </div>
+
+            {/* Crosshair Cursor */}
+            {cursorPos && tool !== "hand" && tool !== "select" && (
+              <div
+                className="fixed pointer-events-none z-50"
+                style={{
+                  left: cursorPos.x,
+                  top: cursorPos.y,
+                  transform: 'translate(-50%, -50%)',
+                }}
+              >
+                {/* Horizontal line */}
+                <div
+                  className="absolute bg-blue-400"
+                  style={{
+                    width: '20px',
+                    height: '1px',
+                    left: '-10px',
+                    top: '0',
+                    opacity: 0.8,
+                  }}
+                />
+                {/* Vertical line */}
+                <div
+                  className="absolute bg-blue-400"
+                  style={{
+                    width: '1px',
+                    height: '20px',
+                    left: '0',
+                    top: '-10px',
+                    opacity: 0.8,
+                  }}
+                />
+                {/* Center dot */}
+                <div
+                  className="absolute bg-blue-400 rounded-full"
+                  style={{
+                    width: '3px',
+                    height: '3px',
+                    left: '-1.5px',
+                    top: '-1.5px',
+                  }}
+                />
+              </div>
+            )}
           </div>
 
-          {/* Tool-specific Instructions */}
-          {showTips && (
+          {/* Tool-specific Instructions (Portrait Only) */}
+          {!isLandscape && showTips && (
             <>
               {tool === "select" && !selection && (
                 <div className="p-2 bg-cyan-900/40 rounded border border-cyan-700 flex-shrink-0">
@@ -2427,8 +2927,8 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
             </>
           )}
 
-          {/* Selection Toolbar */}
-          {selection && (
+          {/* Selection Toolbar (Portrait Only) */}
+          {!isLandscape && selection && (
             <div className="flex items-center gap-1.5 p-2 bg-blue-900/40 rounded border border-blue-700 flex-shrink-0 flex-wrap">
               <div className="text-blue-200 text-xs font-semibold">Selection:</div>
 
@@ -2487,8 +2987,8 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
             </div>
           )}
 
-          {/* Text Input Dialog */}
-          {showTextInput && (
+          {/* Text Input Dialog (Portrait Only) */}
+          {!isLandscape && showTextInput && (
             <div className="p-3 bg-slate-900/60 rounded-lg border border-slate-800">
               <div className="text-slate-300 text-sm mb-2">Enter text:</div>
               <input
@@ -2528,8 +3028,8 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
             </div>
           )}
 
-          {/* Layers Panel */}
-          {showLayersPanel && (
+          {/* Layers Panel (Portrait Only) */}
+          {!isLandscape && showLayersPanel && (
             <div className="p-3 bg-slate-900/80 rounded-lg border border-slate-700 max-h-64 overflow-y-auto flex-shrink-0">
               <div className="flex items-center justify-between mb-2">
                 <div className="text-slate-200 text-sm font-semibold">Layers</div>
@@ -2628,6 +3128,388 @@ export const CanvasBoard: React.FC<CanvasBoardProps> = ({
             </div>
           )}
         </div>
+
+        {/* Right Controls Sidebar (landscape only) */}
+        {isLandscape && (
+          <div 
+            className="flex-shrink-0 overflow-y-auto border-l border-slate-800 bg-slate-900/40"
+            style={{ width: '150px' }}
+          >
+            <div className="p-1.5 space-y-1.5">
+              {/* Stroke Color */}
+              <button
+                onClick={() => {
+                  setShowStrokeColorPicker(!showStrokeColorPicker);
+                  setShowFillColorPicker(false);
+                }}
+                className="w-full px-2 py-1.5 rounded border border-slate-800 text-slate-200 hover:bg-slate-900/40 relative flex items-center gap-2"
+                title="Stroke Color"
+              >
+                <div
+                  className="w-5 h-5 rounded border-2 border-slate-600"
+                  style={{ backgroundColor: strokeColor }}
+                />
+                <span className="text-xs">Stroke</span>
+              </button>
+
+              {showStrokeColorPicker && (
+                <div className="p-2 bg-slate-900/60 rounded border border-slate-800 space-y-2">
+                  <div className="text-xs font-semibold text-slate-300 flex items-center gap-1">
+                    <Droplet className="w-3 h-3" />
+                    Stroke Color
+                  </div>
+                  <input
+                    type="color"
+                    value={strokeColor}
+                    onChange={(e) => setStrokeColor(e.target.value)}
+                    className="w-full h-7 rounded border border-slate-700 bg-slate-950 cursor-pointer"
+                  />
+                  <div className="flex gap-1.5 flex-wrap">
+                    {quickColors.map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => setStrokeColor(c)}
+                        className={[
+                          "w-6 h-6 rounded border hover:scale-110 transition-transform",
+                          c === strokeColor ? "border-slate-100 border-2" : "border-slate-700",
+                        ].join(" ")}
+                        style={{ backgroundColor: c }}
+                        title={c}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Fill Color */}
+              <button
+                onClick={() => {
+                  setShowFillColorPicker(!showFillColorPicker);
+                  setShowStrokeColorPicker(false);
+                }}
+                className="w-full px-2 py-1.5 rounded border border-slate-800 text-slate-200 hover:bg-slate-900/40 relative flex items-center gap-2"
+                title="Fill Color"
+              >
+                <div
+                  className="w-5 h-5 rounded border border-slate-600"
+                  style={{ backgroundColor: fillColor }}
+                />
+                <span className="text-xs">Fill</span>
+              </button>
+
+              {showFillColorPicker && (
+                <div className="p-2 bg-slate-900/60 rounded border border-slate-800 space-y-2">
+                  <div className="text-xs font-semibold text-slate-300 flex items-center gap-1">
+                    <Droplet className="w-3 h-3" />
+                    Fill Color
+                  </div>
+                  <input
+                    type="color"
+                    value={fillColor}
+                    onChange={(e) => setFillColor(e.target.value)}
+                    className="w-full h-7 rounded border border-slate-700 bg-slate-950 cursor-pointer"
+                  />
+                  <div className="flex gap-1.5 flex-wrap">
+                    {quickColors.map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => setFillColor(c)}
+                        className={[
+                          "w-6 h-6 rounded border hover:scale-110 transition-transform",
+                          c === fillColor ? "border-slate-100 border-2" : "border-slate-700",
+                        ].join(" ")}
+                        style={{ backgroundColor: c }}
+                        title={c}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Stroke Width */}
+              <div className="space-y-1">
+                <label className="text-[10px] text-slate-400">Width: {strokeWidth}px</label>
+                <input
+                  type="range"
+                  min={1}
+                  max={24}
+                  value={strokeWidth}
+                  onChange={(e) => setStrokeWidth(Number(e.target.value))}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-1 pt-1 border-t border-slate-800">
+                <button
+                  onClick={undo}
+                  disabled={historyStep <= 0}
+                  className="w-full px-2 py-1 rounded border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed text-[10px]"
+                >
+                  <Undo2 className="w-3 h-3" />
+                  Undo
+                </button>
+
+                <button
+                  onClick={redo}
+                  disabled={historyStep >= history.length - 1}
+                  className="w-full px-2 py-1 rounded border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed text-[10px]"
+                >
+                  <Redo2 className="w-3 h-3" />
+                  Redo
+                </button>
+
+                <button
+                  onClick={clear}
+                  className="w-full px-2 py-1 rounded border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-1 text-[10px]"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  Clear
+                </button>
+
+                <button
+                  onClick={() => setShowLayersPanel(!showLayersPanel)}
+                  className={`w-full px-2 py-1 rounded border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-1 text-[10px] ${showLayersPanel ? 'bg-slate-800' : ''}`}
+                >
+                  <Layers className="w-3 h-3" />
+                  Layers
+                </button>
+
+                <button
+                  onClick={() => setSmoothStrokes(!smoothStrokes)}
+                  className={`w-full px-2 py-1 rounded border text-[10px] font-semibold transition-colors ${
+                    smoothStrokes
+                      ? 'bg-emerald-900/40 border-emerald-700 text-emerald-200'
+                      : 'bg-transparent border-slate-800 text-slate-400'
+                  }`}
+                >
+                  <Sparkles className="w-3 h-3 inline mr-1" />
+                  {smoothStrokes ? "Smooth" : "Direct"}
+                </button>
+
+                <button
+                  onClick={() => setShowTips(!showTips)}
+                  className={`w-full px-2 py-1 rounded border text-[10px] font-semibold transition-colors ${
+                    showTips
+                      ? 'bg-cyan-700 border-cyan-600 text-cyan-100'
+                      : 'bg-transparent border-slate-800 text-slate-400'
+                  }`}
+                >
+                  <Info className="w-3 h-3 inline mr-1" />
+                  Tips
+                </button>
+
+                <button
+                  onClick={exportToPNG}
+                  className="w-full px-2 py-1 rounded border border-slate-800 text-slate-200 hover:bg-slate-900/40 flex items-center gap-1 text-[10px]"
+                >
+                  <Download className="w-3 h-3" />
+                  Export
+                </button>
+
+                <button
+                  onClick={save}
+                  className="w-full px-2 py-1 rounded bg-slate-100 text-slate-950 font-semibold hover:bg-white flex items-center justify-center gap-1 text-[10px]"
+                >
+                  <Save className="w-3 h-3" />
+                  Save
+                </button>
+              </div>
+
+              {/* Tips */}
+              {showTips && (
+                <div className="p-1.5 bg-cyan-900/40 rounded border border-cyan-700 text-[9px] text-cyan-200 leading-snug">
+                  <strong>Ctrl+Scroll</strong> or <strong>Pinch</strong> to zoom<br/>
+                  <strong>Shift+Scroll</strong> or <strong>Hand</strong> to pan
+                </div>
+              )}
+
+              {/* Layers Panel */}
+              {showLayersPanel && (
+                <div className="p-1.5 bg-slate-900/80 rounded border border-slate-700 max-h-40 overflow-y-auto">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="text-slate-200 text-[10px] font-semibold">Layers</div>
+                    <div className="flex gap-0.5">
+                      <button
+                        onClick={addLayer}
+                        className="p-0.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-200"
+                        title="Add layer"
+                      >
+                        <Plus className="w-2.5 h-2.5" />
+                      </button>
+                      <button
+                        onClick={mergeLayers}
+                        disabled={layers.length <= 1}
+                        className="px-1 py-0.5 rounded text-[9px] bg-slate-700 hover:bg-slate-600 text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                        title="Merge all layers"
+                      >
+                        Merge
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-0.5">
+                    {[...layers].reverse().map((layer, idx) => (
+                      <div
+                        key={layer.id}
+                        className={`p-1 rounded border ${
+                          layer.id === activeLayerId
+                            ? "border-blue-500 bg-blue-900/20"
+                            : "border-slate-700 bg-slate-800/40"
+                        }`}
+                      >
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => toggleLayerVisibility(layer.id)}
+                            className="p-0.5 text-slate-400 hover:text-slate-200"
+                          >
+                            {layer.visible ? <Eye className="w-2.5 h-2.5" /> : <EyeOff className="w-2.5 h-2.5" />}
+                          </button>
+
+                          <div
+                            onClick={() => setActiveLayerId(layer.id)}
+                            className="flex-1 text-[9px] text-slate-200 cursor-pointer"
+                          >
+                            {layer.name}
+                          </div>
+
+                          <div className="flex gap-0.5">
+                            <button
+                              onClick={() => moveLayerUp(layer.id)}
+                              disabled={idx === 0}
+                              className="p-0.5 text-slate-400 hover:text-slate-200 disabled:opacity-40"
+                            >
+                              <ChevronUp className="w-2 h-2" />
+                            </button>
+                            <button
+                              onClick={() => moveLayerDown(layer.id)}
+                              disabled={idx === layers.length - 1}
+                              className="p-0.5 text-slate-400 hover:text-slate-200 disabled:opacity-40"
+                            >
+                              <ChevronDownIcon className="w-2 h-2" />
+                            </button>
+                            <button
+                              onClick={() => deleteLayer(layer.id)}
+                              disabled={layers.length <= 1}
+                              className="p-0.5 text-red-400 hover:text-red-300 disabled:opacity-40"
+                            >
+                              <Trash2 className="w-2 h-2" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="mt-0.5 flex items-center gap-1">
+                          <span className="text-[8px] text-slate-500">Opacity:</span>
+                          <input
+                            type="range"
+                            min={0}
+                            max={100}
+                            value={layer.opacity * 100}
+                            onChange={(e) => setLayerOpacity(layer.id, Number(e.target.value) / 100)}
+                            className="flex-1 h-1"
+                          />
+                          <span className="text-[8px] text-slate-400 w-6">
+                            {Math.round(layer.opacity * 100)}%
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Selection Toolbar */}
+              {selection && (
+                <div className="space-y-1 p-2 bg-blue-900/40 rounded border border-blue-700">
+                  <div className="text-blue-200 text-xs font-semibold mb-1">Selection:</div>
+
+                  <button
+                    onClick={copySelection}
+                    className="w-full px-2 py-1 rounded border border-blue-700 text-blue-200 hover:bg-blue-800/40 flex items-center gap-1.5 text-xs"
+                  >
+                    <Copy className="w-3 h-3" />
+                    Copy
+                  </button>
+
+                  <button
+                    onClick={cutSelection}
+                    className="w-full px-2 py-1 rounded border border-blue-700 text-blue-200 hover:bg-blue-800/40 flex items-center gap-1.5 text-xs"
+                  >
+                    <Scissors className="w-3 h-3" />
+                    Cut
+                  </button>
+
+                  <button
+                    onClick={deleteSelection}
+                    className="w-full px-2 py-1 rounded border border-red-700 text-red-200 hover:bg-red-800/40 flex items-center gap-1.5 text-xs"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    Delete
+                  </button>
+
+                  <div className="border-t border-blue-700 my-1"></div>
+
+                  <button
+                    onClick={flipSelectionHorizontal}
+                    className="w-full px-2 py-1 rounded border border-blue-700 text-blue-200 hover:bg-blue-800/40 flex items-center gap-1.5 text-xs"
+                  >
+                    <FlipHorizontal className="w-3 h-3" />
+                    Flip H
+                  </button>
+
+                  <button
+                    onClick={flipSelectionVertical}
+                    className="w-full px-2 py-1 rounded border border-blue-700 text-blue-200 hover:bg-blue-800/40 flex items-center gap-1.5 text-xs"
+                  >
+                    <FlipVertical className="w-3 h-3" />
+                    Flip V
+                  </button>
+                </div>
+              )}
+
+              {/* Text Input */}
+              {showTextInput && (
+                <div className="p-2 bg-slate-900/60 rounded border border-slate-800">
+                  <div className="text-slate-300 text-xs mb-1">Enter text:</div>
+                  <input
+                    type="text"
+                    value={textValue}
+                    onChange={(e) => setTextValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") addText();
+                      if (e.key === "Escape") {
+                        setShowTextInput(false);
+                        setTextValue("");
+                        setTextInputPos(null);
+                      }
+                    }}
+                    className="w-full px-2 py-1.5 bg-slate-950 border border-slate-700 rounded text-slate-100 text-xs focus:outline-none focus:border-slate-500"
+                    placeholder="Type your text..."
+                    autoFocus
+                  />
+                  <div className="flex gap-1.5 mt-1.5">
+                    <button
+                      onClick={addText}
+                      className="flex-1 px-2 py-1 bg-slate-100 text-slate-950 rounded text-xs font-semibold hover:bg-white"
+                    >
+                      Add
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowTextInput(false);
+                        setTextValue("");
+                        setTextInputPos(null);
+                      }}
+                      className="flex-1 px-2 py-1 border border-slate-700 text-slate-300 rounded text-xs hover:bg-slate-900/40"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

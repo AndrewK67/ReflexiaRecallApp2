@@ -109,7 +109,7 @@ export default function Library() {
 
     return (
       <div
-        className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/15 p-5 hover:bg-white/15 transition-all"
+        className="bg-white/10 backdrop-blur-xl rounded-xl border border-white/10 p-5 hover:bg-white/15 transition-all"
       >
         {/* Header */}
         <div className="flex items-start justify-between mb-3">

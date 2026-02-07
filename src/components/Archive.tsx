@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Search,
   Filter,
@@ -13,6 +13,9 @@ import {
   ChevronRight,
   Download,
   SlidersHorizontal,
+  Play,
+  Pause,
+  Volume2,
 } from 'lucide-react';
 import type { Entry, ReflectionModelId } from '../types';
 import {
@@ -26,6 +29,126 @@ import {
 import { isEntryLocked } from '../services/privacyService';
 import { storageService } from '../services/storageService';
 import { MODEL_CONFIG } from '../constants';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+
+// Helper function to open Documents folder
+async function openDocumentsFolder() {
+  try {
+    if (Capacitor.getPlatform() === 'android') {
+      // Try multiple methods to open file manager
+      
+      // Method 1: Try to open Samsung My Files app specifically
+      try {
+        window.location.href = 'content://com.android.externalstorage.documents/document/primary%3ADocuments';
+      } catch (e) {
+        // silently ignore - fallback methods below
+      }
+      
+      // Method 2: Generic file manager with GET_CONTENT action
+      setTimeout(() => {
+        try {
+          const intent = 'intent:#Intent;' +
+            'action=android.intent.action.GET_CONTENT;' +
+            'type=*/*;' +
+            'end';
+          window.open(intent, '_system');
+        } catch (e) {
+          // silently ignore - fallback methods below
+        }
+      }, 500);
+      
+      // Method 3: Try to open file manager app
+      setTimeout(() => {
+        try {
+          window.location.href = 'intent:#Intent;action=android.intent.action.VIEW;end';
+        } catch (e) {
+          alert('Could not open file manager. Please open My Files app and go to Documents folder manually.');
+        }
+      }, 1000);
+    } else {
+      alert('Please open your Files app and navigate to the Documents folder.');
+    }
+  } catch (error) {
+    console.error('Error opening folder:', error);
+    alert('Please open your Files/My Files app manually and go to Documents folder.');
+  }
+}
+
+// Helper function to save audio to Downloads folder
+async function saveAudioToDownloads(audioUrl: string) {
+  try {
+    if (audioUrl.startsWith('file://')) {
+      if (Capacitor.getPlatform() === 'android') {
+        try {
+          // Read the file from app's data directory
+          // Don't remove the leading slash - Capacitor needs the full path
+          const originalPath = audioUrl.replace('file://', '');
+
+          const fileData = await Filesystem.readFile({
+            path: originalPath,
+          });
+          
+          const dataSize = typeof fileData.data === 'string' ? fileData.data.length : fileData.data.size;
+
+          if (!fileData.data || dataSize === 0) {
+            alert('Error: Audio file is empty or could not be read.');
+            return;
+          }
+          
+          // Create a timestamp-based filename
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+          const publicFileName = `Reflexia_Audio_${timestamp}.webm`;
+          
+          // Write to Documents directory (Downloads not always accessible)
+          await Filesystem.writeFile({
+            path: publicFileName,
+            data: fileData.data,
+            directory: Directory.Documents,
+          });
+
+          // Verify the file was written by reading it back
+          const verification = await Filesystem.readFile({
+            path: publicFileName,
+            directory: Directory.Documents,
+          });
+          const verifySize = typeof verification.data === 'string' ? verification.data.length : verification.data.size;
+
+          // Show detailed success message with clear instructions
+          alert(
+            `✅ Audio saved successfully!\n\n` +
+            `📂 Location: Documents folder\n` +
+            `📄 File: ${publicFileName}\n` +
+            `File size: ${Math.round(verifySize / 1024)}KB\n\n` +
+            `🎵 How to play:\n` +
+            `1. Open "My Files" or "Files" app on your phone\n` +
+            `2. Tap "Documents" folder\n` +
+            `3. Look for file: ${publicFileName}\n` +
+            `4. Tap the file to play\n\n` +
+            `📱 Recommended players:\n` +
+            `• VLC for Android (free from Play Store)\n` +
+            `• Chrome browser\n` +
+            `• MX Player\n\n` +
+            `💡 Tip: All Reflexia audio files start with "Reflexia_Audio_"`
+          );
+          
+        } catch (err) {
+          console.error('Error saving file:', err);
+          alert(`Error saving audio: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        }
+      } else {
+        window.open(audioUrl, '_system');
+      }
+    } else if (audioUrl.startsWith('blob:')) {
+      alert('This audio is not yet saved. Please use the "Save to Device" button in the capture screen first.');
+    } else {
+      window.open(audioUrl, '_system');
+    }
+  } catch (error) {
+    console.error('Error saving audio file:', error);
+    alert('Could not save audio file. Please try again.');
+  }
+}
 
 interface ArchiveProps {
   entries: Entry[];
@@ -42,12 +165,64 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
 
+  // Audio playback state
+  const [playingAudioUrl, setPlayingAudioUrl] = useState<string | null>(null);
+  const [audioProgress, setAudioProgress] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
   // Load user profile for blur setting
   const [blurEnabled, setBlurEnabled] = useState(false);
 
   useEffect(() => {
     const profile = storageService.loadProfile();
     setBlurEnabled(profile.blurHistory ?? false);
+  }, []);
+
+  // Audio playback handlers
+  const toggleAudioPlayback = (audioUrl: string) => {
+    if (playingAudioUrl === audioUrl) {
+      // Pause if already playing this audio
+      audioRef.current?.pause();
+      setPlayingAudioUrl(null);
+    } else {
+      // Play new audio
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      audioRef.current = new Audio(audioUrl);
+      audioRef.current.play().catch(err => console.error('Audio playback error:', err));
+      setPlayingAudioUrl(audioUrl);
+
+      audioRef.current.ontimeupdate = () => {
+        if (audioRef.current) {
+          setAudioProgress(audioRef.current.currentTime);
+          setAudioDuration(audioRef.current.duration);
+        }
+      };
+
+      audioRef.current.onended = () => {
+        setPlayingAudioUrl(null);
+        setAudioProgress(0);
+      };
+    }
+  };
+
+  const seekAudio = (time: number) => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = time;
+      setAudioProgress(time);
+    }
+  };
+
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
   }, []);
 
   // Get unique tags from all entries
@@ -378,9 +553,78 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
                               </div>
                             )}
                             {hasAudio && (
-                              <div className="px-2 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 flex items-center gap-1">
-                                <span className="text-[10px]">🎵</span>
-                                <span className="text-[10px] font-bold">{media.filter((m: any) => m.type === 'AUDIO').length}</span>
+                              <div className="flex flex-col gap-1">
+                                {media.filter((m: any) => m.type === 'AUDIO').map((audioFile: any, idx: number) => {
+                                  const audioUrl = audioFile.url;
+                                  const isPlaying = playingAudioUrl === audioUrl;
+                                  
+                                  return (
+                                    <div 
+                                      key={idx}
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="px-2 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 flex items-center gap-2 min-w-[200px]"
+                                    >
+                                      {/* Play/Pause Button */}
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          toggleAudioPlayback(audioUrl);
+                                        }}
+                                        className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-500/40 hover:bg-emerald-500/60 flex items-center justify-center transition"
+                                        title={isPlaying ? "Pause" : "Play"}
+                                      >
+                                        {isPlaying ? (
+                                          <Pause size={12} fill="currentColor" />
+                                        ) : (
+                                          <Play size={12} fill="currentColor" />
+                                        )}
+                                      </button>
+
+                                      {/* Progress Bar */}
+                                      {isPlaying && (
+                                        <div className="flex-1 flex items-center gap-1.5">
+                                          <input
+                                            type="range"
+                                            min="0"
+                                            max={audioDuration || 100}
+                                            value={audioProgress}
+                                            onChange={(e) => {
+                                              e.stopPropagation();
+                                              seekAudio(Number(e.target.value));
+                                            }}
+                                            className="flex-1 h-1 bg-emerald-500/30 rounded-full appearance-none cursor-pointer"
+                                            style={{
+                                              background: `linear-gradient(to right, rgb(52 211 153) 0%, rgb(52 211 153) ${(audioProgress / audioDuration) * 100}%, rgb(52 211 153 / 0.3) ${(audioProgress / audioDuration) * 100}%, rgb(52 211 153 / 0.3) 100%)`
+                                            }}
+                                          />
+                                          <span className="text-[9px] font-mono">
+                                            {Math.floor(audioProgress)}s / {Math.floor(audioDuration)}s
+                                          </span>
+                                        </div>
+                                      )}
+
+                                      {/* Static indicator when not playing */}
+                                      {!isPlaying && (
+                                        <div className="flex items-center gap-1">
+                                          <Volume2 size={10} />
+                                          <span className="text-[10px]">Audio</span>
+                                        </div>
+                                      )}
+
+                                      {/* Download Button */}
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          saveAudioToDownloads(audioUrl);
+                                        }}
+                                        className="flex-shrink-0 p-1 rounded hover:bg-emerald-500/40 transition"
+                                        title="Save to Downloads"
+                                      >
+                                        <Download size={10} />
+                                      </button>
+                                    </div>
+                                  );
+                                })}
                               </div>
                             )}
                           </div>

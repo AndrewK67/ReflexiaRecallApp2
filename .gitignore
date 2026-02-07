@@ -34,3 +34,25 @@ dist-ssr
 
 # Local Netlify folder
 .netlify
+
+# Capacitor native builds
+android/
+ios/
+
+# Screenshots and images
+Screenshots/
+*.jpg
+*.png
+!src/**/*.png
+
+# Debug scripts and logs
+scripts/
+
+# Planning/setup docs (not part of the app)
+ADSENSE_SETUP.md
+CAPACITOR_SETUP_COMPLETE.md
+COMPLETION_SUMMARY.md
+URGENT_FIXES_NEEDED.md
+
+# Draft files
+ReflectionFlow_IMPROVED.tsx

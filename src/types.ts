@@ -210,6 +210,9 @@ export interface ReflectionEntry extends BaseEntry {
   mood?: number; // 1-5
   actionSteps?: string[];
   cpd?: CPDLog;
+
+  // NMC Code themes linked to this reflection (for revalidation export)
+  nmcCodeThemes?: string[];
 }
 
 export type IncidentCategory =
@@ -334,6 +337,10 @@ export interface UserProfile {
 
   // storageService default expects this
   guidePersonality?: "ZEN" | "PRO" | "PLAYFUL" | "DIRECT" | string;
+
+  // UI preferences
+  showDisclaimers?: boolean;
+  autoOpenKeyboard?: boolean;
 }
 
 // ---------- Gamification ----------

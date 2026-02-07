@@ -1,6 +1,5 @@
 import React from 'react';
 import { X, Save, AlertTriangle } from 'lucide-react';
-import Guide from '../Guide';
 
 interface HolodeckSpaceProps {
   title: string;
@@ -42,7 +41,7 @@ export default function HolodeckSpace({
   nextLabel = 'Next',
 }: HolodeckSpaceProps) {
   return (
-    <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col overflow-y-auto custom-scrollbar">
+    <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col overflow-y-auto custom-scrollbar nav-safe">
       {/* Header */}
       <div className="flex-shrink-0 p-6 border-b border-white/10">
         <div className="flex items-start justify-between mb-3">
@@ -83,13 +82,6 @@ export default function HolodeckSpace({
 
       {/* Content area */}
       <div className="flex-1 overflow-y-auto p-6 pb-32 custom-scrollbar">
-        {/* Guide */}
-        <div className="flex justify-center mb-6">
-          <div className="scale-125">
-            <Guide stageId={null} state={guideState} customColor={color} />
-          </div>
-        </div>
-
         {/* Current prompt */}
         <div className="mb-6">
           <div

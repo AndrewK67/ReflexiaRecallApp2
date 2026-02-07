@@ -1,10 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Mic, StopCircle, X, Volume2, VolumeX, Play, RotateCcw } from "lucide-react";
+import { Mic, StopCircle, X, Volume2, VolumeX, Play, RotateCcw, AlertTriangle } from "lucide-react";
 import type { IncidentEntry, MediaItem } from "../types";
-import Guide from "./Guide";
 
 /**
- * DriveMode
+ * Voice Notes (formerly DriveMode)
  * - High-contrast, hands-free capture loop.
  * - Speaks prompt -> listens -> saves answer -> speaks next prompt.
  * - Voice commands: "stop", "exit", "close" end the session.
@@ -43,9 +42,9 @@ function looksLikeStopCommand(text: string) {
     t === "stop" ||
     t === "exit" ||
     t === "close" ||
-    t.includes("stop drive") ||
-    t.includes("exit drive") ||
-    t.includes("close drive")
+    t.includes("stop voice") ||
+    t.includes("exit voice") ||
+    t.includes("close voice")
   );
 }
 
@@ -227,9 +226,9 @@ const DriveMode: React.FC<DriveModeProps> = ({ onComplete, onClose }) => {
       id: Date.now().toString(),
       date: new Date().toISOString(),
       type: "INCIDENT",
-      notes: notes || "Drive Mode capture.",
+      notes: notes || "Voice Notes capture.",
       media: [] as MediaItem[],
-      keywords: ["drive-mode"],
+      keywords: ["voice-notes"],
       location: undefined,
     };
 
@@ -240,13 +239,25 @@ const DriveMode: React.FC<DriveModeProps> = ({ onComplete, onClose }) => {
   const tint = pickHighContrastColor(step);
 
   return (
-    <div className="h-full bg-black text-white flex flex-col relative overflow-y-auto custom-scrollbar">
+    <div className="h-full bg-black text-white flex flex-col relative overflow-y-auto custom-scrollbar nav-safe">
       <div
         className="absolute inset-0 opacity-25 pointer-events-none overflow-hidden"
         style={{ background: `radial-gradient(circle at 30% 20%, ${tint}55, transparent 55%)` }}
       />
 
-      <div className="flex items-center justify-between px-5 pt-6 pb-4 z-10">
+      {/* Safety Warning Banner */}
+      <div className="px-5 pt-6 pb-3 z-10">
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 mb-3">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="text-red-400 flex-shrink-0 mt-0.5" size={16} />
+            <div className="text-xs text-red-200">
+              <strong className="font-bold">SAFETY WARNING:</strong> Never use this feature while driving, operating machinery, or in any situation requiring your full attention.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between px-5 pb-4 z-10">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full flex items-center justify-center border border-white/10 bg-white/5">
             <span className="text-[10px] font-mono opacity-70">
@@ -254,8 +265,8 @@ const DriveMode: React.FC<DriveModeProps> = ({ onComplete, onClose }) => {
             </span>
           </div>
           <div>
-            <div className="text-sm font-bold">Drive Mode</div>
-            <div className="text-[11px] text-white/60">hands-free capture</div>
+            <div className="text-sm font-bold">Quick Voice Capture</div>
+            <div className="text-[11px] text-white/60">hands-free recording</div>
           </div>
         </div>
 
@@ -279,19 +290,16 @@ const DriveMode: React.FC<DriveModeProps> = ({ onComplete, onClose }) => {
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center px-6 z-10">
-        <div className="mb-8 scale-150">
-          <Guide
-            stageId={null}
-            customColor={tint}
-            state={
-              engine === "listening"
-                ? "listening"
-                : engine === "speaking"
-                ? "speaking"
-                : engine === "processing"
-                ? "thinking"
-                : "idle"
-            }
+        {/* Status indicator */}
+        <div className="mb-8">
+          <div
+            className="w-24 h-24 rounded-full transition-all duration-500"
+            style={{
+              backgroundColor: tint,
+              boxShadow: `0 0 40px ${tint}, 0 0 80px ${tint}40`,
+              opacity: engine === "listening" || engine === "speaking" ? 1 : 0.4,
+              transform: engine === "listening" ? 'scale(1.2)' : 'scale(1)',
+            }}
           />
         </div>
 

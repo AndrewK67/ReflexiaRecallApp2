@@ -11,9 +11,7 @@ export default function UpdateNotification() {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW({
-    onRegistered(r) {
-      console.log('[UpdateNotification] SW Registered:', r);
-    },
+    onRegistered() {},
     onRegisterError(error) {
       console.error('[UpdateNotification] SW registration error:', error);
     },

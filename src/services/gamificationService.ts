@@ -7,6 +7,7 @@ import type { Entry } from '../types';
 
 const GAMIFICATION_DATA_KEY = 'reflexia_gamification';
 const UNLOCKED_ACHIEVEMENTS_KEY = 'reflexia_unlocked_achievements';
+const BONUS_XP_KEY = 'reflexia_bonus_xp';
 
 export type AchievementCategory =
   | 'reflection'
@@ -543,6 +544,36 @@ export function getNewAchievements(): Achievement[] {
 }
 
 /**
+ * Get count of completed holodeck sessions from localStorage
+ */
+export function getHolodeckSessionCount(): number {
+  const stored = localStorage.getItem('holodeckEntries');
+  if (!stored) return 0;
+  try {
+    const entries = JSON.parse(stored) as Array<{ completed?: boolean }>;
+    return entries.filter((e) => e.completed).length;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Get bonus XP (e.g. from tutorial rewards) stored in localStorage
+ */
+export function getBonusXP(): number {
+  const stored = localStorage.getItem(BONUS_XP_KEY);
+  return stored ? parseInt(stored, 10) || 0 : 0;
+}
+
+/**
+ * Award bonus XP (e.g. from tutorial completion) and persist it
+ */
+export function awardBonusXP(amount: number): void {
+  const current = getBonusXP();
+  localStorage.setItem(BONUS_XP_KEY, String(current + amount));
+}
+
+/**
  * Build gamification data from entries and other sources
  */
 export function buildGamificationData(
@@ -565,12 +596,13 @@ export function buildGamificationData(
   // Calculate streak
   const { currentStreak, longestStreak, totalDays } = calculateStreakFromEntries(entries);
 
-  // Calculate total points from unlocked achievements
+  // Calculate total points from unlocked achievements + bonus XP
   const unlocked = getUnlockedAchievements();
-  const totalPoints = unlocked.reduce((sum, u) => {
+  const achievementPoints = unlocked.reduce((sum, u) => {
     const achievement = ACHIEVEMENTS[u.achievementId];
     return sum + (achievement?.points || 0);
   }, 0);
+  const totalPoints = achievementPoints + getBonusXP();
 
   const level = calculateLevel(totalPoints).level;
 

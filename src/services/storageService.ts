@@ -18,6 +18,10 @@ const DEFAULT_PROFILE: UserProfile = {
   isOnboarded: false,
   privacyLockEnabled: false,
   blurHistory: false,
+  // Show inline disclaimers by default; user can toggle this to reduce onscreen clutter
+  showDisclaimers: true,
+  // Whether the text input should auto-focus (and trigger keyboard) when opening reflection flows
+  autoOpenKeyboard: false,
 };
 
 const DEFAULT_STATS: UserStats = {
@@ -53,6 +57,16 @@ function downloadTextFile(filename: string, text: string) {
   setTimeout(() => URL.revokeObjectURL(url), 500);
 }
 
+function safeSetItem(key: string, value: string): boolean {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch (e) {
+    console.error(`[storageService] Failed to save ${key}:`, e);
+    return false;
+  }
+}
+
 export const storageService = {
   // ---- Entries ----
   loadEntries(): Entry[] {
@@ -60,7 +74,7 @@ export const storageService = {
   },
 
   saveEntries(entries: Entry[]) {
-    localStorage.setItem(KEYS.entries, JSON.stringify(entries));
+    safeSetItem(KEYS.entries, JSON.stringify(entries));
   },
 
   saveEntry(entry: Entry) {
@@ -89,8 +103,10 @@ export const storageService = {
     if (merged.isOnboarded === undefined) merged.isOnboarded = false;
     if (merged.privacyLockEnabled === undefined) merged.privacyLockEnabled = false;
     if (merged.blurHistory === undefined) merged.blurHistory = false;
+    if (merged.showDisclaimers === undefined) merged.showDisclaimers = true;
+    if (merged.autoOpenKeyboard === undefined) merged.autoOpenKeyboard = false;
 
-    localStorage.setItem(KEYS.profile, JSON.stringify(merged));
+    safeSetItem(KEYS.profile, JSON.stringify(merged));
     return merged;
   },
 
@@ -147,7 +163,7 @@ export const storageService = {
   },
 
   saveStats(stats: UserStats) {
-    localStorage.setItem(KEYS.stats, JSON.stringify(stats));
+    safeSetItem(KEYS.stats, JSON.stringify(stats));
   },
 
   /**
@@ -206,6 +222,6 @@ export const storageService = {
     if (!n) return;
     const existing = storageService.getRecentNames().filter((x) => x !== n);
     const next = [n, ...existing].slice(0, 10);
-    localStorage.setItem(KEYS.recentNames, JSON.stringify(next));
+    safeSetItem(KEYS.recentNames, JSON.stringify(next));
   },
 };

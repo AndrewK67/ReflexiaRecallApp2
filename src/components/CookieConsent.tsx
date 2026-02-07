@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Cookie, X, Settings } from 'lucide-react';
+import { downloadPrivacy } from '../utils/legalDownloads';
 
 export function CookieConsent() {
   const [showBanner, setShowBanner] = useState(false);
@@ -112,7 +113,7 @@ export function CookieConsent() {
                   <p className="font-semibold mb-1">We use cookies</p>
                   <p className="text-white/60">
                     We use cookies for analytics and advertising.
-                    <a href="/privacy-policy" className="underline ml-1 hover:text-cyan-400">Learn more</a>
+                    <button onClick={downloadPrivacy} className="underline ml-1 hover:text-cyan-400">Learn more</button>
                   </p>
                 </div>
               </div>

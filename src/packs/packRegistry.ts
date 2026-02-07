@@ -82,15 +82,16 @@ export const PACK_REGISTRY: Record<PackId, PackDefinition> = {
   professional: {
     id: 'professional',
     name: 'Professional Development',
-    description: 'CPD tracking, revalidation support, and professional documentation',
+    description: 'CPD tracking and professional documentation. ⚠️ Not an official regulatory resource - verify requirements with your regulatory body.',
     icon: '📋',
     category: 'professional',
     isCore: false,
     features: [
       'CPD time tracking',
       'Professional document export',
-      'Revalidation portfolio',
-      'Standards mapping'
+      'Revalidation portfolio support',
+      'Standards mapping reference',
+      '⚠️ Disclaimer: This assists with CPD tracking but does not replace official regulatory requirements. Always verify with NMC, HCPC, GPhC, or your regulatory body.'
     ]
   },
 
@@ -126,16 +127,18 @@ export const PACK_REGISTRY: Record<PackId, PackDefinition> = {
 
   driveVoiceNotes: {
     id: 'driveVoiceNotes',
-    name: 'Voice Notes (Parked/Passenger)',
-    description: 'Hands-free voice recording - ONLY when parked or as passenger',
+    name: 'Quick Voice Capture',
+    description: '⚠️ SAFETY WARNING: Never use while driving or operating machinery',
     icon: '🎙️',
     category: 'advanced',
     isCore: false,
     features: [
       'Voice-first interface',
-      'Large touch targets',
+      'Large touch targets for easy access',
       'Auto-save functionality',
-      '⚠️ SAFETY: Only use when parked or as passenger'
+      '⚠️ Do NOT use while driving',
+      '⚠️ Do NOT use while operating equipment',
+      'Safe for use when stationary only'
     ]
   }
 };

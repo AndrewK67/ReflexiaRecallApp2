@@ -20,10 +20,13 @@ import { MODEL_CONFIG, PROFESSION_CONFIG } from "../constants";
 import { StageId } from "../types";
 import type { MediaItem, ProfessionType, ReflectionEntry, ReflectionModel } from "../types";
 
-import Guide from "./Guide";
+// Guide character removed for cleaner UX
 import CanvasBoard from "./CanvasBoard";
+import { storageService } from "../services/storageService";
 
 import { analyzeReflection, getStageCoaching } from "../services/aiService";
+import { migrateBase64ToFile } from "../services/fileStorageService";
+import { startAudioRecording, stopAudioRecording, saveAudioToFile } from "../services/mediaService";
 import { getOfflineStagePrompt } from "../data/offlinePrompts";
 
 interface ReflectionFlowProps {
@@ -121,6 +124,16 @@ const SIMPLE_MODE_STAGES = [
   },
 ];
 
+const NMC_CODE_THEMES = [
+  { id: 'prioritise-people', label: 'Prioritise people' },
+  { id: 'practise-effectively', label: 'Practise effectively' },
+  { id: 'preserve-safety', label: 'Preserve safety' },
+  { id: 'promote-professionalism', label: 'Promote professionalism and trust' },
+] as const;
+
+// Professions regulated by the NMC (Nursing and Midwifery Council)
+const NMC_PROFESSIONS = new Set(['NURSING', 'MENTAL_HEALTH']);
+
 export default function ReflectionFlow({ onComplete, onCancel, profession, aiEnabled }: ReflectionFlowProps) {
   const [useSimpleMode, setUseSimpleMode] = useState(true);
   const [selectedModel, setSelectedModel] = useState<ReflectionModel | null>(null);
@@ -133,12 +146,12 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
   const [isSaving, setIsSaving] = useState(false);
 
   const [isRecording, setIsRecording] = useState(false);
-  const [guideState, setGuideState] = useState<"idle" | "listening" | "thinking" | "speaking">("idle");
   const [coachTip, setCoachTip] = useState<string | null>(null);
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
   const [showInsight, setShowInsight] = useState(false);
 
   const [showCanvas, setShowCanvas] = useState(false);
+  const [nmcCodeThemes, setNmcCodeThemes] = useState<string[]>([]);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -194,7 +207,6 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
       setCoachTip(null);
     } else {
       setIsFinished(true);
-      setGuideState("idle");
     }
   };
 
@@ -213,49 +225,46 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
     }
 
     try {
-      setGuideState("listening");
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mr = new MediaRecorder(stream);
-      mediaRecorderRef.current = mr;
-      audioChunksRef.current = [];
+      const recorder = await startAudioRecording();
+      mediaRecorderRef.current = recorder;
 
-      mr.ondataavailable = (e) => {
-        if (e.data.size > 0) audioChunksRef.current.push(e.data);
-      };
-
-      mr.onstop = async () => {
-        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        stream.getTracks().forEach((t) => t.stop());
-
-        const url = URL.createObjectURL(blob);
-        const media: MediaItem = {
-          id: `audio_${Date.now()}`,
-          type: "AUDIO",
-          url,
-          createdAt: Date.now(),
-          name: `Voice ${new Date().toLocaleTimeString()}`,
-        };
-        setAttachments((prev) => [...prev, media]);
-
-        setGuideState("idle");
-        setIsRecording(false);
-      };
-
-      mr.start();
+      recorder.start();
       setIsRecording(true);
     } catch (err) {
       console.error("Voice error:", err);
-      setGuideState("idle");
       alert("Could not access microphone.");
     }
   };
 
   const handleVoiceStop = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stop();
+      const mr = mediaRecorderRef.current;
+      // Use mediaService helper to stop and get blob
+      stopAudioRecording(mr)
+        .then(async (blob) => {
+          try {
+            const filePath = await saveAudioToFile(blob);
+            const media: MediaItem = {
+              id: `audio_${Date.now()}`,
+              type: 'AUDIO',
+              url: filePath,
+              createdAt: Date.now(),
+              name: `Voice ${new Date().toLocaleTimeString()}`,
+            };
+            setAttachments((prev) => [...prev, media]);
+          } catch (e) {
+            console.error('Failed to save audio file', e);
+          }
+        })
+        .catch((err) => {
+          console.error('Stop audio error', err);
+        })
+        .finally(() => {
+          setIsRecording(false);
+          mediaRecorderRef.current = null;
+        });
     } else {
       setIsRecording(false);
-      setGuideState("idle");
     }
   };
 
@@ -263,32 +272,44 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
     if (!stageData) return;
 
     setCoachTip(null);
-    setGuideState("thinking");
+    
 
     const prompt = AI_ON
       ? await getStageCoaching(stageData.id, currentAnswer, profession)
       : getOfflineStagePrompt(selectedModel!, stageData.id, profession).prompt;
 
     setCoachTip(prompt);
-    setGuideState("speaking");
+    
 
     setTimeout(() => {
-      setGuideState("idle");
+      
     }, 2000);
   };
 
   const handleDrawingSave = (dataUrl: string) => {
-    setAttachments((prev) => [
-      ...prev,
-      { id: Date.now().toString(), type: "SKETCH", url: dataUrl, timestamp: new Date().toISOString(), createdAt: Date.now(), name: "Sketch" },
-    ]);
-    setShowCanvas(false);
+    (async () => {
+      try {
+        const filePath = await migrateBase64ToFile(dataUrl, 'drawing');
+        setAttachments((prev) => [
+          ...prev,
+          { id: Date.now().toString(), type: 'SKETCH', url: filePath, timestamp: new Date().toISOString(), createdAt: Date.now(), name: 'Sketch' },
+        ]);
+      } catch (e) {
+        // Fallback to inline dataUrl if save fails
+        setAttachments((prev) => [
+          ...prev,
+          { id: Date.now().toString(), type: 'SKETCH', url: dataUrl, timestamp: new Date().toISOString(), createdAt: Date.now(), name: 'Sketch' },
+        ]);
+      } finally {
+        setShowCanvas(false);
+      }
+    })();
   };
 
   const handleUnlockInsight = async () => {
     if (showInsight || !selectedModel) return;
 
-    setGuideState("thinking");
+    
     setShowInsight(true);
 
     try {
@@ -298,7 +319,7 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
       setAnalysisResult("Reflection saved. Insights can appear here when AI is enabled.");
     }
 
-    setGuideState("idle");
+    
   };
 
   const handleSave = async () => {
@@ -318,6 +339,7 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
       mood,
       attachments,
       aiInsight: analysisResult ?? undefined,
+      nmcCodeThemes: nmcCodeThemes.length > 0 ? nmcCodeThemes : undefined,
       createdAt: Date.now(),
     };
 
@@ -326,7 +348,8 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
   };
 
   useEffect(() => {
-    if (stageData?.id && textareaRef.current) {
+    const profile = storageService.loadProfile();
+    if (stageData?.id && textareaRef.current && profile.autoOpenKeyboard) {
       textareaRef.current.focus();
     }
   }, [currentStageIndex, stageData]);
@@ -447,14 +470,13 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
           <div className="grain" />
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center justify-center custom-scrollbar pb-28 relative z-10">
-          <div className="mb-8 scale-110">
-            <Guide stageId={null} state={guideState} />
+        <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center custom-scrollbar pb-24 relative z-10">
+          <div className="mb-4 scale-75">
           </div>
 
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-light text-white mb-2">Complete</h2>
-            <p className="text-white/60 text-lg">Your reflection is ready to save.</p>
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-light text-white mb-1">Complete</h2>
+            <p className="text-white/60 text-sm">Your reflection is ready to save.</p>
           </div>
 
           <div className="w-full max-w-md space-y-4">
@@ -473,7 +495,7 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
                     <Sparkles className="w-5 h-5 text-indigo-400" /> Insight
                   </h3>
 
-                  {guideState === "thinking" && (
+                  {!analysisResult && (
                     <Loader2 className="w-5 h-5 text-indigo-400 animate-spin" />
                   )}
                 </div>
@@ -504,6 +526,40 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
               </div>
             </div>
 
+            {/* NMC Code Themes - only for NMC-regulated professions */}
+            {NMC_PROFESSIONS.has(profession) && (
+              <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-5 border border-white/10">
+                <div className="text-xs font-bold text-white mb-1">NMC Code Themes</div>
+                <p className="text-[10px] text-white/50 mb-3">Which themes does this reflection relate to? (Optional)</p>
+                <div className="space-y-2">
+                  {NMC_CODE_THEMES.map((theme) => (
+                    <label
+                      key={theme.id}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border cursor-pointer transition ${
+                        nmcCodeThemes.includes(theme.id)
+                          ? "border-indigo-500/50 bg-indigo-500/10"
+                          : "border-white/10 bg-white/5 hover:border-white/20"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={nmcCodeThemes.includes(theme.id)}
+                        onChange={() =>
+                          setNmcCodeThemes((prev) =>
+                            prev.includes(theme.id)
+                              ? prev.filter((t) => t !== theme.id)
+                              : [...prev, theme.id]
+                          )
+                        }
+                        className="w-4 h-4 rounded border-white/20 bg-white/10 text-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                      />
+                      <span className="text-sm text-white/90">{theme.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <button
               onClick={handleSave}
               disabled={isSaving}
@@ -526,6 +582,7 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
       <CanvasBoard
         onSave={handleDrawingSave}
         onCancel={() => setShowCanvas(false)}
+        showSizeSelector={true}
       />
     );
   }
@@ -581,16 +638,15 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
           </div>
         )}
 
-        <div className="mt-3 text-center">
-          <Guide stageId={stageData?.id} state={guideState} />
+        <div className="mt-2 text-center scale-75">
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-5 pb-40 custom-scrollbar relative z-10">
-        <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-5 mb-4">
-          <div className="text-xs font-bold text-indigo-400 mb-2">Prompt</div>
+      <div className="flex-1 overflow-y-auto p-4 pb-40 custom-scrollbar relative z-10">
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-4 mb-3">
+          <div className="text-xs font-bold text-indigo-400 mb-2">Reflection Prompt</div>
           <div className="text-sm text-white/90 leading-relaxed">
-            {profPromptPrefix} {stageData?.prompt}
+            {stageData?.prompt}
           </div>
         </div>
 
@@ -614,7 +670,7 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
         <div className="mt-4 flex flex-wrap gap-2">
           <button
             onClick={handleCoaching}
-            disabled={guideState !== "idle"}
+            disabled={isRecording}
             className="px-4 py-2 bg-white/10 border border-white/10 text-white rounded-xl text-sm font-semibold hover:bg-white/15 disabled:opacity-50 flex items-center gap-2"
           >
             <Sparkles size={16} />
@@ -632,8 +688,7 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
           {!isRecording ? (
             <button
               onClick={handleVoiceStart}
-              disabled={guideState !== "idle"}
-              className="px-4 py-2 bg-white/10 border border-white/10 text-white rounded-xl text-sm font-semibold hover:bg-white/15 disabled:opacity-50 flex items-center gap-2"
+              className="px-4 py-2 bg-white/10 border border-white/10 text-white rounded-xl text-sm font-semibold hover:bg-white/15 flex items-center gap-2"
             >
               <Mic size={16} />
               Voice
@@ -669,9 +724,9 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
         <div className="max-w-md mx-auto pointer-events-auto">
           <button
             onClick={handleStageNext}
-            disabled={!currentAnswer.trim()}
+            disabled={isSaving}
             className={`w-full py-3 rounded-2xl font-bold text-sm shadow-xl transition-all flex items-center justify-center gap-2 ${
-              !currentAnswer.trim()
+              isSaving
                 ? "bg-white/10 text-white/50"
                 : "bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white active:scale-95"
             }`}

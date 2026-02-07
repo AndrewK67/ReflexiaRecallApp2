@@ -23,8 +23,6 @@ export default function Holodeck({ onClose }: HolodeckProps) {
     const existingEntries = JSON.parse(localStorage.getItem('holodeckEntries') || '[]');
     const updatedEntries = [entry, ...existingEntries];
     localStorage.setItem('holodeckEntries', JSON.stringify(updatedEntries));
-
-    console.log('Holodeck entry saved:', entry);
   };
 
   // Show specific space if one is active

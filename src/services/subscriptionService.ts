@@ -252,7 +252,7 @@ export function getTierFeatures(tier: UserTier): string[] {
       'Up to 30 reflections',
       '1 regulatory body',
       'Basic CPD tracking',
-      'Quick Capture & Drive Mode',
+      'Quick Capture & Voice Notes',
       'Offline support',
       'Crisis Protocols',
       'Basic CSV export',

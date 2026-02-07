@@ -3,6 +3,7 @@ import type { UserProfile, Entry, UserStats } from '../types';
 import { PROFESSION_CONFIG, APP_VERSION, APP_BUILD_DATE } from '../constants';
 import { storageService } from '../services/storageService';
 import { resetTutorial } from '../services/tutorialService';
+import { downloadTerms, downloadPrivacy, downloadDisclaimer } from '../utils/legalDownloads';
 import {
   Network,
   Briefcase,
@@ -404,6 +405,40 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
           </div>
 
           <p className="mt-3 text-xs text-white/50 text-center">These actions help you manage your app state safely.</p>
+        </div>
+
+        {/* Legal Documents */}
+        <div className="bg-white/10 backdrop-blur-xl p-6 rounded-2xl border border-white/15">
+          <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+            <Shield size={18} className="text-cyan-300" /> Legal
+          </h2>
+
+          <div className="space-y-2">
+            <button
+              onClick={downloadTerms}
+              className="w-full px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-white/80 hover:text-white transition text-left"
+            >
+              Terms of Use
+            </button>
+
+            <button
+              onClick={downloadPrivacy}
+              className="w-full px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-white/80 hover:text-white transition text-left"
+            >
+              Privacy Policy
+            </button>
+
+            <button
+              onClick={downloadDisclaimer}
+              className="w-full px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-white/80 hover:text-white transition text-left"
+            >
+              Disclaimer
+            </button>
+          </div>
+
+          <p className="mt-3 text-xs text-white/50 text-center">
+            Legal documents will download when clicked
+          </p>
         </div>
 
         {/* Account Actions */}

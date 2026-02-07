@@ -7,6 +7,7 @@ import {
   getUnlockedAchievements,
   calculateLevel,
   getPointsToNextLevel,
+  getHolodeckSessionCount,
   ACHIEVEMENTS,
   LEVELS,
   type AchievementCategory,
@@ -24,7 +25,7 @@ export default function GamificationHub({ entries, onClose }: GamificationHubPro
   // Build gamification data
   const gamificationData = useMemo(() => {
     const groundingSessions = getGroundingSessions().filter((s) => s.completed).length;
-    const holodeckSessions = 0; // TODO: Track holodeck sessions
+    const holodeckSessions = getHolodeckSessionCount();
     return buildGamificationData(entries, groundingSessions, holodeckSessions);
   }, [entries]);
 
@@ -75,13 +76,20 @@ export default function GamificationHub({ entries, onClose }: GamificationHubPro
     : 100;
 
   return (
-    <div className="h-full bg-gradient-to-b from-slate-900 to-slate-800 text-white flex flex-col overflow-y-auto custom-scrollbar">
+    <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col overflow-y-auto custom-scrollbar nav-safe relative">
+      <div className="animated-backdrop-dark overflow-hidden">
+        <div className="orb one" />
+        <div className="orb two" />
+        <div className="orb three" />
+        <div className="grain" />
+      </div>
+
       {/* Header */}
-      <div className="p-6 border-b border-white/10">
+      <div className="p-6 border-b border-white/10 bg-slate-950/50 backdrop-blur relative z-10">
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 transition"
+            className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/15 flex items-center justify-center transition"
             aria-label="Go back to dashboard"
           >
             <ArrowLeft size={20} aria-hidden="true" />

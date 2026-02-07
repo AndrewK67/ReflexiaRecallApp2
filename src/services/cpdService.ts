@@ -55,6 +55,7 @@ export function generateCPDFromReflection(entry: ReflectionEntry): CPDRecord {
     learningOutcomes: learningOutcomes.length > 0 ? learningOutcomes : undefined,
     linkedEntryId: entry.id,
     evidenceType: 'reflection',
+    participatory: false, // Self-directed reflective writing
     verified: true,
     tags: ['reflection', typeof entry.model === 'string' ? entry.model.toLowerCase() : 'general'],
     createdAt: (entry as any).createdAt || entry.date,
@@ -85,6 +86,7 @@ export function generateCPDFromHolodeck(entry: HolodeckEntry): CPDRecord {
     ],
     linkedEntryId: entry.id,
     evidenceType: 'reflection',
+    participatory: true, // Guided scenario practice
     verified: true,
     tags: ['holodeck', entry.spaceId],
     createdAt: typeof entry.createdAt === 'string' ? entry.createdAt : entry.date,
@@ -112,6 +114,7 @@ export function generateCPDFromIncident(entry: Entry): CPDRecord {
     learningOutcomes: ['Clinical incident analysis and learning'],
     linkedEntryId: entry.id,
     evidenceType: 'reflection',
+    participatory: false, // Self-directed incident analysis
     verified: true,
     tags: ['incident', 'clinical-practice'],
     createdAt: entry.date,
@@ -173,6 +176,11 @@ export function calculateCPDSummary(
   // Calculate total hours
   const totalHours = cycleRecords.reduce((sum, r) => sum + r.hours, 0);
 
+  // Calculate participatory hours
+  const participatoryHours = cycleRecords
+    .filter((r) => r.participatory === true)
+    .reduce((sum, r) => sum + r.hours, 0);
+
   // Calculate category breakdown
   const categoryMap = new Map<CPDCategoryType, number>();
   cycleRecords.forEach((r) => {
@@ -195,6 +203,7 @@ export function calculateCPDSummary(
     cycleStartDate: cycleDates.start,
     cycleEndDate: cycleDates.end,
     totalHours,
+    participatoryHours,
     categoryBreakdown,
     meetsRequirements: false,
     gaps: [],
@@ -206,6 +215,7 @@ export function calculateCPDSummary(
     cycleStartDate: cycleDates.start,
     cycleEndDate: cycleDates.end,
     totalHours,
+    participatoryHours,
     categoryBreakdown,
     meetsRequirements: complianceCheck.meets,
     gaps: complianceCheck.gaps,
@@ -235,7 +245,11 @@ export function exportCPDToCSV(records: CPDRecord[], summary: CPDSummary): strin
   // Compliance Status
   lines.push(`"COMPLIANCE STATUS"`);
   lines.push(`"Total Hours Completed: ${summary.totalHours.toFixed(1)}"`);
+  lines.push(`"Participatory Hours: ${summary.participatoryHours.toFixed(1)}"`);
   lines.push(`"Annual Requirement: ${summary.standard.annualRequirement.totalHours} hours"`);
+  if (summary.standard.annualRequirement.minimumParticipatoryHours) {
+    lines.push(`"Participatory Requirement: ${summary.standard.annualRequirement.minimumParticipatoryHours} hours minimum"`);
+  }
   lines.push(`"Status: ${summary.meetsRequirements ? '✓ MEETS REQUIREMENTS' : '✗ REQUIREMENTS NOT MET'}"`);
   if (summary.standard.annualRequirement.minimumReflection) {
     const reflectionHours = summary.categoryBreakdown.find(c => c.category === 'reflection')?.hours || 0;
@@ -335,7 +349,8 @@ export function createManualCPDRecord(
   date: string,
   description: string,
   evidenceType: CPDRecord['evidenceType'],
-  learningOutcomes?: string[]
+  learningOutcomes?: string[],
+  participatory?: boolean
 ): CPDRecord {
   return {
     id: `cpd_manual_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -346,6 +361,7 @@ export function createManualCPDRecord(
     description,
     learningOutcomes,
     evidenceType,
+    participatory,
     verified: false, // Manual records need verification
     tags: [category, evidenceType],
     createdAt: new Date().toISOString(),

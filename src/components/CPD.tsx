@@ -25,6 +25,7 @@ import {
   loadManualCPDRecords,
   getSuggestedHours,
 } from '../services/cpdService';
+import { storageService } from '../services/storageService';
 
 interface CPDProps {
   entries: Entry[];
@@ -81,6 +82,8 @@ export default function CPD({ entries, onClose }: CPDProps) {
     100
   );
 
+  const profile = storageService.loadProfile();
+
   return (
     <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col overflow-y-auto custom-scrollbar nav-safe relative">
       <div className="animated-backdrop-dark overflow-hidden">
@@ -91,11 +94,11 @@ export default function CPD({ entries, onClose }: CPDProps) {
       </div>
 
       {/* Header */}
-      <div className="flex-shrink-0 p-6 border-b border-white/10 relative z-10">
+      <div className="flex-shrink-0 p-6 border-b border-white/10 bg-slate-950/50 backdrop-blur relative z-10">
         <div className="flex items-center gap-3 mb-3">
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 transition"
+            className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/15 flex items-center justify-center transition"
             aria-label="Go back to dashboard"
           >
             <ArrowLeft size={20} />
@@ -107,6 +110,13 @@ export default function CPD({ entries, onClose }: CPDProps) {
             </p>
           </div>
         </div>
+
+        {/* Regulatory Disclaimer */}
+        {profile?.showDisclaimers !== false && (
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-xs text-amber-200 mt-4">
+            <strong>Disclaimer:</strong> This tool assists with CPD tracking and professional development but does not replace official regulatory requirements. Always verify with your regulatory body (NMC, HCPC, GPhC, GMC, etc.) for official guidance and compliance standards.
+          </div>
+        )}
       </div>
 
       {/* Country Selection */}
@@ -354,6 +364,7 @@ function AddManualRecordModal({ onSave, onCancel }: AddManualRecordModalProps) {
   const [description, setDescription] = useState('');
   const [evidenceType, setEvidenceType] = useState<CPDRecord['evidenceType']>('course');
   const [learningOutcome, setLearningOutcome] = useState('');
+  const [participatory, setParticipatory] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -365,7 +376,8 @@ function AddManualRecordModal({ onSave, onCancel }: AddManualRecordModalProps) {
       new Date(date).toISOString(),
       description,
       evidenceType,
-      learningOutcome ? [learningOutcome] : undefined
+      learningOutcome ? [learningOutcome] : undefined,
+      participatory
     );
 
     onSave(record);
@@ -461,6 +473,20 @@ function AddManualRecordModal({ onSave, onCancel }: AddManualRecordModalProps) {
               <option value="other">Other</option>
             </select>
           </div>
+
+          {/* Participatory Toggle */}
+          <label className="flex items-center gap-3 px-4 py-3 rounded-xl border border-white/15 bg-white/5 cursor-pointer hover:bg-white/10 transition">
+            <input
+              type="checkbox"
+              checked={participatory}
+              onChange={(e) => setParticipatory(e.target.checked)}
+              className="w-4 h-4 rounded border-white/20 bg-white/10 text-cyan-500 focus:ring-2 focus:ring-cyan-500"
+            />
+            <div>
+              <div className="text-sm font-semibold text-white">Participatory learning</div>
+              <div className="text-xs text-white/50">Group activity, course, workshop, or supervised learning (NMC requires 20 of 35 hours)</div>
+            </div>
+          </label>
 
           {/* Description */}
           <div>

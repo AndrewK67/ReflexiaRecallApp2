@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Check, Crown, Zap, Sparkles, X, Loader } from 'lucide-react';
 import { getPricing, createCheckoutSession } from '../services/stripeService';
 import { getTierFeatures } from '../services/subscriptionService';
+import { downloadTerms, downloadPrivacy } from '../utils/legalDownloads';
 
 interface CheckoutProps {
   onClose: () => void;
@@ -187,9 +188,9 @@ export default function Checkout({ onClose, preselectedPlan }: CheckoutProps) {
             </p>
             <p className="text-xs text-white/40 mt-4">
               By continuing, you agree to our{' '}
-              <a href="/terms" className="underline hover:text-white">Terms of Use</a>
+              <button onClick={downloadTerms} className="underline hover:text-white">Terms of Use</button>
               {' '}and{' '}
-              <a href="/privacy" className="underline hover:text-white">Privacy Policy</a>
+              <button onClick={downloadPrivacy} className="underline hover:text-white">Privacy Policy</button>
             </p>
           </div>
         </div>

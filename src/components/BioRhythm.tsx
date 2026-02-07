@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Wind, Clock, Timer } from "lucide-react";
-import Guide from "./Guide";
 
 interface BioRhythmProps {
   onClose: () => void;
@@ -135,7 +134,7 @@ export default function BioRhythm({ onClose }: BioRhythmProps) {
     "#c084fc";
 
   return (
-    <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 text-white relative overflow-y-auto custom-scrollbar">
+    <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 text-white relative overflow-y-auto custom-scrollbar nav-safe">
       <div
         className="absolute inset-0 opacity-30 pointer-events-none overflow-hidden"
         style={{ background: `radial-gradient(circle at center, ${phaseColor}40, transparent 70%)` }}
@@ -196,16 +195,16 @@ export default function BioRhythm({ onClose }: BioRhythmProps) {
             />
           </svg>
 
-          {/* Guide orb with scale animation */}
+          {/* Breathing orb with scale animation */}
           <div
-            className="transition-all ease-in-out"
+            className="w-32 h-32 rounded-full transition-all ease-in-out"
             style={{
               transform: `scale(${scale})`,
               transitionDuration: `${Math.max(0.6, phaseDuration(pattern, phase))}s`,
+              backgroundColor: phaseColor,
+              boxShadow: `0 0 40px ${phaseColor}, 0 0 80px ${phaseColor}40`,
             }}
-          >
-            <Guide stageId={null} state="idle" customColor={phaseColor} />
-          </div>
+          />
         </div>
 
         <div className="text-4xl font-bold tracking-wide">{phaseLabel}</div>

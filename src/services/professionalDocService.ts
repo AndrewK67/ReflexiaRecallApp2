@@ -132,33 +132,65 @@ function generateNMCReflectiveAccount(entry: ReflectionEntry, config: DocumentCo
   const { description, reflection, action } = extractContent(entry);
   const tags = getTags(entry);
 
+  // NMC Code theme labels
+  const codeThemeLabels: Record<string, string> = {
+    'prioritise-people': 'Prioritise people',
+    'practise-effectively': 'Practise effectively',
+    'preserve-safety': 'Preserve safety',
+    'promote-professionalism': 'Promote professionalism and trust',
+  };
+
   // Title
   sections.push(`Reflective Account: ${entry.title || 'Professional Reflection'}`);
   sections.push(`Date: ${new Date(entry.date || entry.createdAt || Date.now()).toLocaleDateString('en-GB')}`);
   sections.push('');
 
-  // NMC Code reference
-  if (tags.length > 0) {
+  // NMC Code themes
+  if (entry.nmcCodeThemes && entry.nmcCodeThemes.length > 0) {
+    sections.push('RELEVANT THEMES OF THE CODE:');
+    entry.nmcCodeThemes.forEach((themeId) => {
+      const label = codeThemeLabels[themeId] || themeId;
+      sections.push(`  [x] ${label}`);
+    });
+    // Show unchecked themes too for completeness
+    Object.entries(codeThemeLabels).forEach(([id, label]) => {
+      if (!entry.nmcCodeThemes!.includes(id)) {
+        sections.push(`  [ ] ${label}`);
+      }
+    });
+    sections.push('');
+  } else if (tags.length > 0) {
     sections.push(`Relevant NMC Code: ${tags.join(', ')}`);
     sections.push('');
   }
 
-  // What happened (Description)
-  sections.push('WHAT HAPPENED:');
+  // What was the nature of the CPD activity and/or practice-related feedback and/or event or experience?
+  sections.push('WHAT WAS THE NATURE OF THE CPD ACTIVITY AND/OR PRACTICE-RELATED FEEDBACK AND/OR EVENT OR EXPERIENCE IN YOUR PRACTICE?');
   sections.push('');
   sections.push(formatParagraph(description, config.wordLimit ? Math.floor(config.wordLimit * 0.3) : undefined));
   sections.push('');
 
-  // What did I learn (Reflection)
-  sections.push('WHAT DID I LEARN:');
+  // What did you learn from the CPD activity and/or feedback and/or event or experience?
+  sections.push('WHAT DID YOU LEARN FROM THE CPD ACTIVITY AND/OR FEEDBACK AND/OR EVENT OR EXPERIENCE IN YOUR PRACTICE?');
   sections.push('');
   sections.push(formatParagraph(reflection, config.wordLimit ? Math.floor(config.wordLimit * 0.4) : undefined));
   sections.push('');
 
-  // How did I change my practice (Action/Impact)
-  sections.push('HOW I CHANGED MY PRACTICE:');
+  // How did you change or improve your practice as a result?
+  sections.push('HOW DID YOU CHANGE OR IMPROVE YOUR PRACTICE AS A RESULT?');
   sections.push('');
   sections.push(formatParagraph(action || reflection, config.wordLimit ? Math.floor(config.wordLimit * 0.3) : undefined));
+  sections.push('');
+
+  // How is this relevant to the Code?
+  sections.push('HOW IS THIS RELEVANT TO THE CODE?');
+  sections.push('');
+  if (entry.nmcCodeThemes && entry.nmcCodeThemes.length > 0) {
+    const themeNames = entry.nmcCodeThemes.map((id) => codeThemeLabels[id] || id).join(', ');
+    sections.push(`This reflection relates to the following themes of the Code: ${themeNames}.`);
+  } else {
+    sections.push('[Please describe how this relates to the Code]');
+  }
   sections.push('');
 
   // CPD hours (if applicable)

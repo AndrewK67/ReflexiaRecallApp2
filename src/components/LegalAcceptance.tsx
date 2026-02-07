@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Shield, FileText, AlertTriangle, Check, Trophy, Brain } from 'lucide-react';
 import DisclaimerQuiz from './DisclaimerQuiz';
+import { downloadTerms, downloadPrivacy, downloadDisclaimer } from '../utils/legalDownloads';
 
 interface LegalAcceptanceProps {
   onAccept: () => void;
@@ -222,9 +223,9 @@ export function LegalAcceptance({ onAccept }: LegalAcceptanceProps) {
             </button>
 
             <p className="text-xs text-white/40 text-center mt-4">
-              <a href="/disclaimer" target="_blank" className="underline hover:text-white">
+              <button onClick={downloadDisclaimer} className="underline hover:text-white">
                 Read full disclaimer
-              </a>
+              </button>
             </p>
           </>
         )}
@@ -282,13 +283,11 @@ export function LegalAcceptance({ onAccept }: LegalAcceptanceProps) {
                 <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-xl p-4">
                   <p className="text-cyan-200 text-xs">
                     <strong>Full documents:</strong>{' '}
-                    <a href="/terms" target="_blank" className="underline">Terms of Use</a>
+                    <button onClick={downloadTerms} className="underline">Terms of Use</button>
                     {' • '}
-                    <a href="/privacy-policy" target="_blank" className="underline">Privacy Policy</a>
+                    <button onClick={downloadPrivacy} className="underline">Privacy Policy</button>
                     {' • '}
-                    <a href="/refund-policy" target="_blank" className="underline">Refund Policy</a>
-                    {' • '}
-                    <a href="/disclaimer" target="_blank" className="underline">Disclaimer</a>
+                    <button onClick={downloadDisclaimer} className="underline">Disclaimer</button>
                   </p>
                 </div>
               </div>
@@ -393,9 +392,7 @@ export function LegalAcceptance({ onAccept }: LegalAcceptanceProps) {
       {currentStep === 'quiz' && (
         <DisclaimerQuiz
           onComplete={handleQuizComplete}
-          onAwardXP={(amount, reason) => {
-            console.log(`Quiz awarded ${amount} XP: ${reason}`);
-          }}
+          onAwardXP={() => {}}
         />
       )}
     </div>

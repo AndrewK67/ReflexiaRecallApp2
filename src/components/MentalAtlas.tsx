@@ -240,7 +240,7 @@ const MentalAtlas: React.FC<MentalAtlasProps> = ({ entries, onClose, privacyLock
           return (
             <div
               key={theme.id}
-              className="p-4 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition"
+              className="p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition"
             >
               <div className="flex items-start justify-between mb-2">
                 <div className="flex-1">

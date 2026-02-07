@@ -107,7 +107,12 @@ export default function Tutorial({ onClose, onNavigate, onAwardXP }: TutorialPro
 
   const handleNavigateToFeature = () => {
     if (currentStep?.targetView) {
+      // Navigate to the feature first
       onNavigate(currentStep.targetView as ViewState);
+      // Close tutorial to let user interact with the feature
+      setTimeout(() => {
+        onClose();
+      }, 300);
     }
   };
 
@@ -150,43 +155,45 @@ export default function Tutorial({ onClose, onNavigate, onAwardXP }: TutorialPro
       )}
 
       {/* Main Tutorial Modal */}
-      <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[100] flex items-center justify-center p-4 overflow-y-auto">
-        <div className="bg-gradient-to-b from-slate-900 to-slate-950 rounded-3xl border-2 border-cyan-500/30 max-w-2xl w-full p-8 my-8 relative overflow-hidden">
+      <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[100] flex items-center justify-center p-4 pb-safe pt-safe">
+        <div className="bg-gradient-to-b from-slate-900 to-slate-950 rounded-2xl border-2 border-cyan-500/30 max-w-lg w-full relative overflow-hidden flex flex-col max-h-[90vh]">
           {/* Animated Background */}
-          <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0 opacity-10 pointer-events-none">
             <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500 rounded-full blur-3xl animate-pulse" />
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
           </div>
 
+          {/* Scrollable content wrapper */}
+          <div className="overflow-y-auto custom-scrollbar flex-1 p-4">
           {/* Header */}
           <div className="relative">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="text-5xl">{currentStep.icon}</div>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="text-3xl">{currentStep.icon}</div>
                 <div>
-                  <div className="text-xs text-cyan-400 font-semibold">
+                  <div className="text-[10px] text-cyan-400 font-semibold">
                     Step {progress.completedSteps.length + 1} of 19
                   </div>
-                  <h2 className="text-2xl font-bold text-white">{currentStep.title}</h2>
+                  <h2 className="text-lg font-bold text-white">{currentStep.title}</h2>
                 </div>
               </div>
-              {/* Always show close button */}
+              {/* Exit button - more prominent */}
               <button
                 onClick={handleClose}
-                className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition text-white/60 hover:text-white"
-                title="Close tutorial (you can restart anytime)"
+                className="p-2 rounded-xl bg-red-500/20 border border-red-500/40 hover:bg-red-500/30 transition text-white flex-shrink-0"
+                title="Exit Tutorial"
               >
                 <X size={20} />
               </button>
             </div>
 
             {/* Progress Bar */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-white/60">Tutorial Progress</span>
-                <span className="text-sm font-bold text-cyan-400">{completionPercentage}%</span>
+            <div className="mb-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-white/60">Progress</span>
+                <span className="text-xs font-bold text-cyan-400">{completionPercentage}%</span>
               </div>
-              <div className="h-3 bg-white/10 rounded-full overflow-hidden">
+              <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-gradient-to-r from-cyan-500 to-purple-500 transition-all duration-500"
                   style={{ width: `${completionPercentage}%` }}
@@ -195,116 +202,134 @@ export default function Tutorial({ onClose, onNavigate, onAwardXP }: TutorialPro
             </div>
 
             {/* Description */}
-            <p className="text-lg text-white/80 mb-6">{currentStep.description}</p>
+            <p className="text-sm text-white/80 mb-3">{currentStep.description}</p>
 
             {/* XP Reward Badge */}
-            <div className="flex items-center gap-4 mb-6">
-              <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-xl px-4 py-2 flex items-center gap-2">
-                <Star size={20} className="text-yellow-400" />
-                <span className="text-yellow-400 font-bold">+{currentStep.xpReward} XP</span>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-lg px-3 py-1.5 flex items-center gap-1.5">
+                <Star size={16} className="text-yellow-400" />
+                <span className="text-yellow-400 font-bold text-sm">+{currentStep.xpReward} XP</span>
               </div>
               {currentStep.badge && (
-                <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-xl px-4 py-2 flex items-center gap-2">
-                  <Trophy size={20} className="text-purple-400" />
-                  <span className="text-purple-400 font-bold">{currentStep.badge}</span>
+                <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-lg px-3 py-1.5 flex items-center gap-1.5">
+                  <Trophy size={16} className="text-purple-400" />
+                  <span className="text-purple-400 font-bold text-sm">{currentStep.badge}</span>
                 </div>
               )}
             </div>
 
             {/* Instructions */}
-            <div className="bg-white/5 rounded-2xl border border-white/10 p-6 mb-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Target size={20} className="text-cyan-400" />
-                <h3 className="text-lg font-bold text-white">What to do:</h3>
+            <div className="bg-white/5 rounded-xl border border-white/10 p-3 mb-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Target size={16} className="text-cyan-400" />
+                <h3 className="text-sm font-bold text-white">What to do:</h3>
               </div>
-              <ul className="space-y-3">
+              <ul className="space-y-2">
                 {currentStep.instructions.map((instruction, index) => (
-                  <li key={index} className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-xs text-cyan-400 font-bold">{index + 1}</span>
+                  <li key={index} className="flex items-start gap-2">
+                    <div className="w-5 h-5 rounded-full bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-[10px] text-cyan-400 font-bold">{index + 1}</span>
                     </div>
-                    <span className="text-white/80">{instruction}</span>
+                    <span className="text-white/80 text-xs leading-relaxed">{instruction}</span>
                   </li>
                 ))}
               </ul>
             </div>
 
             {/* Completion Criteria */}
-            <div className="bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 border border-emerald-500/30 rounded-xl p-4 mb-6">
-              <div className="flex items-start gap-3">
-                <Check size={20} className="text-emerald-400 flex-shrink-0 mt-0.5" />
+            <div className="bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 border border-emerald-500/30 rounded-xl p-3 mb-3">
+              <div className="flex items-start gap-2">
+                <Check size={16} className="text-emerald-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <div className="text-sm text-white/60 mb-1">To complete this step:</div>
-                  <div className="text-white font-semibold">{currentStep.completionCriteria}</div>
+                  <div className="text-xs text-white/60 mb-0.5">To complete:</div>
+                  <div className="text-white font-semibold text-sm">{currentStep.completionCriteria}</div>
                 </div>
               </div>
             </div>
 
             {/* Fun Fact */}
             {currentStep.funFact && (
-              <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-xl p-4 mb-6">
-                <div className="flex items-start gap-3">
-                  <Sparkles size={20} className="text-purple-400 flex-shrink-0 mt-0.5" />
+              <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-xl p-3 mb-3">
+                <div className="flex items-start gap-2">
+                  <Sparkles size={16} className="text-purple-400 flex-shrink-0 mt-0.5" />
                   <div>
-                    <div className="text-sm text-white/60 mb-1">Fun Fact</div>
-                    <div className="text-white/90">{currentStep.funFact}</div>
+                    <div className="text-xs text-white/60 mb-0.5">Fun Fact</div>
+                    <div className="text-white/90 text-xs">{currentStep.funFact}</div>
                   </div>
                 </div>
               </div>
             )}
 
             {/* Actions */}
-            <div className="flex gap-3">
-              {currentStep.targetView && !isCompleted && (
+            <div className="flex flex-col gap-3 mt-4 relative z-10">
+              {currentStep.targetView && !isCompleted && !isWelcome && (
                 <button
                   onClick={handleNavigateToFeature}
-                  className="flex-1 py-4 px-6 rounded-2xl bg-white/10 border border-white/20 text-white font-bold hover:bg-white/15 transition flex items-center justify-center gap-2"
+                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-500 text-white font-bold hover:opacity-90 active:scale-95 transition flex items-center justify-center gap-2 text-sm"
                 >
-                  <Rocket size={20} />
-                  Try {currentStep.title.split(' ')[0]}
+                  <Rocket size={18} />
+                  Go Try It Now
                 </button>
               )}
 
               <button
                 onClick={handleCompleteStep}
-                className={`py-4 px-6 rounded-2xl font-bold transition flex items-center justify-center gap-2 ${
-                  currentStep.targetView && !isCompleted
-                    ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white hover:scale-[1.02]'
-                    : 'flex-1 bg-gradient-to-r from-cyan-500 to-purple-500 text-white hover:scale-[1.02]'
+                className={`w-full py-3 px-4 rounded-xl font-bold transition flex items-center justify-center gap-2 text-sm ${
+                  currentStep.targetView && !isCompleted && !isWelcome
+                    ? 'bg-white/10 border border-white/20 text-white hover:bg-white/15 active:scale-95'
+                    : 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white hover:opacity-90 active:scale-95'
                 }`}
               >
                 {isWelcome && (
                   <>
-                    <Rocket size={20} />
+                    <Rocket size={18} />
                     Start Tutorial
                   </>
                 )}
                 {isCompleted && (
                   <>
-                    <Trophy size={20} />
+                    <Trophy size={18} />
                     Finish & Claim Rewards!
                   </>
                 )}
-                {!isWelcome && !isCompleted && (
+                {!isWelcome && !isCompleted && currentStep.targetView && (
                   <>
-                    <Check size={20} />
-                    Mark Complete
-                    <ChevronRight size={20} />
+                    <Check size={18} />
+                    I Tried It - Continue to Next Step
+                    <ChevronRight size={18} />
+                  </>
+                )}
+                {!isWelcome && !isCompleted && !currentStep.targetView && (
+                  <>
+                    <Check size={18} />
+                    Continue
+                    <ChevronRight size={18} />
                   </>
                 )}
               </button>
+
+              {/* Skip button at bottom */}
+              {!isCompleted && (
+                <button
+                  onClick={handleSkip}
+                  className="w-full py-2 text-white/40 hover:text-white/60 text-xs transition"
+                >
+                  Skip Tutorial
+                </button>
+              )}
             </div>
 
             {/* Total XP Earned */}
             {progress.xpEarned > 0 && (
-              <div className="mt-6 text-center">
-                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-full px-6 py-2">
-                  <Gift size={16} className="text-yellow-400" />
-                  <span className="text-sm text-white/60">Total XP Earned:</span>
-                  <span className="text-lg font-bold text-yellow-400">{progress.xpEarned}</span>
+              <div className="mt-3 text-center">
+                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-full px-4 py-1.5">
+                  <Gift size={14} className="text-yellow-400" />
+                  <span className="text-xs text-white/60">Total XP:</span>
+                  <span className="text-sm font-bold text-yellow-400">{progress.xpEarned}</span>
                 </div>
               </div>
             )}
+          </div>
           </div>
         </div>
       </div>

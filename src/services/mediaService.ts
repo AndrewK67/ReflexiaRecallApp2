@@ -1,7 +1,18 @@
 /**
  * Media Service
  * Handles camera, video, and audio capture for the app
+ * Camera requests are serialized with long release delays to avoid conflicts
  */
+
+import { saveMediaFile } from './fileStorageService';
+
+// Track active camera stream
+let activeCameraStream: MediaStream | null = null;
+
+// Serialize camera requests to prevent concurrent access conflicts
+let cameraRequestInProgress = false;
+let cameraRequestQueue: Array<() => Promise<MediaStream>> = [];
+let cameraRequestResolvers: Array<{ resolve: (stream: MediaStream) => void; reject: (error: Error) => void }> = [];
 
 export interface CameraOptions {
   facingMode?: 'user' | 'environment';
@@ -22,9 +33,12 @@ export interface AudioRecordingOptions {
 
 /**
  * Request camera access and return a MediaStream
+ * Each request releases the old stream before requesting a new one
+ * Requests are serialized to prevent concurrent getUserMedia calls
  */
 export async function requestCameraAccess(options: CameraOptions = {}): Promise<MediaStream> {
-  try {
+  // Create a task that will be processed by the queue
+  const task = async (): Promise<MediaStream> => {
     const constraints: MediaStreamConstraints = {
       video: {
         facingMode: options.facingMode || 'user',
@@ -34,20 +48,71 @@ export async function requestCameraAccess(options: CameraOptions = {}): Promise<
       audio: false,
     };
 
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
-    return stream;
-  } catch (error) {
-    if (error instanceof Error) {
-      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-        throw new Error('Camera permission denied. Please allow camera access in your browser settings.');
-      } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
-        throw new Error('No camera found on this device.');
-      } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
-        throw new Error('Camera is already in use by another application.');
+    // Release any previously active stream to free up hardware resources
+    if (activeCameraStream) {
+      try {
+        const streamToRelease = activeCameraStream;
+        activeCameraStream = null;
+        streamToRelease.getTracks().forEach((track) => track.stop());
+      } catch (e) {
+        // ignore cleanup errors
       }
-      throw new Error(`Camera error: ${error.message}`);
+      // Wait for hardware to fully release the old stream before requesting new one
+      // 1500ms gives the camera hardware time to truly release
+      await new Promise(resolve => setTimeout(resolve, 1500));
     }
-    throw new Error('Unknown camera error occurred.');
+
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    activeCameraStream = stream;
+    return stream;
+  };
+
+  // Add task to queue and wait for it to complete
+  return new Promise<MediaStream>((resolve, reject) => {
+    cameraRequestQueue.push(task);
+    cameraRequestResolvers.push({ resolve, reject });
+    processCameraQueue();
+  });
+}
+
+async function processCameraQueue() {
+  if (cameraRequestInProgress || cameraRequestQueue.length === 0) {
+    return;
+  }
+
+  cameraRequestInProgress = true;
+  const task = cameraRequestQueue.shift();
+  const handlers = cameraRequestResolvers.shift();
+
+  if (task && handlers) {
+    try {
+      const stream = await task();
+      handlers.resolve(stream);
+    } catch (error) {
+      console.error('requestCameraAccess error', error);
+      let errorMsg = 'Unknown camera error occurred.';
+      
+      if (error instanceof Error) {
+        if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+          errorMsg = 'Camera permission denied. Please allow camera access in your browser settings.';
+        } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+          errorMsg = 'No camera found on this device.';
+        } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+          errorMsg = 'Camera is already in use by another application.';
+        } else {
+          errorMsg = `Camera error: ${error.message}`;
+        }
+      }
+      
+      handlers.reject(new Error(errorMsg));
+    }
+  }
+
+  cameraRequestInProgress = false;
+
+  // Process next item in queue
+  if (cameraRequestQueue.length > 0) {
+    processCameraQueue();
   }
 }
 
@@ -62,41 +127,48 @@ export function capturePhoto(stream: MediaStream, quality: number = 0.92): Promi
       video.srcObject = stream;
       video.autoplay = true;
       video.muted = true;
+      const onReady = async () => {
+        try {
+          // Ensure the video has current frame data
+          await video.play().catch(() => {});
+          const canvas = document.createElement('canvas');
+          canvas.width = video.videoWidth || 1280;
+          canvas.height = video.videoHeight || 720;
 
-      video.onloadedmetadata = () => {
-        // Wait for video to be ready
-        setTimeout(() => {
-          try {
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-
-            const ctx = canvas.getContext('2d');
-            if (!ctx) {
-              reject(new Error('Failed to get canvas context'));
-              return;
-            }
-
-            // Draw the current video frame
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            // Convert to blob
-            canvas.toBlob(
-              (blob) => {
-                if (blob) {
-                  resolve(blob);
-                } else {
-                  reject(new Error('Failed to create image blob'));
-                }
-              },
-              'image/jpeg',
-              quality
-            );
-          } catch (err) {
-            reject(err);
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Failed to get canvas context'));
+            return;
           }
-        }, 100);
+
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                resolve(blob);
+              } else {
+                reject(new Error('Failed to create image blob'));
+              }
+            },
+            'image/jpeg',
+            quality
+          );
+        } catch (err) {
+          reject(err);
+        }
       };
+
+      // Prefer ready state event but fallback to loadedmetadata
+      if (video.readyState >= 2) {
+        onReady();
+      } else {
+        video.onloadedmetadata = onReady;
+        // Add a timeout to avoid hanging
+        setTimeout(() => {
+          if (video.readyState < 2) onReady();
+        }, 500);
+      }
 
       video.onerror = () => {
         reject(new Error('Failed to load video stream'));
@@ -196,11 +268,12 @@ export async function startAudioRecording(
 
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
 
-    // Determine the best mime type supported
+    // Try audio/webm without codec specification - let the browser choose
+    // Android WebView's MediaRecorder has issues with opus codec
     const mimeTypes = [
-      'audio/webm;codecs=opus',
       'audio/webm',
-      'audio/ogg;codecs=opus',
+      'audio/webm;codecs=opus',
+      'audio/ogg',
       'audio/mp4',
     ];
 
@@ -211,8 +284,20 @@ export async function startAudioRecording(
 
     const mediaRecorder = new MediaRecorder(stream, {
       mimeType,
-      audioBitsPerSecond: 128000, // 128 kbps
+      audioBitsPerSecond: 128000, // 128 kbps for good quality
     });
+    
+    // Store chunks as they arrive during recording (not just at stop)
+    const recordedChunks: Blob[] = [];
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data && event.data.size > 0) {
+        recordedChunks.push(event.data);
+      }
+    };
+    
+    // Store chunks array and stream on the recorder object
+    (mediaRecorder as any)._recordedChunks = recordedChunks;
+    (mediaRecorder as any)._stream = stream;
 
     return mediaRecorder;
   } catch (error) {
@@ -233,8 +318,11 @@ export async function startAudioRecording(
  */
 export function stopAudioRecording(recorder: MediaRecorder): Promise<Blob> {
   return new Promise((resolve, reject) => {
-    const chunks: Blob[] = [];
+    // Get chunks that were collected during recording
+    const chunks: Blob[] = (recorder as any)._recordedChunks || [];
 
+    // Keep capturing any remaining chunks
+    const originalHandler = recorder.ondataavailable;
     recorder.ondataavailable = (event) => {
       if (event.data && event.data.size > 0) {
         chunks.push(event.data);
@@ -244,17 +332,29 @@ export function stopAudioRecording(recorder: MediaRecorder): Promise<Blob> {
     recorder.onstop = () => {
       try {
         // Stop all tracks in the stream
-        const stream = recorder.stream;
-        stream.getTracks().forEach((track) => track.stop());
+        const stream = (recorder as any)._stream || recorder.stream;
+        if (stream) {
+          stream.getTracks().forEach((track) => {
+            track.stop();
+          });
+        }
 
-        const blob = new Blob(chunks, { type: recorder.mimeType });
-        resolve(blob);
+        // Create blob with proper mime type
+        const mimeType = recorder.mimeType || 'audio/webm';
+        const blob = new Blob(chunks, { type: mimeType });
+
+        // Add a small delay to ensure all data is flushed
+        setTimeout(() => {
+          resolve(blob);
+        }, 100);
       } catch (error) {
+        console.error('[stopAudioRecording] Error in onstop:', error);
         reject(error);
       }
     };
 
     recorder.onerror = (event) => {
+      console.error('[stopAudioRecording] Recorder error:', event);
       reject(new Error(`Recording error: ${(event as any).error?.message || 'Unknown error'}`));
     };
 
@@ -387,6 +487,7 @@ export function stopMediaStream(stream: MediaStream): void {
   stream.getTracks().forEach((track) => {
     track.stop();
   });
+  if (stream === activeCameraStream) activeCameraStream = null;
 }
 
 /**
@@ -430,4 +531,32 @@ export function checkMediaSupport() {
     videoRecording: typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported('video/webm'),
     audioRecording: typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported('audio/webm'),
   };
+}
+
+/**
+ * Save a photo blob to filesystem and return the file path
+ */
+export async function savePhotoToFile(blob: Blob): Promise<string> {
+  return await saveMediaFile(blob, 'photo');
+}
+
+/**
+ * Save a video blob to filesystem and return the file path
+ */
+export async function saveVideoToFile(blob: Blob): Promise<string> {
+  return await saveMediaFile(blob, 'video');
+}
+
+/**
+ * Save an audio blob to filesystem and return the file path
+ */
+export async function saveAudioToFile(blob: Blob): Promise<string> {
+  return await saveMediaFile(blob, 'audio');
+}
+
+/**
+ * Save a drawing blob to filesystem and return the file path
+ */
+export async function saveDrawingToFile(blob: Blob): Promise<string> {
+  return await saveMediaFile(blob, 'drawing');
 }

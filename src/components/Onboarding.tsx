@@ -3,7 +3,6 @@ import type { ProfessionType, UserProfile } from "../types";
 import { PROFESSION_CONFIG } from "../constants";
 import { storageService } from "../services/storageService";
 import { ArrowRight, Check } from "lucide-react";
-import Guide from "./Guide";
 
 interface OnboardingProps {
   onComplete: (profile: Partial<UserProfile>) => void;
@@ -40,7 +39,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   const disabled = step === 1 && !name.trim();
 
   return (
-    <div className="h-full bg-slate-950 flex flex-col relative overflow-y-auto custom-scrollbar text-white">
+    <div className="h-full bg-slate-950 flex flex-col relative overflow-y-auto custom-scrollbar text-white nav-safe">
       {/* ✅ BG animation (very visible) */}
       <div className="animated-backdrop-dark overflow-hidden">
         <div className="orb one" />
@@ -50,10 +49,6 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center p-8 z-10">
-        <div className="mb-8 transform scale-125 drop-shadow-[0_0_15px_rgba(6,182,212,0.5)]">
-          <Guide stageId={null} state="idle" />
-        </div>
-
         {step === 1 ? (
           <div className="w-full max-w-sm text-center">
             <h1 className="text-3xl font-bold mb-2">Reflexia Recall</h1>
@@ -70,7 +65,6 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
               onChange={(e) => setName(e.target.value)}
               placeholder="Your name"
               className="w-full p-4 rounded-xl border border-slate-700 bg-slate-900/70 backdrop-blur text-lg text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 mb-3 text-center"
-              autoFocus
             />
 
             {!name.trim() && recentNames.length > 0 && (

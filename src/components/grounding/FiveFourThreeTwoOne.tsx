@@ -58,7 +58,7 @@ export default function FiveFourThreeTwoOne({ onComplete, onCancel }: FiveFourTh
   const isComplete = step >= steps.length;
 
   return (
-    <div className="h-full flex flex-col relative overflow-y-auto custom-scrollbar text-white">
+    <div className="h-full flex flex-col relative overflow-y-auto custom-scrollbar text-white nav-safe">
       {/* Background Decor */}
       <div
         className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden"

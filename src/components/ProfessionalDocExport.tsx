@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { storageService } from '../services/storageService';
 import { FileText, Download, Copy, Check, ChevronDown, X, FileCheck, AlertTriangle } from 'lucide-react';
 import {
   generateProfessionalDoc,
@@ -25,6 +26,8 @@ export default function ProfessionalDocExport({ entries, onClose }: Professional
 
   const templates = getAllTemplates();
   const currentTemplateInfo = getTemplateInfo(selectedTemplate);
+
+  const profile = storageService.loadProfile();
 
   // Filter entries to only reflections
   const reflectionEntries = useMemo(() => {
@@ -123,17 +126,22 @@ export default function ProfessionalDocExport({ entries, onClose }: Professional
           </div>
         </div>
 
-        {/* AI Warning Banner */}
-        <div className="bg-red-500/10 border-b border-red-500/30 p-4">
-          <div className="flex items-start gap-3">
-            <AlertTriangle size={20} className="text-red-400 flex-shrink-0 mt-0.5" />
-            <div className="text-xs text-red-300">
-              <strong className="block mb-1">⚠️ AI-GENERATED CONTENT WARNING</strong>
-              This feature uses AI to generate documentation. AI may produce errors, inaccuracies, or inappropriate content.
-              <strong> You MUST review, edit, and verify all generated content before submission.</strong> Not affiliated with any regulatory body.
+        {/* AI Warning & Regulatory Disclaimer */}
+        {profile?.showDisclaimers !== false && (
+          <div className="bg-red-500/10 border-b border-red-500/30 p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle size={20} className="text-red-400 flex-shrink-0 mt-0.5" />
+              <div className="text-xs text-red-300">
+                <strong className="block mb-1">⚠️ AI-GENERATED CONTENT WARNING</strong>
+                This feature uses AI to generate documentation. AI may produce errors, inaccuracies, or inappropriate content.
+                <strong> You MUST review, edit, and verify all generated content before submission.</strong>
+                <div className="mt-2 pt-2 border-t border-red-500/20 text-amber-200">
+                  <strong>Regulatory Disclaimer:</strong> This tool assists with professional documentation but does not replace official regulatory requirements. Always verify with your regulatory body (NMC, HCPC, GPhC, GMC, etc.) for official guidance and compliance standards.
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {!generatedDoc ? (
