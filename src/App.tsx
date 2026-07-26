@@ -232,7 +232,7 @@ export default function App() {
     }
   }, [openEntry]);
 
-  const handleOnboardingComplete = async (partial: Partial<UserProfile>) => {
+  const handleOnboardingComplete = async (partial: Partial<UserProfile>, startTutorial = false) => {
     const newProfile: UserProfile = { ...userProfile, ...partial, isOnboarded: true };
 
     storageService.saveProfile(newProfile);
@@ -240,6 +240,9 @@ export default function App() {
 
     // After login, go dashboard
     setView("DASHBOARD");
+
+    // Onboarding can hand straight off to the guided tour
+    if (startTutorial) setShowTutorial(true);
   };
 
   const persistEntries = async (next: Entry[]) => {
@@ -287,6 +290,7 @@ export default function App() {
       dailyPrompt={dailyPrompt}
       onNavigate={(viewName) => handleNavigateWithGating(viewName)}
       onShowPackSettings={() => setView("PACK_BROWSER")}
+      onStartTutorial={() => setShowTutorial(true)}
     />
   );
 

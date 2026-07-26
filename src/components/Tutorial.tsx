@@ -34,6 +34,9 @@ export default function Tutorial({ onClose, onNavigate, onAwardXP }: TutorialPro
   const [showCelebration, setShowCelebration] = useState(false);
   const [recentXP, setRecentXP] = useState(0);
   const [recentBadge, setRecentBadge] = useState<string | null>(null);
+  // Sending the user to a feature has to get the modal out of the way, but the
+  // tutorial must stay mounted so the parent keeps auto-completing steps.
+  const [minimized, setMinimized] = useState(false);
 
   const currentStep = getCurrentStepConfig(progress);
   const completionPercentage = getCompletionPercentage(progress);
@@ -89,6 +92,7 @@ export default function Tutorial({ onClose, onNavigate, onAwardXP }: TutorialPro
       const targetView = result.nextStep.targetView;
       setTimeout(() => {
         onNavigate(targetView as ViewState);
+        setMinimized(true);
       }, 1000);
     }
   };
@@ -108,11 +112,36 @@ export default function Tutorial({ onClose, onNavigate, onAwardXP }: TutorialPro
   const handleNavigateToFeature = () => {
     if (currentStep?.targetView) {
       onNavigate(currentStep.targetView as ViewState);
+      setMinimized(true);
     }
   };
 
   if (!currentStep) {
     return null;
+  }
+
+  // Minimized: stay out of the way so the user can actually use the feature,
+  // leaving a pill to bring the step card back.
+  if (minimized) {
+    // Mirrors .app-shell / .phone so the pill hugs the phone frame instead of
+    // drifting to the corner of a desktop viewport.
+    return (
+      <div className="fixed inset-0 z-[100] pointer-events-none flex items-center justify-center px-4 py-7">
+        <div className="relative w-[min(420px,92vw)] h-[min(860px,92vh)]">
+          <button
+            onClick={() => setMinimized(false)}
+            className="pointer-events-auto absolute bottom-24 right-3 w-14 h-14 bg-gradient-to-r from-cyan-500 to-purple-500 text-white rounded-full shadow-2xl flex flex-col items-center justify-center gap-0.5 hover:scale-105 active:scale-95 transition"
+            title="Back to the tutorial"
+            aria-label={`Back to the tutorial, ${completionPercentage}% complete`}
+          >
+            <Rocket size={18} />
+            <span className="text-[9px] font-bold text-white/90 leading-none">
+              {completionPercentage}%
+            </span>
+          </button>
+        </div>
+      </div>
+    );
   }
 
   const isWelcome = currentStep.id === 'WELCOME';

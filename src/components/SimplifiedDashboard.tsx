@@ -3,20 +3,24 @@
  * Focus: Capture → Reflect → Retrieve
  */
 
+import { Rocket } from 'lucide-react';
 import { isPackEnabled } from '../packs';
+import { getTutorialProgress, getCompletionPercentage } from '../services/tutorialService';
 
 interface SimplifiedDashboardProps {
   userName: string;
   dailyPrompt: string;
   onNavigate: (view: string) => void;
   onShowPackSettings?: () => void;
+  onStartTutorial?: () => void;
 }
 
 export default function SimplifiedDashboard({
   userName,
   dailyPrompt,
   onNavigate,
-  onShowPackSettings
+  onShowPackSettings,
+  onStartTutorial
 }: SimplifiedDashboardProps) {
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -33,6 +37,13 @@ export default function SimplifiedDashboard({
   const hasWellbeing = isPackEnabled('wellbeing');
   const hasAI = isPackEnabled('aiReflectionCoach');
   const hasVisualTools = isPackEnabled('visualTools');
+
+  // Tutorial state - drives whether we prompt to start, resume, or replay
+  const tutorialProgress = getTutorialProgress();
+  const tutorialPercent = getCompletionPercentage(tutorialProgress || undefined);
+  const tutorialFinished =
+    !!tutorialProgress && (tutorialProgress.skipped || tutorialProgress.currentStep === 'COMPLETED');
+  const tutorialInProgress = !!tutorialProgress && !tutorialFinished;
 
   return (
     <div className="h-full overflow-y-auto flex flex-col items-center p-6 pt-8 nav-safe relative">
@@ -58,6 +69,39 @@ export default function SimplifiedDashboard({
 
       {/* Core Actions */}
       <div className="w-full max-w-xs space-y-3 relative z-10">
+        {/* Guided tour - front and centre until the user finishes or skips it */}
+        {onStartTutorial && !tutorialFinished && (
+          <button
+            onClick={onStartTutorial}
+            className="w-full bg-white/5 backdrop-blur-xl border border-cyan-500/30 rounded-2xl p-4 text-left hover:bg-white/10 active:scale-95 transition-all"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center flex-shrink-0">
+                <Rocket size={20} className="text-cyan-400" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-sm font-bold text-white">
+                  {tutorialInProgress ? 'Continue the guided tour' : 'Take the guided tour'}
+                </div>
+                <div className="text-xs text-white/60">
+                  {tutorialInProgress
+                    ? `${tutorialPercent}% complete`
+                    : 'See everything Reflexia can do'}
+                </div>
+              </div>
+            </div>
+
+            {tutorialInProgress && (
+              <div className="mt-3 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-cyan-500 to-purple-500 transition-all duration-500"
+                  style={{ width: `${tutorialPercent}%` }}
+                />
+              </div>
+            )}
+          </button>
+        )}
+
         {/* Primary CTA: Capture */}
         <button
           onClick={() => onNavigate("QUICK_CAPTURE")}
@@ -147,6 +191,16 @@ export default function SimplifiedDashboard({
         >
           ✨ Explore Optional Packs
         </button>
+
+        {/* Replay the tour once it has been finished or skipped */}
+        {onStartTutorial && tutorialFinished && (
+          <button
+            onClick={onStartTutorial}
+            className="w-full text-white/60 hover:text-white/90 text-xs font-medium py-2 transition"
+          >
+            🚀 Replay the guided tour
+          </button>
+        )}
       </div>
 
       {/* Data Notice */}

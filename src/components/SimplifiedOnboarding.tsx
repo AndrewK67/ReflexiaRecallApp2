@@ -4,11 +4,11 @@
  */
 
 import { useState } from 'react';
-import { ChevronRight, X } from 'lucide-react';
+import { ChevronRight, X, Rocket } from 'lucide-react';
 import type { UserProfile } from '../types';
 
 interface SimplifiedOnboardingProps {
-  onComplete: (profile: Partial<UserProfile>) => void;
+  onComplete: (profile: Partial<UserProfile>, startTutorial?: boolean) => void;
 }
 
 export default function SimplifiedOnboarding({ onComplete }: SimplifiedOnboardingProps) {
@@ -25,6 +25,13 @@ export default function SimplifiedOnboarding({ onComplete }: SimplifiedOnboardin
     } else {
       onComplete({ name: name || 'User', isOnboarded: true });
     }
+  };
+
+  // Finish onboarding first, then open the tutorial on the dashboard. Starting
+  // the tutorial before onComplete would let it navigate away with the profile
+  // (and the name typed on step 3) still unsaved.
+  const handleStartTutorial = () => {
+    onComplete({ name: name || 'User', isOnboarded: true }, true);
   };
 
   return (
@@ -123,7 +130,7 @@ export default function SimplifiedOnboarding({ onComplete }: SimplifiedOnboardin
       </div>
 
       {/* Navigation */}
-      <div className="mt-8">
+      <div className="mt-8 space-y-3">
         <button
           onClick={handleNext}
           className="w-full bg-gradient-to-r from-cyan-600 to-indigo-600 text-white py-4 rounded-2xl font-bold text-lg shadow-xl hover:from-cyan-500 hover:to-indigo-500 active:scale-95 transition-all flex items-center justify-center gap-2"
@@ -140,6 +147,18 @@ export default function SimplifiedOnboarding({ onComplete }: SimplifiedOnboardin
             </>
           )}
         </button>
+
+        {/* Guided tour - available from the very first screen */}
+        <button
+          onClick={handleStartTutorial}
+          className="w-full bg-white/10 border border-white/20 text-white py-3 rounded-2xl font-semibold hover:bg-white/15 active:scale-95 transition-all flex items-center justify-center gap-2"
+        >
+          <Rocket size={18} className="text-cyan-400" />
+          <span>Take the guided tour</span>
+        </button>
+        <p className="text-center text-white/40 text-xs">
+          Walks you through every feature — skip or exit anytime
+        </p>
       </div>
 
       {/* Footer Notice */}
