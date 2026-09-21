@@ -20,7 +20,6 @@ import { MODEL_CONFIG, PROFESSION_CONFIG } from "../constants";
 import { StageId } from "../types";
 import type { MediaItem, ProfessionType, ReflectionEntry, ReflectionModel } from "../types";
 
-import Guide from "./Guide";
 import CanvasBoard from "./CanvasBoard";
 
 import { analyzeReflection, getStageCoaching } from "../services/aiService";
@@ -390,10 +389,6 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
     return (
       <div className="flex flex-col h-full bg-slate-50 animate-in fade-in duration-300 nav-safe">
         <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center justify-center custom-scrollbar pb-28">
-          <div className="mb-8 scale-110">
-            <Guide stageId={null} state={guideState} />
-          </div>
-
           <div className="text-center mb-10">
             <h2 className="text-3xl font-light text-slate-800 mb-2">Complete</h2>
             <p className="text-slate-400 text-lg">Your reflection is ready to save.</p>
@@ -498,10 +493,6 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
           >
             {audioEngine.isMuted ? <VolumeX className="text-slate-600" size={20} /> : <Volume2 className="text-slate-600" size={20} />}
           </button>
-        </div>
-
-        <div className="mt-3 text-center">
-          <Guide stageId={stageData?.id} state={guideState} />
         </div>
       </div>
 

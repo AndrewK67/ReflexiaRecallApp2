@@ -4,7 +4,30 @@
       "Bash(npm run build:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(npm install:*)",
+      "Bash(npx cap init Reflexia com.reflexia.app --web-dir=dist)",
+      "Bash(npx cap add android)",
+      "Bash(npx cap:*)",
+      "Bash(gradlew.bat assembleDebug:*)",
+      "Bash(.gradlew.bat assembleDebug)",
+      "Bash(./gradlew.bat:*)",
+      "Bash(explorer.exe \"C:\\\\Users\\\\andre\\\\reflexia-app\\\\android\\\\app\\\\build\\\\outputs\\\\apk\\\\debug\")",
+      "WebFetch(domain:drive.google.com)",
+      "Bash(..gradlew.bat assembleDebug)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(npx tsc:*)",
+      "Bash(grep:*)",
+      "Bash(wc:*)",
+      "Bash(find:*)",
+      "Bash(node -e:*)",
+      "Bash(npx vite build:*)",
+      "Bash(git -C \"c:\\\\Users\\\\andre\\\\reflexia-app\" status --short)",
+      "Bash(git -C \"c:\\\\Users\\\\andre\\\\reflexia-app\" add .gitignore .env.example index.html package.json package-lock.json tailwind.config.js capacitor.config.ts src/types.ts src/index.css src/App.tsx src/data/cpdStandards.ts src/services/cpdService.ts src/services/gamificationService.ts src/services/mediaService.ts src/services/professionalDocService.ts src/services/storageService.ts src/services/subscriptionService.ts src/services/tutorialService.ts src/services/fileStorageService.ts src/utils/legalDownloads.ts src/packs/packRegistry.ts src/components/AdBanner.tsx src/components/Archive.tsx src/components/BioRhythm.tsx src/components/CPD.tsx src/components/CanvasBoard.tsx src/components/CanvasBoardBasic.tsx src/components/CanvasSizeSelector.tsx src/components/Checkout.tsx src/components/CookieConsent.tsx src/components/DriveMode.tsx src/components/GamificationHub.tsx src/components/Grounding.tsx src/components/Guide.tsx src/components/Holodeck.tsx src/components/LegalAcceptance.tsx src/components/Library.tsx src/components/MentalAtlas.tsx src/components/Navigation.tsx src/components/NeuralLink.tsx src/components/Onboarding.tsx src/components/Oracle.tsx src/components/PackBrowser.tsx src/components/ProfessionalDocExport.tsx src/components/QuickCapture.tsx src/components/ReflectionFlow.tsx src/components/SimplifiedDashboard.tsx src/components/SimplifiedOnboarding.tsx src/components/Tutorial.tsx src/components/UpdateNotification.tsx src/components/grounding/FiveFourThreeTwoOne.tsx src/components/holodeck/HolodeckHub.tsx src/components/holodeck/HolodeckSpace.tsx src/components/media/AudioCapture.tsx src/components/media/CameraCapture.tsx src/components/media/VideoCapture.tsx)",
+      "Bash(git -C \"c:\\\\Users\\\\andre\\\\reflexia-app\" commit -m \"$\\(cat <<''EOF''\nPrepare app for nurse user testing \\(PWA, offline-only, UK\\)\n\nSafety & compliance:\n- Guardian safety check runs regardless of AI setting\n- UK crisis helplines: Samaritans 116 123, Shout 85258, NHS 111\n- NMC Code theme picker on reflections \\(nursing professions only\\)\n- NMC Reflective Account export matches official form headings\n- Participatory learning flag on CPD records with 20-hour gap detection\n- Storage saves wrapped in try-catch for quota errors\n\nUser experience:\n- Profession picker added to onboarding \\(defaults to Nursing\\)\n- Dashboard shows reflection count and streak\n- Drive Mode renamed to Voice Notes throughout\n- Legal document links download as .txt \\(fixed broken SPA routes\\)\n- Holodeck sessions count in gamification stats\n- Tutorial bonus XP system added\n\nCode quality:\n- Removed all console.log statements from src/ \\(kept console.error\\)\n- Removed API key from .env \\(offline-only for testing\\)\n- Shared legal downloads utility \\(src/utils/legalDownloads.ts\\)\n- Updated .gitignore for android/, screenshots, debug scripts\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(ping:*)"
     ]
   }
 }
