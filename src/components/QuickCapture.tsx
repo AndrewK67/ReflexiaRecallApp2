@@ -1,13 +1,11 @@
 // src/components/QuickCapture.tsx
 import React, { useMemo, useState } from "react";
 import type { Entry, GuardianBadge, IncidentEntry, MediaItem } from "../types";
-import CanvasBoard from "./CanvasBoard";
-import CanvasBoardBasic from "./CanvasBoardBasic";
 import CameraCapture from "./media/CameraCapture";
-import VideoCapture from "./media/VideoCapture";
 import AudioCapture from "./media/AudioCapture";
 import { Capacitor } from '@capacitor/core';
-import { savePhotoToFile, saveVideoToFile, saveAudioToFile } from '../services/mediaService';
+import { savePhotoToFile, saveAudioToFile } from '../services/mediaService';
+import { saveMediaFile } from '../services/fileStorageService';
 
 type QuickCaptureProps = {
   aiEnabled: boolean;
@@ -68,15 +66,12 @@ function localGuardianCheck(text: string): GuardianBadge | null {
 
 export default function QuickCapture({ aiEnabled, onComplete, onCancel }: QuickCaptureProps) {
   const [notes, setNotes] = useState("");
-  const [tab, setTab] = useState<"TEXT" | "PHOTO" | "VIDEO" | "AUDIO" | "DRAW">("TEXT");
-  const [drawingDataUrl, setDrawingDataUrl] = useState<string | null>(null);
+  const [tab, setTab] = useState<"TEXT" | "PHOTO" | "AUDIO">("TEXT");
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
-  const [videoDataUrl, setVideoDataUrl] = useState<string | null>(null);
   const [audioDataUrl, setAudioDataUrl] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [useAdvancedCanvas, setUseAdvancedCanvas] = useState(false);
 
-  const hasMedia = !!(photoDataUrl || videoDataUrl || audioDataUrl || drawingDataUrl);
+  const hasMedia = !!(photoDataUrl || audioDataUrl);
 
   // Camera transition state to prevent race conditions
   const [cameraReady, setCameraReady] = useState(false);
@@ -104,29 +99,18 @@ export default function QuickCapture({ aiEnabled, onComplete, onCancel }: QuickC
         });
       }
 
-      if (videoDataUrl) {
-        media.push({
-          id: `video_${Date.now()}`,
-          type: "VIDEO",
-          url: videoDataUrl,
-          createdAt: Date.now(),
-        });
-      }
-
       if (audioDataUrl) {
+        // Persist blob URL to IndexedDB for durable storage
+        let audioUrl = audioDataUrl;
+        if (audioUrl.startsWith('blob:')) {
+          const response = await fetch(audioUrl);
+          const blob = await response.blob();
+          audioUrl = await saveMediaFile(blob, 'audio');
+        }
         media.push({
           id: `audio_${Date.now()}`,
           type: "AUDIO",
-          url: audioDataUrl,
-          createdAt: Date.now(),
-        });
-      }
-
-      if (drawingDataUrl) {
-        media.push({
-          id: `draw_${Date.now()}`,
-          type: "DRAWING",
-          url: drawingDataUrl,
+          url: audioUrl,
           createdAt: Date.now(),
         });
       }
@@ -167,15 +151,18 @@ export default function QuickCapture({ aiEnabled, onComplete, onCancel }: QuickC
     try {
       if (!item.url) return;
       
-      // Handle file:// paths - read the file to get the blob
+      // Resolve URL to a Blob
       let blob: Blob;
-      if (item.url.startsWith('file://')) {
-        // Read the file from native filesystem
+      if (item.url.startsWith('blob:')) {
+        // Blob URL — fetch to get the blob
+        const response = await fetch(item.url);
+        blob = await response.blob();
+      } else if (item.url.startsWith('file://')) {
+        // Native filesystem path
         const { Filesystem } = await import('@capacitor/filesystem');
         const result = await Filesystem.readFile({ path: item.url.replace('file://', '') });
-        const contentType = 
+        const contentType =
           item.type === 'PHOTO' ? 'image/jpeg' :
-          item.type === 'VIDEO' ? 'video/webm' :
           item.type === 'AUDIO' ? 'audio/webm' : 'application/octet-stream';
         const base64Data = typeof result.data === 'string' ? result.data : '';
         const binary = atob(base64Data);
@@ -183,7 +170,7 @@ export default function QuickCapture({ aiEnabled, onComplete, onCancel }: QuickC
         for (let i = 0; i < binary.length; i++) u8[i] = binary.charCodeAt(i);
         blob = new Blob([u8], { type: contentType });
       } else {
-        // Handle data URLs
+        // Data URL
         blob = dataUrlToBlob(item.url);
       }
       
@@ -196,20 +183,6 @@ export default function QuickCapture({ aiEnabled, onComplete, onCancel }: QuickC
           const a = document.createElement('a');
           a.href = url;
           a.download = `photo_${Date.now()}.${blob.type.split('/')[1] || 'jpg'}`;
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          URL.revokeObjectURL(url);
-        }
-      } else if (item.type === 'VIDEO') {
-        if (Capacitor.isNativePlatform()) {
-          const path = await saveVideoToFile(blob);
-          alert(`Saved video: ${path}`);
-        } else {
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `video_${Date.now()}.${blob.type.split('/')[1] || 'webm'}`;
           document.body.appendChild(a);
           a.click();
           a.remove();
@@ -237,39 +210,6 @@ export default function QuickCapture({ aiEnabled, onComplete, onCancel }: QuickC
   };
 
   return (
-    <>
-      {/* Camera/Video overlays - render outside normal flow for proper full-screen positioning */}
-      {tab === "PHOTO" && cameraReady && (
-        <CameraCapture
-          key={`camera-${cameraKey}`}
-          onCapture={(dataUrl) => {
-            setPhotoDataUrl(dataUrl);
-            setCameraReady(false);
-            setTab("TEXT");
-          }}
-          onCancel={() => {
-            setCameraReady(false);
-            setTab("TEXT");
-          }}
-        />
-      )}
-
-      {tab === "VIDEO" && cameraReady && (
-        <VideoCapture
-          key={`video-${cameraKey}`}
-          onCapture={(dataUrl) => {
-            setVideoDataUrl(dataUrl);
-            setCameraReady(false);
-            setTab("TEXT");
-          }}
-          onCancel={() => {
-            setCameraReady(false);
-            setTab("TEXT");
-          }}
-          maxDuration={60}
-        />
-      )}
-
       <div className="h-full flex flex-col overflow-hidden bg-gradient-to-b from-slate-950 to-slate-900 text-white relative">
         {/* Animated Background */}
         <div className="animated-backdrop-dark overflow-hidden">
@@ -325,22 +265,6 @@ export default function QuickCapture({ aiEnabled, onComplete, onCancel }: QuickC
           </button>
           <button
             onClick={() => {
-              if (tab === "VIDEO") return;
-              setCameraReady(false);
-              setCameraKey(prev => prev + 1);
-              setTab("VIDEO");
-              setTimeout(() => setCameraReady(true), 50);
-            }}
-            className={`py-2 px-4 landscape:py-1.5 landscape:px-3 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-              tab === "VIDEO"
-                ? "bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-lg"
-                : "bg-white/10 text-white/60 hover:text-white hover:bg-white/15"
-            }`}
-          >
-            Video
-          </button>
-          <button
-            onClick={() => {
               setCameraReady(false);
               setTab("AUDIO");
             }}
@@ -352,26 +276,13 @@ export default function QuickCapture({ aiEnabled, onComplete, onCancel }: QuickC
           >
             Audio
           </button>
-          <button
-            onClick={() => {
-              setCameraReady(false);
-              setTab("DRAW");
-            }}
-            className={`py-2 px-4 landscape:py-1.5 landscape:px-3 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-              tab === "DRAW"
-                ? "bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-lg"
-                : "bg-white/10 text-white/60 hover:text-white hover:bg-white/15"
-            }`}
-          >
-            Draw
-          </button>
         </div>
       </div>
 
       {/* Content area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Content area - full height for media tabs */}
-        {(tab === "PHOTO" || tab === "VIDEO" || tab === "AUDIO") ? (
+        {(tab === "PHOTO" || tab === "AUDIO") ? (
         <div className="flex-1 relative overflow-hidden">
           {tab === "AUDIO" && (
             <AudioCapture
@@ -384,12 +295,27 @@ export default function QuickCapture({ aiEnabled, onComplete, onCancel }: QuickC
             />
           )}
 
+          {tab === "PHOTO" && cameraReady && (
+            <CameraCapture
+              key={`camera-${cameraKey}`}
+              onCapture={(dataUrl) => {
+                setPhotoDataUrl(dataUrl);
+                setCameraReady(false);
+                setTab("TEXT");
+              }}
+              onCancel={() => {
+                setCameraReady(false);
+                setTab("TEXT");
+              }}
+            />
+          )}
+
           {/* Loading state during camera transition */}
-          {(tab === "PHOTO" || tab === "VIDEO") && !cameraReady && (
-            <div className="flex-1 bg-black flex items-center justify-center">
+          {tab === "PHOTO" && !cameraReady && (
+            <div className="absolute inset-0 bg-black flex items-center justify-center">
               <div className="text-white text-center">
-                <div className="w-12 h-12 border-4 border-t-white/80 border-white/20 rounded-full animate-spin mx-auto mb-3" />
-                <p className="text-sm">Preparing camera...</p>
+                <div className="w-10 h-10 border-4 border-t-white/80 border-white/20 rounded-full animate-spin mx-auto mb-2" />
+                <p className="text-xs">Preparing camera...</p>
               </div>
             </div>
           )}
@@ -457,26 +383,6 @@ export default function QuickCapture({ aiEnabled, onComplete, onCancel }: QuickC
                           </div>
                         </div>
                       )}
-                      {videoDataUrl && (
-                        <div className="relative group w-24">
-                          <video src={videoDataUrl} className="w-24 h-24 object-cover rounded-lg border border-white/20" />
-                          <button
-                            onClick={() => setVideoDataUrl(null)}
-                            className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
-                          >
-                            ×
-                          </button>
-                          <div className="mt-1 flex flex-col gap-1">
-                            <button
-                              onClick={() => handleSaveMedia({ type: 'VIDEO', url: videoDataUrl })}
-                              className="w-full py-1 rounded-md bg-blue-600 text-white text-xs"
-                            >
-                              Save to device
-                            </button>
-                            <p className="text-[10px] text-white/50 text-center">Video</p>
-                          </div>
-                        </div>
-                      )}
                       {audioDataUrl && (
                         <div className="relative group w-24">
                           <div className="w-24 h-24 rounded-lg border border-white/20 bg-indigo-600/20 flex items-center justify-center">
@@ -499,76 +405,20 @@ export default function QuickCapture({ aiEnabled, onComplete, onCancel }: QuickC
                           </div>
                         </div>
                       )}
-                      {drawingDataUrl && (
-                        <div className="relative group">
-                          <img src={drawingDataUrl} alt="Drawing" className="w-20 h-20 object-cover rounded-lg border border-white/20" />
-                          <button
-                            onClick={() => setDrawingDataUrl(null)}
-                            className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
-                          >
-                            ×
-                          </button>
-                          <p className="text-[10px] text-white/50 mt-1 text-center">Drawing</p>
-                        </div>
-                      )}
                     </div>
                   </div>
                 )}
               </>
             )}
 
-            {tab === "DRAW" && (
-              <div className="rounded-xl border border-white/10 bg-white/5 overflow-hidden">
-                {useAdvancedCanvas ? (
-                  <CanvasBoard
-                    height={window.innerHeight > window.innerWidth ? 400 : 280}
-                    onExport={(dataUrl) => {
-                      setDrawingDataUrl(dataUrl);
-                      setTab("TEXT");
-                      setUseAdvancedCanvas(false);
-                    }}
-                    initialDataUrl={drawingDataUrl ?? undefined}
-                    onCancel={() => {
-                      setTab("TEXT");
-                      setUseAdvancedCanvas(false);
-                    }}
-                  />
-                ) : (
-                  <CanvasBoardBasic
-                    height={window.innerHeight > window.innerWidth ? 400 : 280}
-                    onExport={(dataUrl) => {
-                      setDrawingDataUrl(dataUrl);
-                      setTab("TEXT");
-                    }}
-                    initialDataUrl={drawingDataUrl ?? undefined}
-                    onCancel={() => setTab("TEXT")}
-                    onUpgrade={(dataUrl) => {
-                      setDrawingDataUrl(dataUrl);
-                      setUseAdvancedCanvas(true);
-                    }}
-                  />
-                )}
-                <div className="p-2 landscape:p-1.5 flex items-center justify-between text-xs landscape:text-[10px]">
-                  <div className="text-white/70">
-                    Tip: export saves your sketch
-                  </div>
-                  <button
-                    onClick={() => setDrawingDataUrl(null)}
-                    className="text-xs text-rose-400 hover:text-rose-300 font-semibold"
-                  >
-                    Clear
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
 
           <div className="flex-shrink-0 p-6 border-t border-white/10 bg-slate-950/50 backdrop-blur relative z-10">
             <button
               onClick={save}
-              disabled={isSaving || (!notes.trim() && !photoDataUrl && !videoDataUrl && !audioDataUrl && !drawingDataUrl)}
+              disabled={isSaving || (!notes.trim() && !photoDataUrl && !audioDataUrl)}
               className={`w-full py-3 landscape:py-2.5 rounded-xl font-bold text-base landscape:text-sm shadow-xl transition-all ${
-                isSaving || (!notes.trim() && !photoDataUrl && !videoDataUrl && !audioDataUrl && !drawingDataUrl)
+                isSaving || (!notes.trim() && !photoDataUrl && !audioDataUrl)
                   ? "bg-white/10 text-white/30"
                   : "bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white active:scale-95"
               }`}
@@ -580,6 +430,5 @@ export default function QuickCapture({ aiEnabled, onComplete, onCancel }: QuickC
       )}
       </div>
     </div>
-    </>
   );
 }

@@ -3,10 +3,7 @@ import { Mic, Square, Play, Pause, RotateCw, X, Check, Volume2 } from 'lucide-re
 import {
   startAudioRecording,
   stopAudioRecording,
-  saveAudioToFile,
 } from '../../services/mediaService';
-import { readMediaFile } from '../../services/fileStorageService';
-import { Capacitor } from '@capacitor/core';
 
 interface AudioCaptureProps {
   onCapture: (dataUrl: string) => void;
@@ -35,14 +32,16 @@ export default function AudioCapture({ onCapture, onCancel, maxDuration = 300 }:
   const [audioLevel, setAudioLevel] = useState(0);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const isRecordingRef = useRef(false);
+  const exportedUrlRef = useRef<string | null>(null);
 
   const timerRef = useRef<number | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  // Clean up blob URL on unmount
+  // Clean up blob URL on unmount — but NOT if it was passed to parent
   useEffect(() => {
     return () => {
-      if (displayUrl && displayUrl.startsWith('blob:')) {
+      if (displayUrl && displayUrl.startsWith('blob:') && displayUrl !== exportedUrlRef.current) {
         URL.revokeObjectURL(displayUrl);
       }
     };
@@ -96,7 +95,7 @@ export default function AudioCapture({ onCapture, onCancel, maxDuration = 300 }:
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
-  // Visualize audio levels
+  // Visualize audio levels (uses ref to avoid stale closure)
   const visualizeAudio = () => {
     if (!analyserRef.current) return;
 
@@ -104,7 +103,7 @@ export default function AudioCapture({ onCapture, onCancel, maxDuration = 300 }:
     const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
     const updateLevel = () => {
-      if (!isRecording) return;
+      if (!isRecordingRef.current) return;
 
       analyser.getByteFrequencyData(dataArray);
 
@@ -122,6 +121,17 @@ export default function AudioCapture({ onCapture, onCancel, maxDuration = 300 }:
     try {
       setError(null);
 
+      // Check secure context (getUserMedia requires HTTPS)
+      if (!window.isSecureContext) {
+        setError('Microphone requires a secure connection (HTTPS). Please access this app via HTTPS.');
+        return;
+      }
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setError('Your browser does not support audio recording. Please try Chrome or Safari.');
+        return;
+      }
+
       const recorder = await startAudioRecording();
 
       // Set up audio analysis for visualization
@@ -133,10 +143,10 @@ export default function AudioCapture({ onCapture, onCancel, maxDuration = 300 }:
 
       analyserRef.current = analyser;
 
-      // Use timeslice for Android WebView - request chunks every 1000ms
-      // This ensures ondataavailable fires regularly during recording
-      recorder.start(1000);
+      // Start recording — no timeslice for better mobile Chrome compatibility
+      recorder.start();
       setMediaRecorder(recorder);
+      isRecordingRef.current = true;
       setIsRecording(true);
       setRecordingTime(0);
 
@@ -152,6 +162,7 @@ export default function AudioCapture({ onCapture, onCancel, maxDuration = 300 }:
 
     try {
       setIsProcessing(true);
+      isRecordingRef.current = false;
       setIsRecording(false); // Immediately stop UI state
 
       // Stop visualization
@@ -170,14 +181,12 @@ export default function AudioCapture({ onCapture, onCancel, maxDuration = 300 }:
         return;
       }
 
-      // Create blob URL for playback (Android WebView compatible)
+      // Create blob URL for playback and passing back to parent
       const blobUrl = URL.createObjectURL(audioBlob);
-
-      const filePath = await saveAudioToFile(audioBlob);
 
       setAudioBlob(audioBlob);
       setDisplayUrl(blobUrl);
-      setRecordedAudio(filePath);
+      setRecordedAudio(blobUrl);
       setMediaRecorder(null);
       setAudioLevel(0);
       setIsProcessing(false);
@@ -205,6 +214,7 @@ export default function AudioCapture({ onCapture, onCancel, maxDuration = 300 }:
 
   const handleUse = () => {
     if (recordedAudio) {
+      exportedUrlRef.current = displayUrl;
       onCapture(recordedAudio);
     }
   };
@@ -233,37 +243,36 @@ export default function AudioCapture({ onCapture, onCancel, maxDuration = 300 }:
   // Show preview if audio is recorded
   if (recordedAudio) {
     return (
-      <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col landscape:flex-row z-50">
-        {/* Audio visualization and player - larger in landscape */}
-        <div className="flex-1 flex flex-col items-center justify-center p-3 landscape:p-8 overflow-y-auto custom-scrollbar pb-safe min-h-0 landscape:w-3/4">
-          <div className="w-32 h-32 landscape:w-40 landscape:h-40 rounded-full bg-emerald-600/20 border-4 border-emerald-500/30 flex items-center justify-center mb-6 relative overflow-hidden">
-            <Check size={64} className="landscape:w-20 landscape:h-20 text-emerald-400 relative z-10" />
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col z-50">
+        {/* Audio visualization and player */}
+        <div className="flex-1 flex flex-col items-center justify-center p-3 min-h-0">
+          <div className="w-16 h-16 rounded-full bg-emerald-600/20 border-4 border-emerald-500/30 flex items-center justify-center mb-3">
+            <Check size={32} className="text-emerald-400" />
           </div>
 
-          {/* Show recording time prominently */}
-          <p className="text-white text-4xl landscape:text-5xl font-bold font-mono mb-2">{formatTime(recordingTime)}</p>
-          <p className="text-emerald-400 text-base landscape:text-lg font-semibold mb-8">✓ Recording complete</p>
-          
+          <p className="text-white text-2xl font-bold font-mono mb-1">{formatTime(recordingTime)}</p>
+          <p className="text-emerald-400 text-sm font-semibold mb-4">Recording complete</p>
+
           {/* Audio player */}
           {displayUrl && (
-            <div className="w-full max-w-md">
-              <div className="bg-slate-800/60 backdrop-blur-sm rounded-2xl p-6 border border-slate-700">
-                <div className="flex items-center gap-4">
+            <div className="w-full max-w-md px-2">
+              <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-3 border border-slate-700">
+                <div className="flex items-center gap-3">
                   <button
                     onClick={handlePlayPause}
-                    className="w-16 h-16 rounded-full bg-emerald-600 hover:bg-emerald-500 flex items-center justify-center transition active:scale-95 flex-shrink-0"
+                    className="w-12 h-12 rounded-full bg-emerald-600 hover:bg-emerald-500 flex items-center justify-center transition active:scale-95 flex-shrink-0"
                   >
                     {isPlaying ? (
-                      <Pause size={32} className="text-white" />
+                      <Pause size={24} className="text-white" />
                     ) : (
-                      <Play size={32} className="text-white ml-1" />
+                      <Play size={24} className="text-white ml-0.5" />
                     )}
                   </button>
                   <div className="flex-1">
-                    <p className="text-white text-lg font-semibold mb-1">Audio Recording</p>
-                    <p className="text-white/70 text-sm">Duration: {formatTime(recordingTime)}</p>
+                    <p className="text-white text-sm font-semibold">Audio Recording</p>
+                    <p className="text-white/70 text-xs">Duration: {formatTime(recordingTime)}</p>
                   </div>
-                  <Volume2 size={28} className="text-emerald-400 flex-shrink-0" />
+                  <Volume2 size={20} className="text-emerald-400 flex-shrink-0" />
                 </div>
               </div>
               <audio
@@ -280,18 +289,18 @@ export default function AudioCapture({ onCapture, onCancel, maxDuration = 300 }:
           )}
         </div>
 
-        {/* Controls - portrait bottom, landscape right sidebar */}
-        <div className="p-3 sm:p-4 landscape:p-6 pb-safe bg-slate-900/90 backdrop-blur-xl border-t landscape:border-l landscape:border-t-0 border-slate-800 flex-shrink-0 landscape:w-1/4 landscape:flex landscape:flex-col landscape:justify-center">
-          <div className="flex landscape:flex-col gap-2 landscape:gap-3">
+        {/* Controls */}
+        <div className="p-2 bg-slate-900/90 backdrop-blur-xl border-t border-slate-800 flex-shrink-0">
+          <div className="flex gap-2">
             <button
               onClick={handleRetake}
-              className="flex-1 py-2 landscape:py-3 px-2 rounded-lg landscape:rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-semibold text-sm flex items-center justify-center gap-2 transition"
+              className="flex-1 py-2.5 px-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-semibold text-sm flex items-center justify-center gap-2 transition"
             >
               <RotateCw size={16} /> Retake
             </button>
             <button
               onClick={handleUse}
-              className="flex-1 py-2 landscape:py-3 px-2 rounded-lg landscape:rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-500/30"
+              className="flex-1 py-2.5 px-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-500/30"
             >
               <Check size={16} /> Use Audio
             </button>
@@ -337,46 +346,46 @@ export default function AudioCapture({ onCapture, onCancel, maxDuration = 300 }:
         </div>
       </div>
 
-      {/* Visualization area - scrollable */}
-      <div className="flex-1 flex flex-col items-center justify-center p-2 sm:p-4 overflow-y-auto custom-scrollbar pb-safe min-h-0">
+      {/* Visualization area */}
+      <div className="flex-1 flex flex-col items-center justify-center p-2 min-h-0">
         {/* Microphone icon with pulsing effect */}
-        <div className="relative mb-3 sm:mb-4">
+        <div className="relative mb-2">
           <div
-            className={`w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-red-500/20 border-4 border-red-500/40 flex items-center justify-center transition-all duration-300 ${
+            className={`w-20 h-20 rounded-full bg-red-500/20 border-4 border-red-500/40 flex items-center justify-center transition-all duration-300 ${
               isRecording ? 'animate-pulse' : ''
             }`}
             style={{
               transform: isRecording ? `scale(${1 + audioLevel * 0.3})` : 'scale(1)',
             }}
           >
-            <Mic size={36} className="text-red-400 sm:w-12 sm:h-12" />
+            <Mic size={32} className="text-red-400" />
           </div>
 
           {/* Recording indicator */}
           {isRecording && (
-            <div className="absolute -top-1 sm:-top-2 -right-1 sm:-right-2 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-red-500 flex items-center justify-center animate-pulse">
-              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-white" />
+            <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 flex items-center justify-center animate-pulse">
+              <div className="w-2.5 h-2.5 rounded-full bg-white" />
             </div>
           )}
         </div>
 
         {/* Timer */}
-        <p className="text-white text-2xl sm:text-3xl font-bold font-mono mb-1">{formatTime(recordingTime)}</p>
+        <p className="text-white text-2xl font-bold font-mono mb-0.5">{formatTime(recordingTime)}</p>
 
         {/* Status text */}
         {isRecording ? (
-          <p className="text-white/70 text-[10px] sm:text-xs">Recording in progress...</p>
+          <p className="text-white/70 text-[10px]">Recording in progress...</p>
         ) : (
-          <p className="text-white/50 text-[10px] sm:text-xs">Ready to record</p>
+          <p className="text-white/50 text-[10px]">Ready to record</p>
         )}
 
         {/* Audio level bars */}
         {isRecording && (
-          <div className="flex items-end gap-0.5 sm:gap-1 mt-3 sm:mt-4 h-10 sm:h-12">
+          <div className="flex items-end gap-0.5 mt-2 h-8">
             {Array.from({ length: 20 }).map((_, i) => (
               <div
                 key={i}
-                className="w-1 sm:w-1.5 bg-gradient-to-t from-red-500 to-red-300 rounded-full transition-all duration-100"
+                className="w-1 bg-gradient-to-t from-red-500 to-red-300 rounded-full transition-all duration-100"
                 style={{
                   height: `${Math.random() * audioLevel * 100 + 10}%`,
                 }}
@@ -387,19 +396,19 @@ export default function AudioCapture({ onCapture, onCancel, maxDuration = 300 }:
       </div>
 
       {/* Bottom controls */}
-      <div className="p-3 sm:p-4 pb-safe bg-slate-900/90 backdrop-blur-xl border-t border-slate-800 flex-shrink-0">
+      <div className="p-2 bg-slate-900/90 backdrop-blur-xl border-t border-slate-800 flex-shrink-0">
         <div className="flex items-center justify-center">
           {!isRecording ? (
             <button
               onClick={handleStartRecording}
               disabled={isProcessing}
-              className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-4 border-red-500 bg-black/10 hover:bg-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition active:scale-95"
+              className="w-14 h-14 rounded-full border-4 border-red-500 bg-black/10 hover:bg-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition active:scale-95"
             >
               {isProcessing ? (
-                <div className="w-5 h-5 sm:w-6 sm:h-6 border-3 border-t-red-500 border-red-500/30 rounded-full animate-spin" />
+                <div className="w-5 h-5 border-3 border-t-red-500 border-red-500/30 rounded-full animate-spin" />
               ) : (
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-red-500 flex items-center justify-center">
-                  <Mic size={20} className="text-white sm:w-6 sm:h-6" />
+                <div className="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center">
+                  <Mic size={20} className="text-white" />
                 </div>
               )}
             </button>
@@ -407,14 +416,14 @@ export default function AudioCapture({ onCapture, onCancel, maxDuration = 300 }:
             <button
               onClick={handleStopRecording}
               disabled={isProcessing}
-              className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-4 border-red-500 bg-red-500/90 hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition active:scale-95"
+              className="w-14 h-14 rounded-full border-4 border-red-500 bg-red-500/90 hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition active:scale-95"
             >
-              <Square size={20} className="text-white fill-white sm:w-6 sm:h-6" />
+              <Square size={20} className="text-white fill-white" />
             </button>
           )}
         </div>
 
-        <p className="text-center text-white/50 text-[10px] sm:text-xs mt-1.5 sm:mt-2">
+        <p className="text-center text-white/50 text-[10px] mt-1">
           {isRecording ? 'Tap to stop recording' : 'Tap to start recording'}
         </p>
       </div>

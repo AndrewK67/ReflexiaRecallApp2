@@ -1,14 +1,9 @@
-import { useEffect, useState, lazy, Suspense, useMemo } from "react";
-import type { Entry, UserProfile, IncidentEntry, ReflectionEntry, ViewState } from "./types";
-import { storageService } from "./services/storageService";
-import { generateDailyPrompt } from "./services/aiService";
-import { offlineDailyPrompt } from "./utils/offlineDailyPrompt";
-import { shouldShowTutorial, completeStep, type TutorialStep } from "./services/tutorialService";
-import { buildGamificationData, getGamificationStats, getHolodeckSessionCount, awardBonusXP } from "./services/gamificationService";
-import { getGroundingSessions } from "./services/groundingService";
-import { isPackEnabled, getRequiredPack, loadPackState, cleanupExpiredTrials, type PackId } from "./packs";
+import { lazy, Suspense } from "react";
+import type { Entry, IncidentEntry, ReflectionEntry } from "./types";
+import { UserProvider, EntriesProvider, AppProvider, useApp, useUser, useEntries } from "./contexts";
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
+import { readMediaFile } from './services/fileStorageService';
 
 // Eager load critical components
 import SimplifiedOnboarding from "./components/SimplifiedOnboarding";
@@ -26,19 +21,13 @@ const Oracle = lazy(() => import("./components/Oracle"));
 const Holodeck = lazy(() => import("./components/Holodeck"));
 const BioRhythm = lazy(() => import("./components/BioRhythm"));
 const Grounding = lazy(() => import("./components/Grounding"));
-const DriveMode = lazy(() => import("./components/DriveMode"));
 const CalendarView = lazy(() => import("./components/CalendarView"));
 const CrisisProtocols = lazy(() => import("./components/CrisisProtocols"));
 const Archive = lazy(() => import("./components/Archive"));
-const GamificationHub = lazy(() => import("./components/GamificationHub"));
 const CPD = lazy(() => import("./components/CPD"));
-const Library = lazy(() => import("./components/Library"));
-const CanvasBoard = lazy(() => import("./components/CanvasBoard"));
-const MentalAtlas = lazy(() => import("./components/MentalAtlas"));
 const Reports = lazy(() => import("./components/Reports"));
 const ProfessionalDocExport = lazy(() => import("./components/ProfessionalDocExport"));
 const Tutorial = lazy(() => import("./components/Tutorial"));
-const RewardsStore = lazy(() => import("./components/RewardsStore"));
 const PackBrowser = lazy(() => import("./components/PackBrowser"));
 const PermissionsHelp = lazy(() => import("./components/PermissionsHelp"));
 
@@ -49,16 +38,12 @@ import UpdateNotification from "./components/UpdateNotification";
 async function openDocumentsFolder() {
   try {
     if (Capacitor.getPlatform() === 'android') {
-      // Try multiple methods to open file manager
-      
-      // Method 1: Try to open Samsung My Files app specifically
       try {
         window.location.href = 'content://com.android.externalstorage.documents/document/primary%3ADocuments';
       } catch (e) {
         // silently ignore - fallback methods below
       }
-      
-      // Method 2: Generic file manager with GET_CONTENT action
+
       setTimeout(() => {
         try {
           const intent = 'intent:#Intent;' +
@@ -70,11 +55,9 @@ async function openDocumentsFolder() {
           // silently ignore - fallback methods below
         }
       }, 500);
-      
-      // Method 3: Try to open file manager app
+
       setTimeout(() => {
         try {
-          // Try to launch file manager
           window.location.href = 'intent:#Intent;action=android.intent.action.VIEW;end';
         } catch (e) {
           alert('Could not open file manager. Please open My Files app and go to Documents folder manually.');
@@ -95,40 +78,34 @@ async function saveAudioToDownloads(audioUrl: string) {
     if (audioUrl.startsWith('file://')) {
       if (Capacitor.getPlatform() === 'android') {
         try {
-          // Read the file from app's data directory
-          // Don't remove the leading slash - Capacitor needs the full path
           const originalPath = audioUrl.replace('file://', '');
 
           const fileData = await Filesystem.readFile({
             path: originalPath,
           });
-          
+
           const dataSize = typeof fileData.data === 'string' ? fileData.data.length : fileData.data.size;
 
           if (!fileData.data || dataSize === 0) {
             alert('Error: Audio file is empty or could not be read.');
             return;
           }
-          
-          // Create a timestamp-based filename
+
           const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
           const publicFileName = `Reflexia_Audio_${timestamp}.webm`;
-          
-          // Write to Documents directory (Downloads not always accessible)
+
           await Filesystem.writeFile({
             path: publicFileName,
             data: fileData.data,
             directory: Directory.Documents,
           });
 
-          // Verify the file was written by reading it back
           const verification = await Filesystem.readFile({
             path: publicFileName,
             directory: Directory.Documents,
           });
           const verifySize = typeof verification.data === 'string' ? verification.data.length : verification.data.size;
 
-          // Show detailed success message with clear instructions
           alert(
             `✅ Audio saved successfully!\n\n` +
             `📂 Location: Documents folder\n` +
@@ -145,7 +122,7 @@ async function saveAudioToDownloads(audioUrl: string) {
             `• MX Player\n\n` +
             `💡 Tip: All Reflexia audio files start with "Reflexia_Audio_"`
           );
-          
+
         } catch (err) {
           console.error('Error saving file:', err);
           alert(`Error saving audio: ${err instanceof Error ? err.message : 'Unknown error'}`);
@@ -153,10 +130,34 @@ async function saveAudioToDownloads(audioUrl: string) {
       } else {
         window.open(audioUrl, '_system');
       }
+    } else if (audioUrl.startsWith('idb://')) {
+      try {
+        const resolvedUrl = await readMediaFile(audioUrl);
+        const response = await fetch(resolvedUrl);
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = `audio_${Date.now()}.${blob.type.split('/')[1] || 'webm'}`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(blobUrl);
+      } catch (err) {
+        console.error('Error reading audio from IndexedDB:', err);
+        alert('Could not read audio file. It may have been deleted.');
+      }
     } else if (audioUrl.startsWith('blob:')) {
       alert('This audio is not yet saved. Please use the "Save to Device" button in the capture screen first.');
+    } else if (audioUrl.startsWith('data:')) {
+      const a = document.createElement('a');
+      a.href = audioUrl;
+      a.download = `audio_${Date.now()}.webm`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
     } else {
-      window.open(audioUrl, '_system');
+      alert('Could not download audio: unsupported format.');
     }
   } catch (error) {
     console.error('Error saving audio file:', error);
@@ -191,7 +192,6 @@ function formatIncident(entry: IncidentEntry) {
   lines.push("");
   lines.push((entry.notes || "").trim() || "(No notes)");
 
-  // guardianBadge is used by some builds; keep runtime safe even if not in type
   const badge = (entry as any)?.guardianBadge;
   if (badge) {
     lines.push("");
@@ -208,219 +208,189 @@ function formatIncident(entry: IncidentEntry) {
   return lines.join("\n").trim();
 }
 
-export default function App() {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [isLocked, setIsLocked] = useState(false);
+function AppContent() {
+  const {
+    currentView, navigate, navigateWithGating,
+    isLoaded, isLocked, setIsLocked,
+    dailyPrompt, showTutorial, setShowTutorial,
+    openEntry, setOpenEntry,
+    refreshPackState, showPackGate, setShowPackGate,
+  } = useApp();
+  const { profile, updateProfile, completeOnboarding } = useUser();
+  const { entries, addEntry, stats, awardXP } = useEntries();
 
-  // Login-first
-  const [view, setView] = useState<ViewState>("ONBOARDING");
-
-  const [userProfile, setUserProfile] = useState<UserProfile>({
-    name: "",
-    profession: "NONE",
-    guidePersonality: "ZEN",
-    aiEnabled: false,
-    gamificationEnabled: false,
-    themeMode: "DARK",
-    isOnboarded: false,
-    privacyLockEnabled: false,
-    blurHistory: false,
-  });
-
-  const [entries, setEntries] = useState<Entry[]>([]);
-  const [dailyPrompt, setDailyPrompt] = useState("Space for your thoughts.");
-  const [openEntry, setOpenEntry] = useState<Entry | null>(null);
-  const [showTutorial, setShowTutorial] = useState(false);
-  const [currentXP, setCurrentXP] = useState(0);
-  const [packState, setPackState] = useState(loadPackState());
-  const [showPackGate, setShowPackGate] = useState<{ packId: PackId; featureName: string } | null>(null);
-
-  // Calculate current XP from gamification data
-  const gamificationData = useMemo(() => {
-    const groundingSessions = getGroundingSessions().filter((s) => s.completed).length;
-    const holodeckSessions = getHolodeckSessionCount();
-    return buildGamificationData(entries, groundingSessions, holodeckSessions);
-  }, [entries]);
-
-  const stats = useMemo(() => getGamificationStats(gamificationData), [gamificationData]);
-
-  // Update XP when stats change
-  useEffect(() => {
-    setCurrentXP(stats.totalPoints);
-  }, [stats.totalPoints]);
-
-  useEffect(() => {
-    const load = async () => {
-      // Clean up expired pack trials
-      cleanupExpiredTrials();
-
-      const profile = storageService.loadProfile();
-      const loadedEntries = storageService.loadEntries();
-
-      // ✅ No duplicate property assignment / spread-overwrite warnings
-      const mergedProfile: UserProfile = {
-        name: profile?.name ?? "",
-        profession: profile?.profession ?? "NONE",
-        guidePersonality: profile?.guidePersonality ?? "ZEN",
-
-        isOnboarded: (profile as any)?.isOnboarded ?? false,
-        privacyLockEnabled: (profile as any)?.privacyLockEnabled ?? false,
-        blurHistory: (profile as any)?.blurHistory ?? false,
-
-        // OFF by default
-        aiEnabled: (profile as any)?.aiEnabled ?? false,
-        gamificationEnabled: (profile as any)?.gamificationEnabled ?? false,
-
-        themeMode: (profile as any)?.themeMode ?? "DARK",
-      };
-
-      setUserProfile(mergedProfile);
-      setEntries(loadedEntries);
-
-      if (mergedProfile.privacyLockEnabled) setIsLocked(true);
-
-      try {
-        if (mergedProfile.aiEnabled) {
-          const prompt = await generateDailyPrompt();
-          setDailyPrompt(prompt);
-        } else {
-          setDailyPrompt(offlineDailyPrompt());
-        }
-      } catch {
-        setDailyPrompt(offlineDailyPrompt());
-      }
-
-      setIsLoaded(true);
-
-      // Keep login-first behaviour. If you later want "auto-skip" when onboarded,
-      // we can add it as an optional setting.
-      setView("ONBOARDING");
-    };
-
-    load();
-  }, []);
-
-  // Tutorial is now opt-in only - user must manually start it from settings
-
-  // Auto-detect tutorial step completions based on view changes
-  useEffect(() => {
-    if (!showTutorial) return;
-
-    const viewToStepMap: Record<string, TutorialStep> = {
-      'REFLECTION': 'FIRST_REFLECTION',
-      'QUICK_CAPTURE': 'QUICK_CAPTURE',
-      'DRIVE_MODE': 'DRIVE_MODE',
-      'ORACLE': 'ORACLE_CHAT',
-      'HOLODECK': 'HOLODECK',
-      'MENTAL_ATLAS': 'MENTAL_ATLAS',
-      'CPD': 'CPD_TRACKING',
-      'PROFESSIONAL_DOC': 'PROFESSIONAL_DOCS',
-      'GAMIFICATION': 'GAMIFICATION',
-      'REWARDS': 'GAMIFICATION', // Use same tutorial step as gamification
-      'BIO_RHYTHM': 'BIO_RHYTHM',
-      'GROUNDING': 'GROUNDING',
-      'CRISIS_PROTOCOLS': 'CRISIS_PROTOCOLS',
-      'CALENDAR': 'CALENDAR_VIEW',
-      'CANVAS': 'CANVAS_BOARD',
-      'LIBRARY': 'LIBRARY',
-      'REPORTS': 'REPORTS',
-      'ARCHIVE': 'ARCHIVE',
-      'NEURAL_LINK': 'NEURAL_LINK',
-    };
-
-    const tutorialStep = viewToStepMap[view];
-    if (tutorialStep) {
-      // Give user a moment to explore before marking complete
-      const timer = setTimeout(() => {
-        completeStep(tutorialStep);
-      }, 3000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [view, showTutorial]);
-
-  // Close entry modal on Escape key
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && openEntry) {
-        setOpenEntry(null);
-      }
-    };
-
-    if (openEntry) {
-      document.addEventListener('keydown', handleEscape);
-      return () => document.removeEventListener('keydown', handleEscape);
-    }
-  }, [openEntry]);
-
-  const handleOnboardingComplete = async (partial: Partial<UserProfile>) => {
-    const newProfile: UserProfile = { ...userProfile, ...partial, isOnboarded: true };
-
-    storageService.saveProfile(newProfile);
-    setUserProfile(newProfile);
-
-    // After login, go dashboard
-    setView("DASHBOARD");
+  const handleEntryComplete = (entry: Entry) => {
+    addEntry(entry);
+    navigate("DASHBOARD");
   };
 
-  const persistEntries = async (next: Entry[]) => {
-    setEntries(next);
-    storageService.saveEntries(next);
+  const handleOnboardingComplete = (partial: Partial<import('./types').UserProfile>) => {
+    completeOnboarding(partial);
+    navigate("DASHBOARD");
   };
 
-  const handleEntryComplete = async (newEntry: Entry) => {
-    const updated = [newEntry, ...entries];
-    await persistEntries(updated);
-    setView("DASHBOARD");
-  };
-
-  const handleUpdateProfile = async (p: UserProfile) => {
-    setUserProfile(p);
-    storageService.saveProfile(p);
-
-    try {
-      if (p.aiEnabled) setDailyPrompt(await generateDailyPrompt());
-      else setDailyPrompt(offlineDailyPrompt());
-    } catch {
-      setDailyPrompt(offlineDailyPrompt());
-    }
-  };
-
-  const handleXPChange = (newXP: number) => {
-    setCurrentXP(newXP);
-  };
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 18) return "Good afternoon";
-    return "Good evening";
-  };
-
-  const getFirstName = () => {
-    const safe = typeof userProfile.name === "string" ? userProfile.name : "";
-    return safe.trim().split(" ")[0] || "friend";
-  };
-
-  const renderDashboard = () => (
-    <SimplifiedDashboard
-      userName={userProfile.name || ""}
-      dailyPrompt={dailyPrompt}
-      onNavigate={(viewName) => handleNavigateWithGating(viewName)}
-      onShowPackSettings={() => setView("PACK_BROWSER")}
-      totalEntries={entries.length}
-      currentStreak={stats.currentStreak ?? 0}
-    />
+  const ComponentLoader = () => (
+    <div className="h-full flex items-center justify-center">
+      <div className="w-6 h-6 border-3 border-t-cyan-400 border-white/20 rounded-full animate-spin" />
+    </div>
   );
 
-  // Navigation with pack gating
-  const handleNavigateWithGating = (viewName: string) => {
-    const requiredPack = getRequiredPack(viewName);
-    if (requiredPack && !isPackEnabled(requiredPack)) {
-      setShowPackGate({ packId: requiredPack, featureName: viewName });
-      return;
+  if (showPackGate) {
+    return (
+      <PackGate
+        requiredPack={showPackGate.packId}
+        featureName={showPackGate.featureName}
+        onClose={() => setShowPackGate(null)}
+        onEnable={() => {
+          refreshPackState();
+          setShowPackGate(null);
+        }}
+      />
+    );
+  }
+
+  const renderScreen = () => {
+    switch (currentView) {
+      case "ONBOARDING":
+        return <SimplifiedOnboarding onComplete={handleOnboardingComplete} />;
+
+      case "REFLECTION":
+        return (
+          <Suspense fallback={<ComponentLoader />}>
+            <ReflectionFlow
+              profession={profile.profession}
+              aiEnabled={profile.aiEnabled === true}
+              onComplete={handleEntryComplete}
+              onCancel={() => navigate("DASHBOARD")}
+            />
+          </Suspense>
+        );
+
+      case "CALENDAR":
+        return (
+          <Suspense fallback={<ComponentLoader />}>
+            <CalendarView entries={entries} onOpenEntry={(e) => setOpenEntry(e)} />
+          </Suspense>
+        );
+
+      case "QUICK_CAPTURE":
+        return (
+          <Suspense fallback={<ComponentLoader />}>
+            <QuickCapture
+              aiEnabled={profile.aiEnabled === true}
+              onComplete={handleEntryComplete}
+              onCancel={() => navigate("DASHBOARD")}
+            />
+          </Suspense>
+        );
+
+      case "NEURAL_LINK":
+        return (
+          <Suspense fallback={<ComponentLoader />}>
+            <NeuralLink
+              entries={entries}
+              profile={profile}
+              onUpdateProfile={updateProfile}
+              onNavigateToWelcome={() => navigate("ONBOARDING")}
+              onStartTutorial={() => setShowTutorial(true)}
+              onShowPermissionsHelp={() => navigate("PERMISSIONS_HELP")}
+            />
+          </Suspense>
+        );
+
+      case "HOLODECK":
+        return (
+          <Suspense fallback={<ComponentLoader />}>
+            <Holodeck onClose={() => navigate("DASHBOARD")} />
+          </Suspense>
+        );
+
+      case "BIO_RHYTHM":
+        return (
+          <Suspense fallback={<ComponentLoader />}>
+            <BioRhythm onClose={() => navigate("DASHBOARD")} />
+          </Suspense>
+        );
+
+      case "GROUNDING":
+        return (
+          <Suspense fallback={<ComponentLoader />}>
+            <Grounding onClose={() => navigate("DASHBOARD")} />
+          </Suspense>
+        );
+
+      case "ORACLE":
+        return (
+          <Suspense fallback={<ComponentLoader />}>
+            <Oracle entries={entries} onClose={() => navigate("DASHBOARD")} />
+          </Suspense>
+        );
+
+      case "CRISIS_PROTOCOLS":
+        return (
+          <Suspense fallback={<ComponentLoader />}>
+            <CrisisProtocols onClose={() => navigate("DASHBOARD")} />
+          </Suspense>
+        );
+
+      case "ARCHIVE":
+        return (
+          <Suspense fallback={<ComponentLoader />}>
+            <Archive entries={entries} onOpenEntry={(e) => setOpenEntry(e)} />
+          </Suspense>
+        );
+
+      case "CPD":
+        return (
+          <Suspense fallback={<ComponentLoader />}>
+            <CPD entries={entries} onClose={() => navigate("DASHBOARD")} />
+          </Suspense>
+        );
+
+      case "REPORTS":
+        return (
+          <Suspense fallback={<ComponentLoader />}>
+            <Reports entries={entries} onClose={() => navigate("DASHBOARD")} />
+          </Suspense>
+        );
+
+      case "PROFESSIONAL_DOC":
+        return (
+          <Suspense fallback={<ComponentLoader />}>
+            <ProfessionalDocExport entries={entries} onClose={() => navigate("DASHBOARD")} />
+          </Suspense>
+        );
+
+      case "PACK_BROWSER":
+        return (
+          <Suspense fallback={<ComponentLoader />}>
+            <PackBrowser
+              onClose={() => navigate("DASHBOARD")}
+              onPacksChanged={() => refreshPackState()}
+            />
+          </Suspense>
+        );
+
+      case "PERMISSIONS_HELP":
+        return (
+          <Suspense fallback={<ComponentLoader />}>
+            <PermissionsHelp onClose={() => navigate("NEURAL_LINK")} />
+          </Suspense>
+        );
+
+      case "DASHBOARD":
+      default:
+        return (
+          <SimplifiedDashboard
+            userName={profile.name || ""}
+            dailyPrompt={dailyPrompt}
+            onNavigate={(viewName) => navigateWithGating(viewName)}
+            onShowPackSettings={() => navigate("PACK_BROWSER")}
+            totalEntries={entries.length}
+            currentStreak={stats.currentStreak ?? 0}
+          />
+        );
     }
-    setView(viewName as ViewState);
   };
 
   const renderEntryModal = () => {
@@ -429,7 +399,6 @@ export default function App() {
     const title = openEntry.type === "INCIDENT" ? "Incident" : `Reflection • ${(openEntry as ReflectionEntry).model}`;
     const body = openEntry.type === "INCIDENT" ? formatIncident(openEntry as IncidentEntry) : formatReflection(openEntry as ReflectionEntry);
 
-    // Get media attachments from entry
     const media = (openEntry as IncidentEntry).media || [];
     const hasMedia = media.length > 0;
 
@@ -456,7 +425,6 @@ export default function App() {
           </div>
 
           <div className="flex-1 overflow-y-auto custom-scrollbar">
-            {/* Media Attachments */}
             {hasMedia && (
               <div className="mb-4 space-y-3">
                 {media.map((item) => (
@@ -520,7 +488,6 @@ export default function App() {
               </div>
             )}
 
-            {/* Text Content */}
             <div className="whitespace-pre-line text-sm text-slate-700 leading-relaxed border border-slate-200 rounded-2xl p-4 bg-slate-50">
               {body}
             </div>
@@ -530,212 +497,8 @@ export default function App() {
     );
   };
 
-  const bgMode = userProfile.themeMode === "LIGHT" ? "bg-anim light" : "bg-anim";
-
-  // Simple loading fallback for Suspense
-  const ComponentLoader = () => (
-    <div className="h-full flex items-center justify-center">
-      <div className="w-6 h-6 border-3 border-t-cyan-400 border-white/20 rounded-full animate-spin" />
-    </div>
-  );
-
-  // Show PackGate if trying to access gated feature
-  if (showPackGate) {
-    return (
-      <PackGate
-        requiredPack={showPackGate.packId}
-        featureName={showPackGate.featureName}
-        onClose={() => setShowPackGate(null)}
-        onEnable={() => {
-          setPackState(loadPackState());
-          setShowPackGate(null);
-        }}
-      />
-    );
-  }
-
-  const renderScreen = () => {
-    switch (view) {
-      case "ONBOARDING":
-        return <SimplifiedOnboarding onComplete={handleOnboardingComplete} />;
-
-      case "REFLECTION":
-        return (
-          <Suspense fallback={<ComponentLoader />}>
-            <ReflectionFlow
-                profession={userProfile.profession}
-                aiEnabled={userProfile.aiEnabled === true}
-                onComplete={handleEntryComplete}
-                onCancel={() => setView("DASHBOARD")}
-              />
-          </Suspense>
-        );
-
-      case "CALENDAR":
-        return (
-          <Suspense fallback={<ComponentLoader />}>
-              <CalendarView entries={entries} onOpenEntry={(e) => setOpenEntry(e)} />
-          </Suspense>
-        );
-
-      case "QUICK_CAPTURE":
-        return (
-          <Suspense fallback={<ComponentLoader />}>
-              <QuickCapture
-                aiEnabled={userProfile.aiEnabled === true}
-                onComplete={handleEntryComplete}
-                onCancel={() => setView("DASHBOARD")}
-              />
-          </Suspense>
-        );
-
-      case "DRIVE_MODE":
-        return (
-          <Suspense fallback={<ComponentLoader />}>
-              <DriveMode onComplete={handleEntryComplete} onClose={() => setView("DASHBOARD")} />
-          </Suspense>
-        );
-
-      case "NEURAL_LINK":
-        return (
-          <Suspense fallback={<ComponentLoader />}>
-              <NeuralLink
-                entries={entries}
-                profile={userProfile}
-                onUpdateProfile={handleUpdateProfile}
-                onNavigateToWelcome={() => setView("ONBOARDING")}
-                onStartTutorial={() => setShowTutorial(true)}
-                onShowPermissionsHelp={() => setView("PERMISSIONS_HELP")}
-              />
-          </Suspense>
-        );
-
-      case "HOLODECK":
-        return (
-          <Suspense fallback={<ComponentLoader />}>
-              <Holodeck onClose={() => setView("DASHBOARD")} />
-          </Suspense>
-        );
-
-      case "BIO_RHYTHM":
-        return (
-          <Suspense fallback={<ComponentLoader />}>
-              <BioRhythm onClose={() => setView("DASHBOARD")} />
-          </Suspense>
-        );
-
-      case "GROUNDING":
-        return (
-          <Suspense fallback={<ComponentLoader />}>
-              <Grounding onClose={() => setView("DASHBOARD")} />
-          </Suspense>
-        );
-
-      case "ORACLE":
-        return (
-          <Suspense fallback={<ComponentLoader />}>
-              <Oracle entries={entries} onClose={() => setView("DASHBOARD")} />
-          </Suspense>
-        );
-
-      case "CRISIS_PROTOCOLS":
-        return (
-          <Suspense fallback={<ComponentLoader />}>
-              <CrisisProtocols onClose={() => setView("DASHBOARD")} />
-          </Suspense>
-        );
-
-      case "ARCHIVE":
-        return (
-          <Suspense fallback={<ComponentLoader />}>
-              <Archive entries={entries} onOpenEntry={(e) => setOpenEntry(e)} />
-          </Suspense>
-        );
-
-      case "GAMIFICATION":
-        return (
-          <Suspense fallback={<ComponentLoader />}>
-              <GamificationHub entries={entries} onClose={() => setView("DASHBOARD")} />
-          </Suspense>
-        );
-
-      case "REWARDS":
-        return (
-          <Suspense fallback={<ComponentLoader />}>
-              <RewardsStore
-                currentXP={currentXP}
-                onXPChange={handleXPChange}
-                userEmail={userProfile.name || undefined}
-              />
-          </Suspense>
-        );
-
-      case "CPD":
-        return (
-          <Suspense fallback={<ComponentLoader />}>
-              <CPD entries={entries} onClose={() => setView("DASHBOARD")} />
-          </Suspense>
-        );
-
-      case "LIBRARY":
-        return (
-          <Suspense fallback={<ComponentLoader />}>
-              <Library />
-          </Suspense>
-        );
-
-      case "CANVAS":
-        return (
-          <Suspense fallback={<ComponentLoader />}>
-              <CanvasBoard onCancel={() => setView("DASHBOARD")} />
-          </Suspense>
-        );
-
-      case "MENTAL_ATLAS":
-        return (
-          <Suspense fallback={<ComponentLoader />}>
-              <MentalAtlas entries={entries} onClose={() => setView("DASHBOARD")} privacyLockEnabled={userProfile.privacyLockEnabled} />
-          </Suspense>
-        );
-
-      case "REPORTS":
-        return (
-          <Suspense fallback={<ComponentLoader />}>
-              <Reports entries={entries} onClose={() => setView("DASHBOARD")} />
-          </Suspense>
-        );
-
-      case "PROFESSIONAL_DOC":
-        return (
-          <Suspense fallback={<ComponentLoader />}>
-              <ProfessionalDocExport entries={entries} onClose={() => setView("DASHBOARD")} />
-          </Suspense>
-        );
-
-      case "PACK_BROWSER":
-        return (
-          <Suspense fallback={<ComponentLoader />}>
-              <PackBrowser
-                onClose={() => setView("DASHBOARD")}
-                onPacksChanged={() => setPackState(loadPackState())}
-              />
-          </Suspense>
-        );
-
-      case "PERMISSIONS_HELP":
-        return (
-          <Suspense fallback={<ComponentLoader />}>
-              <PermissionsHelp onClose={() => setView("NEURAL_LINK")} />
-          </Suspense>
-        );
-
-      case "DASHBOARD":
-      default:
-        return renderDashboard();
-    }
-  };
-
-  const showNav = isLoaded && !isLocked && view !== "ONBOARDING";
+  const bgMode = profile.themeMode === "LIGHT" ? "bg-anim light" : "bg-anim";
+  const showNav = isLoaded && !isLocked && currentView !== "ONBOARDING";
 
   return (
     <>
@@ -748,40 +511,48 @@ export default function App() {
 
           {isLoaded && isLocked && (
             <div className="fade-in">
-              <PrivacyLock onUnlock={() => setIsLocked(false)} userName={userProfile.name || ""} />
+              <PrivacyLock onUnlock={() => setIsLocked(false)} userName={profile.name || ""} />
             </div>
           )}
 
           {isLoaded && !isLocked && (
             <>
               <div className="fade-in h-full flex flex-col">
-                {/* Top Section - Scrollable Content */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
                   {renderScreen()}
                   {renderEntryModal()}
                 </div>
 
-                {/* Bottom Section - Fixed Navigation */}
-                {showNav && <Navigation current={view} onChange={(v) => setView(v)} />}
+                {showNav && <Navigation current={currentView} onChange={(v) => navigate(v)} />}
               </div>
             </>
           )}
         </div>
       </div>
 
-      {/* Gamified Tutorial */}
       {showTutorial && isLoaded && !isLocked && (
         <Suspense fallback={null}>
           <Tutorial
             onClose={() => setShowTutorial(false)}
-            onNavigate={(targetView) => setView(targetView)}
-            onAwardXP={(amount, reason) => {
-              awardBonusXP(amount);
-              setCurrentXP((prev) => prev + amount);
+            onNavigate={(targetView) => navigate(targetView)}
+            onAwardXP={(amount, _reason) => {
+              awardXP(amount);
             }}
           />
         </Suspense>
       )}
     </>
+  );
+}
+
+export default function App() {
+  return (
+    <UserProvider>
+      <EntriesProvider>
+        <AppProvider>
+          <AppContent />
+        </AppProvider>
+      </EntriesProvider>
+    </UserProvider>
   );
 }

@@ -31,6 +31,7 @@ import { storageService } from '../services/storageService';
 import { MODEL_CONFIG } from '../constants';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
+import { readMediaFile } from '../services/fileStorageService';
 
 // Helper function to open Documents folder
 async function openDocumentsFolder() {
@@ -139,10 +140,37 @@ async function saveAudioToDownloads(audioUrl: string) {
       } else {
         window.open(audioUrl, '_system');
       }
+    } else if (audioUrl.startsWith('idb://')) {
+      // Resolve IndexedDB URL to a playable blob URL, then trigger download
+      try {
+        const resolvedUrl = await readMediaFile(audioUrl);
+        const response = await fetch(resolvedUrl);
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = `audio_${Date.now()}.${blob.type.split('/')[1] || 'webm'}`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(blobUrl);
+      } catch (err) {
+        console.error('Error reading audio from IndexedDB:', err);
+        alert('Could not read audio file. It may have been deleted.');
+      }
     } else if (audioUrl.startsWith('blob:')) {
       alert('This audio is not yet saved. Please use the "Save to Device" button in the capture screen first.');
+    } else if (audioUrl.startsWith('data:')) {
+      // Legacy base64 data URLs — trigger direct download
+      const a = document.createElement('a');
+      a.href = audioUrl;
+      a.download = `audio_${Date.now()}.webm`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
     } else {
-      window.open(audioUrl, '_system');
+      // Unknown URL scheme — don't navigate
+      alert('Could not download audio: unsupported format.');
     }
   } catch (error) {
     console.error('Error saving audio file:', error);
@@ -180,7 +208,7 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
   }, []);
 
   // Audio playback handlers
-  const toggleAudioPlayback = (audioUrl: string) => {
+  const toggleAudioPlayback = async (audioUrl: string) => {
     if (playingAudioUrl === audioUrl) {
       // Pause if already playing this audio
       audioRef.current?.pause();
@@ -190,7 +218,19 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
       if (audioRef.current) {
         audioRef.current.pause();
       }
-      audioRef.current = new Audio(audioUrl);
+
+      // Resolve idb:// and other non-playable URLs to playable ones
+      let playableUrl = audioUrl;
+      if (audioUrl.startsWith('idb://') || audioUrl.startsWith('file://')) {
+        try {
+          playableUrl = await readMediaFile(audioUrl);
+        } catch (err) {
+          console.error('Failed to resolve audio URL:', err);
+          return;
+        }
+      }
+
+      audioRef.current = new Audio(playableUrl);
       audioRef.current.play().catch(err => console.error('Audio playback error:', err));
       setPlayingAudioUrl(audioUrl);
 

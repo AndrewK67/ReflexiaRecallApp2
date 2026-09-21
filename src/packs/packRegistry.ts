@@ -13,7 +13,7 @@ export const PACK_REGISTRY: Record<PackId, PackDefinition> = {
     category: 'core',
     isCore: true,
     features: [
-      'Quick Capture (text, audio, photo, video)',
+      'Quick Capture (text, audio, photo)',
       'Reflection prompts',
       'Archive & Search',
       'Export (PDF/ZIP)',
@@ -49,22 +49,6 @@ export const PACK_REGISTRY: Record<PackId, PackDefinition> = {
     ]
   },
 
-  gamification: {
-    id: 'gamification',
-    name: 'Gamification',
-    description: 'XP, levels, achievements, and rewards to build consistent habits',
-    icon: '🏆',
-    category: 'productivity',
-    isCore: false,
-    features: [
-      'Experience points (XP)',
-      'Levels and progression',
-      'Achievement badges',
-      'Streak tracking',
-      'Rewards store'
-    ]
-  },
-
   scenario: {
     id: 'scenario',
     name: 'Scenario Practice',
@@ -95,21 +79,6 @@ export const PACK_REGISTRY: Record<PackId, PackDefinition> = {
     ]
   },
 
-  visualTools: {
-    id: 'visualTools',
-    name: 'Visual Tools',
-    description: 'Mind mapping, timelines, and visual organization',
-    icon: '🎨',
-    category: 'productivity',
-    isCore: false,
-    features: [
-      'Canvas board (mind mapping)',
-      'Mental Atlas (knowledge graph)',
-      'Calendar timeline view',
-      'Library resources'
-    ]
-  },
-
   reports: {
     id: 'reports',
     name: 'Analytics & Reports',
@@ -124,23 +93,6 @@ export const PACK_REGISTRY: Record<PackId, PackDefinition> = {
       'Data visualization'
     ]
   },
-
-  driveVoiceNotes: {
-    id: 'driveVoiceNotes',
-    name: 'Quick Voice Capture',
-    description: '⚠️ SAFETY WARNING: Never use while driving or operating machinery',
-    icon: '🎙️',
-    category: 'advanced',
-    isCore: false,
-    features: [
-      'Voice-first interface',
-      'Large touch targets for easy access',
-      'Auto-save functionality',
-      '⚠️ Do NOT use while driving',
-      '⚠️ Do NOT use while operating equipment',
-      'Safe for use when stationary only'
-    ]
-  }
 };
 
 // Helper to get pack definition

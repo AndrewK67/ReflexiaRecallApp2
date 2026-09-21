@@ -186,10 +186,19 @@ export const storageService = {
   },
 
   // ---- Backup / Restore ----
-  exportBackup() {
+  async exportBackup() {
+    // Load entries from IndexedDB (primary) with localStorage fallback
+    let entries: Entry[];
+    try {
+      const entryStorage = await import('./entryStorageService');
+      entries = await entryStorage.loadEntries();
+    } catch {
+      entries = storageService.loadEntries();
+    }
+
     const backup = {
       profile: storageService.loadProfile(),
-      entries: storageService.loadEntries(),
+      entries,
       stats: safeJsonParse<UserStats | null>(localStorage.getItem(KEYS.stats), null),
       exportedAt: new Date().toISOString(),
       version: 1,
@@ -203,8 +212,18 @@ export const storageService = {
       const data = JSON.parse(text);
 
       if (data?.profile) localStorage.setItem(KEYS.profile, JSON.stringify(data.profile));
-      if (data?.entries) localStorage.setItem(KEYS.entries, JSON.stringify(data.entries));
       if (data?.stats) localStorage.setItem(KEYS.stats, JSON.stringify(data.stats));
+
+      // Import entries to both IDB and localStorage
+      if (data?.entries) {
+        localStorage.setItem(KEYS.entries, JSON.stringify(data.entries));
+        try {
+          const entryStorage = await import('./entryStorageService');
+          await entryStorage.importEntries(data.entries);
+        } catch {
+          // localStorage write above is the fallback
+        }
+      }
 
       return true;
     } catch {

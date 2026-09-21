@@ -1,12 +1,14 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import basicSsl from '@vitejs/plugin-basic-ssl'
 
 export default defineConfig({
   define: {
     __BUILD_DATE__: JSON.stringify(new Date().toISOString().split('T')[0])
   },
   plugins: [
+    basicSsl(),
     react(),
     VitePWA({
       registerType: 'prompt', // Changed from 'autoUpdate' to give users control

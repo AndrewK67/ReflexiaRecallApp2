@@ -1,0 +1,185 @@
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import type { Entry, ViewState } from '../types';
+import type { PackId } from '../packs/packTypes';
+import { loadPackState, cleanupExpiredTrials, isPackEnabled, getRequiredPack } from '../packs';
+import { generateDailyPrompt } from '../services/aiService';
+import { offlineDailyPrompt } from '../utils/offlineDailyPrompt';
+import { shouldShowTutorial, completeStep, type TutorialStep } from '../services/tutorialService';
+import { useUser } from './UserContext';
+import { useEntries } from './EntriesContext';
+
+interface PackGateInfo {
+  packId: PackId;
+  featureName: string;
+}
+
+interface AppContextType {
+  currentView: ViewState;
+  navigate: (view: ViewState) => void;
+  navigateWithGating: (viewName: string) => void;
+  isLoaded: boolean;
+  isLocked: boolean;
+  setIsLocked: (v: boolean) => void;
+  dailyPrompt: string;
+  showTutorial: boolean;
+  setShowTutorial: (v: boolean) => void;
+  openEntry: Entry | null;
+  setOpenEntry: (e: Entry | null) => void;
+  packState: ReturnType<typeof loadPackState>;
+  refreshPackState: () => void;
+  showPackGate: PackGateInfo | null;
+  setShowPackGate: (v: PackGateInfo | null) => void;
+}
+
+const AppContext = createContext<AppContextType | null>(null);
+
+export function AppProvider({ children }: { children: ReactNode }) {
+  const { profile, isProfileLoaded } = useUser();
+  const { isEntriesLoaded } = useEntries();
+
+  const [currentView, setCurrentView] = useState<ViewState>('ONBOARDING');
+  const [isLocked, setIsLocked] = useState(false);
+  const [dailyPrompt, setDailyPrompt] = useState('Space for your thoughts.');
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [openEntry, setOpenEntry] = useState<Entry | null>(null);
+  const [packState, setPackState] = useState(loadPackState());
+  const [showPackGate, setShowPackGate] = useState<PackGateInfo | null>(null);
+  const [isInitDone, setIsInitDone] = useState(false);
+
+  const isLoaded = isProfileLoaded && isEntriesLoaded && isInitDone;
+
+  // Init: cleanup trials, check privacy lock, generate daily prompt
+  useEffect(() => {
+    if (!isProfileLoaded || !isEntriesLoaded) return;
+
+    cleanupExpiredTrials();
+
+    if (profile.privacyLockEnabled) {
+      setIsLocked(true);
+    }
+
+    const generatePrompt = async () => {
+      try {
+        if (profile.aiEnabled) {
+          setDailyPrompt(await generateDailyPrompt());
+        } else {
+          setDailyPrompt(offlineDailyPrompt());
+        }
+      } catch {
+        setDailyPrompt(offlineDailyPrompt());
+      }
+      setIsInitDone(true);
+    };
+
+    generatePrompt();
+  }, [isProfileLoaded, isEntriesLoaded]);
+
+  // Regenerate daily prompt when aiEnabled changes
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    const regenerate = async () => {
+      try {
+        if (profile.aiEnabled) {
+          setDailyPrompt(await generateDailyPrompt());
+        } else {
+          setDailyPrompt(offlineDailyPrompt());
+        }
+      } catch {
+        setDailyPrompt(offlineDailyPrompt());
+      }
+    };
+
+    regenerate();
+  }, [profile.aiEnabled]);
+
+  // Auto-detect tutorial step completions
+  useEffect(() => {
+    if (!showTutorial) return;
+
+    const viewToStepMap: Record<string, TutorialStep> = {
+      'REFLECTION': 'FIRST_REFLECTION',
+      'QUICK_CAPTURE': 'QUICK_CAPTURE',
+      'ORACLE': 'ORACLE_CHAT',
+      'HOLODECK': 'HOLODECK',
+      'CPD': 'CPD_TRACKING',
+      'PROFESSIONAL_DOC': 'PROFESSIONAL_DOCS',
+      'BIO_RHYTHM': 'BIO_RHYTHM',
+      'GROUNDING': 'GROUNDING',
+      'CRISIS_PROTOCOLS': 'CRISIS_PROTOCOLS',
+      'CALENDAR': 'CALENDAR_VIEW',
+      'REPORTS': 'REPORTS',
+      'ARCHIVE': 'ARCHIVE',
+      'NEURAL_LINK': 'NEURAL_LINK',
+    };
+
+    const tutorialStep = viewToStepMap[currentView];
+    if (tutorialStep) {
+      const timer = setTimeout(() => {
+        completeStep(tutorialStep);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [currentView, showTutorial]);
+
+  // Close entry modal on Escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && openEntry) {
+        setOpenEntry(null);
+      }
+    };
+
+    if (openEntry) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [openEntry]);
+
+  const navigate = (view: ViewState) => {
+    setCurrentView(view);
+  };
+
+  const navigateWithGating = (viewName: string) => {
+    const requiredPack = getRequiredPack(viewName);
+    if (requiredPack && !isPackEnabled(requiredPack)) {
+      setShowPackGate({ packId: requiredPack, featureName: viewName });
+      return;
+    }
+    setCurrentView(viewName as ViewState);
+  };
+
+  const refreshPackState = () => {
+    setPackState(loadPackState());
+  };
+
+  return (
+    <AppContext.Provider
+      value={{
+        currentView,
+        navigate,
+        navigateWithGating,
+        isLoaded,
+        isLocked,
+        setIsLocked,
+        dailyPrompt,
+        showTutorial,
+        setShowTutorial,
+        openEntry,
+        setOpenEntry,
+        packState,
+        refreshPackState,
+        showPackGate,
+        setShowPackGate,
+      }}
+    >
+      {children}
+    </AppContext.Provider>
+  );
+}
+
+export function useApp(): AppContextType {
+  const ctx = useContext(AppContext);
+  if (!ctx) throw new Error('useApp must be used within AppProvider');
+  return ctx;
+}

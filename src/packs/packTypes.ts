@@ -7,12 +7,9 @@ export type PackId =
   | 'core'                    // Always enabled (Capture, Reflect, Archive, Export, Settings)
   | 'wellbeing'               // BioRhythm + Grounding exercises
   | 'aiReflectionCoach'       // Oracle AI assistant
-  | 'gamification'            // XP, levels, achievements, rewards
   | 'scenario'                // Holodeck scenario practice
   | 'professional'            // CPD tracking, professional docs, revalidation
-  | 'visualTools'             // Canvas, Mental Atlas, Calendar view
-  | 'reports'                 // Analytics and Reports
-  | 'driveVoiceNotes';        // Voice Notes (Parked/Passenger mode)
+  | 'reports';                // Analytics and Reports
 
 export interface PackDefinition {
   id: PackId;
@@ -24,14 +21,14 @@ export interface PackDefinition {
   features: string[];         // List of features included
 }
 
-export type TrialDuration = 1 | 3 | 7 | 'forever';
+export type TrialDuration = 7 | 'forever';
 
 export interface PackTrialInfo {
   enabled: boolean;
   isPermanent: boolean;       // True if enabled forever, false if on trial
   trialStartDate?: string;    // ISO date when trial started
   trialEndDate?: string;      // ISO date when trial expires
-  trialDuration?: TrialDuration; // Duration chosen (1, 3, 7 days or 'forever')
+  trialDuration?: TrialDuration; // Duration chosen (7 days or 'forever')
 }
 
 export interface PackState {

@@ -289,10 +289,6 @@ export function getRequiredPack(featureId: string): PackId | null {
     // AI
     'ORACLE': 'aiReflectionCoach',
 
-    // Gamification
-    'GAMIFICATION': 'gamification',
-    'REWARDS': 'gamification',
-
     // Scenario
     'HOLODECK': 'scenario',
 
@@ -300,17 +296,8 @@ export function getRequiredPack(featureId: string): PackId | null {
     'CPD': 'professional',
     'PROFESSIONAL_DOC': 'professional',
 
-    // Visual Tools
-    'CANVAS': 'visualTools',
-    'MENTAL_ATLAS': 'visualTools',
-    'CALENDAR': 'visualTools',
-    'LIBRARY': 'visualTools',
-
     // Reports
     'REPORTS': 'reports',
-
-    // Drive Voice Notes
-    'DRIVE_MODE': 'driveVoiceNotes'
   };
 
   return featurePackMap[featureId] || null;

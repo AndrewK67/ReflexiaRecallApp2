@@ -37,14 +37,11 @@ export default function SimplifiedDashboard({
   // Check which optional packs are enabled
   const hasWellbeing = isPackEnabled('wellbeing');
   const hasAI = isPackEnabled('aiReflectionCoach');
-  const hasVisualTools = isPackEnabled('visualTools');
-  const hasGamification = isPackEnabled('gamification');
   const hasScenario = isPackEnabled('scenario');
   const hasProfessional = isPackEnabled('professional');
   const hasReports = isPackEnabled('reports');
-  const hasDriveVoiceNotes = isPackEnabled('driveVoiceNotes');
 
-  const hasAnyPacks = hasWellbeing || hasAI || hasVisualTools || hasGamification || hasScenario || hasProfessional || hasReports || hasDriveVoiceNotes;
+  const hasAnyPacks = hasWellbeing || hasAI || hasScenario || hasProfessional || hasReports;
 
   return (
     <div className="h-full overflow-y-auto flex flex-col items-center p-4 pt-6 nav-safe relative">
@@ -148,60 +145,6 @@ export default function SimplifiedDashboard({
                 </button>
               )}
 
-              {/* Visual Tools */}
-              {hasVisualTools && (
-                <>
-                  <button
-                    onClick={() => onNavigate("CALENDAR")}
-                    className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg p-1.5 transition flex flex-col items-center gap-0.5"
-                  >
-                    <span className="text-base">📅</span>
-                    <span className="text-[8px] font-semibold text-white/80">Calendar</span>
-                  </button>
-                  <button
-                    onClick={() => onNavigate("MENTAL_ATLAS")}
-                    className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg p-1.5 transition flex flex-col items-center gap-0.5"
-                  >
-                    <span className="text-base">🗺️</span>
-                    <span className="text-[8px] font-semibold text-white/80">Atlas</span>
-                  </button>
-                  <button
-                    onClick={() => onNavigate("CANVAS")}
-                    className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg p-1.5 transition flex flex-col items-center gap-0.5"
-                  >
-                    <span className="text-base">🎨</span>
-                    <span className="text-[8px] font-semibold text-white/80">Canvas</span>
-                  </button>
-                  <button
-                    onClick={() => onNavigate("LIBRARY")}
-                    className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg p-1.5 transition flex flex-col items-center gap-0.5"
-                  >
-                    <span className="text-base">📚</span>
-                    <span className="text-[8px] font-semibold text-white/80">Library</span>
-                  </button>
-                </>
-              )}
-
-              {/* Gamification */}
-              {hasGamification && (
-                <>
-                  <button
-                    onClick={() => onNavigate("GAMIFICATION")}
-                    className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg p-1.5 transition flex flex-col items-center gap-0.5"
-                  >
-                    <span className="text-base">🏆</span>
-                    <span className="text-[8px] font-semibold text-white/80">Progress</span>
-                  </button>
-                  <button
-                    onClick={() => onNavigate("REWARDS")}
-                    className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg p-1.5 transition flex flex-col items-center gap-0.5"
-                  >
-                    <span className="text-base">🎁</span>
-                    <span className="text-[8px] font-semibold text-white/80">Rewards</span>
-                  </button>
-                </>
-              )}
-
               {/* Scenario Practice */}
               {hasScenario && (
                 <button
@@ -244,16 +187,6 @@ export default function SimplifiedDashboard({
                 </button>
               )}
 
-              {/* Drive Voice Notes */}
-              {hasDriveVoiceNotes && (
-                <button
-                  onClick={() => onNavigate("DRIVE_MODE")}
-                  className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg p-1.5 transition flex flex-col items-center gap-0.5"
-                >
-                  <span className="text-base">🎙️</span>
-                  <span className="text-[8px] font-semibold text-white/80">Voice</span>
-                </button>
-              )}
             </div>
           </div>
         )}
