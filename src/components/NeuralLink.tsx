@@ -157,6 +157,7 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
               onClick={() => (isEditing ? handleSave() : setIsEditing(true))}
               className="p-2 rounded-full bg-white/10 hover:bg-white/15"
               title={isEditing ? 'Save' : 'Edit'}
+              aria-label={isEditing ? 'Save name' : 'Edit name'}
             >
               {isEditing ? <Check size={16} /> : <Edit2 size={16} />}
             </button>

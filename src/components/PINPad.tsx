@@ -173,7 +173,7 @@ export default function PINPad({ mode, onSuccess, onCancel, onVerify, onSetup, o
                 <p className="text-xs text-white/60 mt-0.5">{getDescription()}</p>
               </div>
             </div>
-            <button
+            <button aria-label="Cancel"
               onClick={onCancel}
               className="text-white/60 hover:text-white transition"
             >
@@ -219,7 +219,7 @@ export default function PINPad({ mode, onSuccess, onCancel, onVerify, onSetup, o
                 {num}
               </button>
             ))}
-            <button
+            <button aria-label="Delete last digit"
               onClick={handleDelete}
               className="h-16 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 text-white transition active:scale-95 flex items-center justify-center"
             >
@@ -231,7 +231,7 @@ export default function PINPad({ mode, onSuccess, onCancel, onVerify, onSetup, o
             >
               0
             </button>
-            <button
+            <button aria-label="Confirm PIN"
               onClick={handleSubmit}
               disabled={currentPin.length < 4}
               className="h-16 rounded-2xl bg-cyan-500 hover:bg-cyan-600 disabled:bg-white/10 disabled:text-white/40 text-white transition active:scale-95 flex items-center justify-center disabled:cursor-not-allowed"

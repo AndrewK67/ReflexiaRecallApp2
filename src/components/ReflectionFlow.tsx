@@ -321,6 +321,7 @@ export default function ReflectionFlow({ onComplete, onCancel, initialFramework 
               onClick={() => setShowPicker(false)}
               className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center transition"
               title="Back"
+              aria-label="Back"
             >
               <ChevronLeft className="text-white" size={22} />
             </button>
@@ -508,6 +509,7 @@ export default function ReflectionFlow({ onComplete, onCancel, initialFramework 
             }
             className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center transition"
             title="Back"
+            aria-label="Back"
           >
             <ChevronLeft className="text-white" size={20} />
           </button>
@@ -528,6 +530,8 @@ export default function ReflectionFlow({ onComplete, onCancel, initialFramework 
             onClick={() => audioEngine.isMuted ? audioEngine.unmuteAll() : audioEngine.muteAll()}
             className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center transition"
             title={audioEngine.isMuted ? "Unmute" : "Mute"}
+            aria-label={audioEngine.isMuted ? "Unmute step sounds" : "Mute step sounds"}
+            aria-pressed={audioEngine.isMuted}
           >
             {audioEngine.isMuted ? <VolumeX className="text-white" size={20} /> : <Volume2 className="text-white" size={20} />}
           </button>

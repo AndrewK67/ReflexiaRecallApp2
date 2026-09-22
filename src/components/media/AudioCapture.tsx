@@ -258,7 +258,7 @@ export default function AudioCapture({ onCapture, onCancel, maxDuration = 300 }:
             <div className="w-full max-w-md px-2">
               <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-3 border border-slate-700">
                 <div className="flex items-center gap-3">
-                  <button
+                  <button aria-label="Play or pause"
                     onClick={handlePlayPause}
                     className="w-12 h-12 rounded-full bg-emerald-600 hover:bg-emerald-500 flex items-center justify-center transition active:scale-95 flex-shrink-0"
                   >
@@ -321,7 +321,7 @@ export default function AudioCapture({ onCapture, onCancel, maxDuration = 300 }:
             </div>
             <p className="text-red-400 font-semibold mb-2">Microphone Error</p>
             <p className="text-white/70 text-sm max-w-xs">{error}</p>
-            <button
+            <button aria-label="Close recorder"
               onClick={onCancel}
               className="mt-4 px-6 py-2 rounded-full bg-slate-700 hover:bg-slate-600 text-white text-sm font-semibold transition"
             >
@@ -399,7 +399,7 @@ export default function AudioCapture({ onCapture, onCancel, maxDuration = 300 }:
       <div className="p-2 bg-slate-900/90 backdrop-blur-xl border-t border-slate-800 flex-shrink-0">
         <div className="flex items-center justify-center">
           {!isRecording ? (
-            <button
+            <button aria-label="Start recording"
               onClick={handleStartRecording}
               disabled={isProcessing}
               className="w-14 h-14 rounded-full border-4 border-red-500 bg-black/10 hover:bg-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition active:scale-95"
@@ -413,7 +413,7 @@ export default function AudioCapture({ onCapture, onCancel, maxDuration = 300 }:
               )}
             </button>
           ) : (
-            <button
+            <button aria-label="Stop recording"
               onClick={handleStopRecording}
               disabled={isProcessing}
               className="w-14 h-14 rounded-full border-4 border-red-500 bg-red-500/90 hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition active:scale-95"

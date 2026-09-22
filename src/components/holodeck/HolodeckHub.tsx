@@ -15,7 +15,7 @@ export default function HolodeckHub({ onSelectSpace, onClose }: HolodeckHubProps
     <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col overflow-y-auto custom-scrollbar nav-safe">
       {/* Header */}
       <div className="flex-shrink-0 p-6 flex items-center gap-3 border-b border-white/10">
-        <button
+        <button aria-label="Back to dashboard"
           onClick={onClose}
           className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center transition"
         >

@@ -31,6 +31,11 @@ test('axe audit of the live screens', async ({ page }) => {
   await scan('onboarding-3');
   await skipOnboarding(page);
   await scan('dashboard-empty');
+  await page.getByRole('button', { name: 'View archive of past reflections' }).click();
+  await scan('archive-empty');
+  await page.getByRole('button', { name: /Filters/ }).click();
+  await scan('archive-empty-filters');
+  await page.getByRole('button', { name: 'Go to dashboard' }).click();
 
   await page.getByRole('button', { name: /Capture$/ }).first().click();
   await scan('quick-capture');

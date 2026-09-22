@@ -17,7 +17,10 @@ export default function Navigation({ current, onChange }: NavigationProps) {
   }, []);
 
   return (
-    <div className="flex-shrink-0 flex justify-center p-4 landscape:p-0 landscape:py-0 bg-transparent landscape:fixed landscape:left-0 landscape:top-0 landscape:bottom-0 landscape:w-16 landscape:flex-col landscape:justify-center landscape:z-50">
+    <nav
+      aria-label="Main"
+      className="flex-shrink-0 flex justify-center p-4 landscape:p-0 landscape:py-0 bg-transparent landscape:fixed landscape:left-0 landscape:top-0 landscape:bottom-0 landscape:w-16 landscape:flex-col landscape:justify-center landscape:z-50"
+    >
       <div className="w-full landscape:h-auto">
         <div className="bg-white/90 backdrop-blur-xl border border-slate-200 shadow-xl rounded-3xl landscape:rounded-2xl px-4 landscape:px-2 py-3 landscape:py-4 flex items-center justify-around landscape:flex-col landscape:gap-3">
           <button
@@ -56,6 +59,6 @@ export default function Navigation({ current, onChange }: NavigationProps) {
           </button>
         </div>
       </div>
-    </div>
+    </nav>
   );
 }

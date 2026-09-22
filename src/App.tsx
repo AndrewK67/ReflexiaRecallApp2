@@ -492,10 +492,11 @@ function AppContent() {
           {isLoaded && !isLocked && (
             <>
               <div className="fade-in h-full flex flex-col">
-                <div className="flex-1 overflow-y-auto custom-scrollbar">
+                {/* One landmark for the screen; the nav below is its own (phase 3C.1) */}
+                <main id="main" className="flex-1 overflow-y-auto custom-scrollbar">
                   {renderScreen()}
                   {renderEntryModal()}
-                </div>
+                </main>
 
                 {showNav && <Navigation current={currentView} onChange={(v) => navigate(v)} />}
               </div>

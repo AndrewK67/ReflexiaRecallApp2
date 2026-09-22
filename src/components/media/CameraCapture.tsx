@@ -188,7 +188,7 @@ export default function CameraCapture({ onCapture, onCancel }: CameraCaptureProp
               </div>
               <p className="text-red-400 font-semibold text-sm mb-1">Camera Error</p>
               <p className="text-white/70 text-xs max-w-xs">{error}</p>
-              <button
+              <button aria-label="Close camera"
                 onClick={onCancel}
                 className="mt-3 px-5 py-1.5 rounded-full bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold transition"
               >
@@ -218,6 +218,8 @@ export default function CameraCapture({ onCapture, onCancel }: CameraCaptureProp
 
           <button
             onClick={() => setFlashEnabled(!flashEnabled)}
+            aria-label={flashEnabled ? 'Turn flash off' : 'Turn flash on'}
+            aria-pressed={flashEnabled}
             className={`w-9 h-9 rounded-full backdrop-blur-sm border flex items-center justify-center transition ${
               flashEnabled
                 ? 'bg-yellow-500/30 border-yellow-500/50'
@@ -237,7 +239,7 @@ export default function CameraCapture({ onCapture, onCancel }: CameraCaptureProp
       <div className="p-2 bg-slate-900/90 backdrop-blur-xl border-t border-slate-800 flex-shrink-0">
         <div className="flex items-center justify-between">
           {/* Flip camera button */}
-          <button
+          <button aria-label="Switch camera"
             onClick={handleFlipCamera}
             disabled={isLoading || !!error}
             className="w-10 h-10 rounded-full bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition"
@@ -246,7 +248,7 @@ export default function CameraCapture({ onCapture, onCancel }: CameraCaptureProp
           </button>
 
           {/* Capture button */}
-          <button
+          <button aria-label="Take photo"
             onClick={handleCapture}
             disabled={isLoading || !!error || isProcessing}
             className="w-14 h-14 rounded-full border-4 border-white bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition active:scale-95"

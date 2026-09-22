@@ -63,7 +63,7 @@ const Grounding: React.FC<GroundingProps> = ({ onClose }) => {
 
       {/* Header */}
       <div className="relative z-10 p-6 flex items-center gap-3 border-b border-white/10 bg-slate-950/50 backdrop-blur">
-        <button
+        <button aria-label="Back to dashboard"
           onClick={onClose}
           className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center transition"
         >

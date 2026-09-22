@@ -348,7 +348,8 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
         <div className="relative mb-3">
           <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
           <input
-            type="text"
+            type="search"
+            aria-label="Search entries"
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
@@ -363,7 +364,8 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
                 setSearchQuery('');
                 setCurrentPage(1);
               }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70"
+              aria-label="Clear search"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white"
             >
               <X size={18} />
             </button>
@@ -399,13 +401,14 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
           <div className="mt-4 p-4 bg-white/5 rounded-2xl border border-white/10 space-y-3">
             {/* Entry Type */}
             <div>
-              <label className="block text-xs font-bold text-white/80 mb-1.5">Entry Type</label>
+              <label htmlFor="archive-filter-type" className="block text-xs font-bold text-white/80 mb-1.5">Entry type</label>
               <select
+                id="archive-filter-type"
                 value={filters.entryType || 'all'}
                 onChange={(e) =>
                   handleFilterChange('entryType', e.target.value as 'all' | 'reflection' | 'capture')
                 }
-                className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-white focus:outline-none focus:border-cyan-500/50 focus:bg-white/10"
+                className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-white text-sm focus:outline-none focus:border-cyan-500/50 focus:bg-white/10"
               >
                 <option value="all">All Types</option>
                 <option value="reflection">Reflections</option>
@@ -416,13 +419,14 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
             {/* Framework (only show if type is reflection or all) */}
             {(!filters.entryType || filters.entryType === 'all' || filters.entryType === 'reflection') && (
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5">Framework</label>
+                <label htmlFor="archive-filter-framework" className="block text-xs font-bold text-white/80 mb-1.5">Framework</label>
                 <select
+                  id="archive-filter-framework"
                   value={filters.reflectionModel || 'all'}
                   onChange={(e) =>
                     handleFilterChange('reflectionModel', e.target.value)
                   }
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-white text-sm focus:outline-none focus:border-cyan-500/50 focus:bg-white/10"
                 >
                   <option value="all">All frameworks</option>
                   {FRAMEWORKS.filter((f) => f.kind === 'built-in').map((f) => (
@@ -451,29 +455,32 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
             {/* Date Range */}
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5">From Date</label>
+                <label htmlFor="archive-filter-from" className="block text-xs font-bold text-white/80 mb-1.5">From date</label>
                 <input
+                  id="archive-filter-from"
                   type="date"
                   value={filters.dateFrom || ''}
                   onChange={(e) => handleFilterChange('dateFrom', e.target.value || undefined)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-white text-sm focus:outline-none focus:border-cyan-500/50 focus:bg-white/10"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5">To Date</label>
+                <label htmlFor="archive-filter-to" className="block text-xs font-bold text-white/80 mb-1.5">To date</label>
                 <input
+                  id="archive-filter-to"
                   type="date"
                   value={filters.dateTo || ''}
                   onChange={(e) => handleFilterChange('dateTo', e.target.value || undefined)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-white text-sm focus:outline-none focus:border-cyan-500/50 focus:bg-white/10"
                 />
               </div>
             </div>
 
             {/* Has Media Toggle */}
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-slate-600">Has Media</label>
+              <span id="archive-filter-media-label" className="text-xs font-bold text-white/80">Has media</span>
               <button
+                aria-labelledby="archive-filter-media-label archive-filter-media-value"
                 onClick={() => {
                   if (filters.hasMedia === undefined) {
                     handleFilterChange('hasMedia', true);
@@ -488,20 +495,21 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
                     ? 'bg-cyan-500 text-white'
                     : filters.hasMedia === false
                     ? 'bg-slate-400 text-white'
-                    : 'bg-slate-200 text-slate-600'
+                    : 'bg-white/10 text-white/80'
                 }`}
               >
-                {filters.hasMedia === true ? 'Yes' : filters.hasMedia === false ? 'No' : 'Any'}
+                <span id="archive-filter-media-value">{filters.hasMedia === true ? 'Yes' : filters.hasMedia === false ? 'No' : 'Any'}</span>
               </button>
             </div>
 
             {/* Sort By */}
             <div>
-              <label className="block text-xs font-bold text-slate-600 mb-1.5">Sort By</label>
+              <label htmlFor="archive-filter-sort" className="block text-xs font-bold text-white/80 mb-1.5">Sort by</label>
               <select
+                id="archive-filter-sort"
                 value={filters.sortBy || 'date-desc'}
                 onChange={(e) => handleFilterChange('sortBy', e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-white text-sm focus:outline-none focus:border-cyan-500/50 focus:bg-white/10"
               >
                 <option value="date-desc">Newest First</option>
                 <option value="date-asc">Oldest First</option>
@@ -512,16 +520,16 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
             {/* Clear Filters */}
             <button
               onClick={handleClearFilters}
-              className="w-full px-3 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold transition"
+              className="w-full px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold transition"
             >
-              Clear All Filters
+              Clear all filters
             </button>
           </div>
         )}
       </div>
 
       {/* Entry List */}
-      <div className="flex-1 overflow-y-auto px-6 py-4 pb-20 custom-scrollbar relative z-10">
+      <div className="flex-1 overflow-y-auto px-6 py-4 pb-20 custom-scrollbar relative z-10" tabIndex={0} aria-label="Entries">
         {searchResult.entries.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-white/40">
             <FileText size={48} className="mb-3 opacity-50" />
@@ -552,9 +560,9 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
                           {new Date(entry.date).toLocaleDateString()}
                         </span>
                       </div>
-                      <h3 className={`text-sm font-bold text-white line-clamp-1 ${blurEnabled ? 'blur-sm' : ''}`}>
+                      <h2 className={`text-sm font-bold text-white line-clamp-1 ${blurEnabled ? 'blur-sm' : ''}`}>
                         {entry.title || (reflection ? frameworkName((entry as any).model) : 'Capture')}
-                      </h3>
+                      </h2>
                     </div>
 
                     {/* Media Preview/Count */}
@@ -712,7 +720,8 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:border-cyan-500 disabled:opacity-30 disabled:cursor-not-allowed transition"
+              aria-label="Previous page"
+              className="p-2 rounded-xl bg-white/10 border border-white/10 text-white hover:border-cyan-500 disabled:opacity-30 disabled:cursor-not-allowed transition"
             >
               <ChevronLeft size={18} />
             </button>
@@ -735,10 +744,12 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
                   <button
                     key={pageNum}
                     onClick={() => setCurrentPage(pageNum)}
+                    aria-label={`Page ${pageNum}`}
+                    aria-current={currentPage === pageNum ? 'page' : undefined}
                     className={`w-8 h-8 rounded-lg text-xs font-bold transition ${
                       currentPage === pageNum
                         ? 'bg-cyan-500 text-white'
-                        : 'bg-white border border-slate-200 text-slate-600 hover:border-cyan-500'
+                        : 'bg-white/10 border border-white/10 text-white hover:border-cyan-500'
                     }`}
                   >
                     {pageNum}
@@ -750,7 +761,8 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
             <button
               onClick={() => setCurrentPage((p) => Math.min(searchResult.totalPages, p + 1))}
               disabled={currentPage === searchResult.totalPages}
-              className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:border-cyan-500 disabled:opacity-30 disabled:cursor-not-allowed transition"
+              aria-label="Next page"
+              className="p-2 rounded-xl bg-white/10 border border-white/10 text-white hover:border-cyan-500 disabled:opacity-30 disabled:cursor-not-allowed transition"
             >
               <ChevronRight size={18} />
             </button>
@@ -759,7 +771,7 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
 
         {/* Results Summary */}
         {searchResult.entries.length > 0 && (
-          <div className="mt-4 text-center text-xs text-slate-400">
+          <div className="mt-4 text-center text-xs text-white/60">
             Showing {(currentPage - 1) * pageSize + 1}-
             {Math.min(currentPage * pageSize, searchResult.filteredCount)} of {searchResult.filteredCount}
           </div>
