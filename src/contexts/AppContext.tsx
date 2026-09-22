@@ -4,7 +4,7 @@ import type { PackId } from '../packs/packTypes';
 import { loadPackState, cleanupExpiredTrials, isPackEnabled, getRequiredPack } from '../packs';
 import { generateDailyPrompt } from '../services/aiService';
 import { offlineDailyPrompt } from '../utils/offlineDailyPrompt';
-import { shouldShowTutorial, completeStep, type TutorialStep } from '../services/tutorialService';
+import { completeStep, type TutorialStep } from '../services/tutorialService';
 import { useUser } from './UserContext';
 import { useEntries } from './EntriesContext';
 

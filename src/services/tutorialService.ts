@@ -7,19 +7,14 @@ export type TutorialStep =
   | 'WELCOME'
   | 'FIRST_REFLECTION'
   | 'QUICK_CAPTURE'
-  | 'DRIVE_MODE'
   | 'ORACLE_CHAT'
   | 'HOLODECK'
-  | 'MENTAL_ATLAS'
   | 'CPD_TRACKING'
   | 'PROFESSIONAL_DOCS'
-  | 'GAMIFICATION'
   | 'BIO_RHYTHM'
   | 'GROUNDING'
   | 'CRISIS_PROTOCOLS'
   | 'CALENDAR_VIEW'
-  | 'CANVAS_BOARD'
-  | 'LIBRARY'
   | 'REPORTS'
   | 'ARCHIVE'
   | 'NEURAL_LINK'
@@ -98,22 +93,6 @@ const TUTORIAL_STEPS: TutorialStepConfig[] = [
     funFact: 'Quick captures are perfect for busy professionals on the go!',
   },
   {
-    id: 'DRIVE_MODE',
-    title: 'Voice Notes 🎤',
-    description: 'Hands-free voice capture for quick reflections',
-    icon: '🎤',
-    xpReward: 75,
-    targetView: 'DRIVE_MODE',
-    instructions: [
-      'Voice Notes lets you reflect hands-free using voice',
-      'Perfect for when your hands are busy or you prefer speaking',
-      'Just speak your thoughts - the app handles the rest',
-      'Voice entries are automatically transcribed',
-    ],
-    completionCriteria: 'Try Voice Notes (tap the microphone)',
-    funFact: 'Speaking your reflections can help you process thoughts more deeply!',
-  },
-  {
     id: 'ORACLE_CHAT',
     title: 'Oracle AI Assistant 🤖',
     description: 'Chat with your AI reflection guide',
@@ -148,22 +127,6 @@ const TUTORIAL_STEPS: TutorialStepConfig[] = [
     funFact: 'Practicing scenarios improves real-world performance by up to 40%!',
   },
   {
-    id: 'MENTAL_ATLAS',
-    title: 'Mental Atlas 🗺️',
-    description: 'Visualize your knowledge and growth',
-    icon: '🧠',
-    xpReward: 100,
-    targetView: 'MENTAL_ATLAS',
-    instructions: [
-      'Mental Atlas creates a visual map of your learning',
-      'See connections between your reflections and topics',
-      'Identify knowledge gaps and growth areas',
-      'Watch your understanding evolve over time',
-    ],
-    completionCriteria: 'Explore your Mental Atlas',
-    funFact: 'Visual learning aids improve retention by 400% compared to text alone!',
-  },
-  {
     id: 'CPD_TRACKING',
     title: 'CPD Tracking 📋',
     description: 'Track professional development for 29+ regulatory bodies',
@@ -195,22 +158,6 @@ const TUTORIAL_STEPS: TutorialStepConfig[] = [
     ],
     completionCriteria: 'Generate one professional document',
     funFact: 'Save hours on paperwork - generate compliant documentation in seconds!',
-  },
-  {
-    id: 'GAMIFICATION',
-    title: 'Achievements & Progress 🏆',
-    description: 'Track your growth with XP, levels, and badges',
-    icon: '⭐',
-    xpReward: 75,
-    targetView: 'GAMIFICATION',
-    instructions: [
-      'Gamification makes reflection rewarding and fun',
-      'Earn XP for every reflection and activity',
-      'Level up and unlock badges',
-      'Track streaks and celebrate milestones',
-    ],
-    completionCriteria: 'Check your achievements and level',
-    funFact: 'You\'re already earning XP by completing this tutorial!',
   },
   {
     id: 'BIO_RHYTHM',
@@ -275,38 +222,6 @@ const TUTORIAL_STEPS: TutorialStepConfig[] = [
     ],
     completionCriteria: 'Open Calendar View',
     funFact: 'Consistent reflection creates lasting behavioral change!',
-  },
-  {
-    id: 'CANVAS_BOARD',
-    title: 'Canvas Board 🎨',
-    description: 'Visual thinking and mind mapping',
-    icon: '🖌️',
-    xpReward: 75,
-    targetView: 'CANVAS',
-    instructions: [
-      'Canvas Board lets you think visually',
-      'Create mind maps, diagrams, and sketches',
-      'Perfect for brainstorming and planning',
-      'Add sticky notes, drawings, and connections',
-    ],
-    completionCriteria: 'Create something on the Canvas',
-    funFact: 'Visual thinking activates different brain regions than text!',
-  },
-  {
-    id: 'LIBRARY',
-    title: 'Resource Library 📚',
-    description: 'Curated resources for professional growth',
-    icon: '📖',
-    xpReward: 50,
-    targetView: 'LIBRARY',
-    instructions: [
-      'The Library contains curated learning resources',
-      'Articles, guides, and tools for your profession',
-      'Save resources for later',
-      'Build your personal knowledge base',
-    ],
-    completionCriteria: 'Browse the Library',
-    funFact: 'Continuous learning is the #1 predictor of career success!',
   },
   {
     id: 'REPORTS',
@@ -384,10 +299,34 @@ export function getTutorialProgress(): TutorialProgress | null {
   if (!saved) return null;
 
   try {
-    return JSON.parse(saved);
+    return normaliseProgress(JSON.parse(saved));
   } catch {
     return null;
   }
+}
+
+/**
+ * Steps are removed from TUTORIAL_STEPS when the feature they point at leaves
+ * the app. Stored progress may still reference them, and Tutorial.tsx renders
+ * nothing when currentStep is unknown. Drop unknown ids and, if the current
+ * step no longer exists, move to the first step not yet completed.
+ */
+function normaliseProgress(progress: TutorialProgress): TutorialProgress {
+  const known = new Set(TUTORIAL_STEPS.map(s => s.id));
+  const completedSteps = (progress.completedSteps || []).filter(id => known.has(id));
+  let currentStep = progress.currentStep;
+
+  if (!known.has(currentStep)) {
+    currentStep = TUTORIAL_STEPS.find(s => !completedSteps.includes(s.id))?.id ?? 'COMPLETED';
+  }
+
+  const changed =
+    currentStep !== progress.currentStep ||
+    completedSteps.length !== (progress.completedSteps || []).length;
+
+  const next = { ...progress, currentStep, completedSteps };
+  if (changed) localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  return next;
 }
 
 /**
