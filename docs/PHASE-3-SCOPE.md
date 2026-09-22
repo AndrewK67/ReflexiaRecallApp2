@@ -1,6 +1,6 @@
 # Phase 3 scope — make the core good for anyone
 
-**Branch:** `phase-1a/professional-module` at `c8bd10a` · **Written:** 22 September 2026 · **Status:** scoped, not started.
+**Branch:** `phase-1a/professional-module` at `c8bd10a` · **Written:** 22 September 2026 · **Status:** scoped; **3E done** the same day (§3, 3E), the other four parts not started.
 
 `CLAUDE.md` lists phase 3 as *first-run experience, persistent storage, accessibility, XP rework to learning tracks, Quick Capture data model — to be scoped*. It also carries open question 1 (the AI gate) and open question 3 (*what does a first-time user with no background actually do in their first 90 seconds?* — "still the most important question in the project"). This document traces all of it against the code as it stands after phase 2, says what each piece costs, and splits the phase into five parts that can land one at a time.
 
@@ -214,6 +214,8 @@ Five parts. Each is one branch-worth of work with its own tests and can be revie
 | 3E.3 | Consent screen and honest Oracle copy | 1.5 | e2e: turning AI on shows the screen; Oracle line reads correctly in both states |
 | 3E.4 | `CLAUDE.md` open question 1 closed; `docs/` note | 0.5 | — |
 | | **Sum** | **5.0** → **5–7 h** | |
+
+**3E landed (22 Sep 2026).** `services/aiKeyService.ts` (key in the `reflexia-keystore` IndexedDB, in-memory fallback when there is none), `keystoreGet/Put/Delete` exported from `cryptoService.ts`, `aiService.ts` rewritten around one `live()` gate that reads `aiEnabled` from the saved profile at call time, `components/AISettings.tsx` (key field, toggle, consent panel) mounted in Profile in place of the bare AI switch, Oracle's banner and footer true in both states, the composer's and Quick Capture's `aiEnabled` props gone (labels come from `isAIActive()`), `utils/offlineDailyPrompt.ts` now behind the gate so the dashboard prompt is unchanged offline, `.env.example` says there are no build-time secrets. Tests: `tests/unit/aiGate.test.ts` (12: truth table of toggle × key with fetch counted, key-store round trip, key absent from backup and `localStorage`, source guard against `import.meta.env`/`VITE_GEMINI` in `aiService.ts` and anywhere under `src/`), `tests/e2e/ai.spec.ts` (4: off by default and not switchable without a key; consent shows the three payloads and needs the second tap, key survives reload, key not in `localStorage`; removing the key turns AI off and the composer and Oracle say so; with AI off, Coach and Oracle answer and no request goes to `googleapis.com`). 92 unit, 24 e2e. One thing §2.7 said that did not happen: the "consent once" flag — the panel shows every time AI is turned on, which is safer and costs one tap. Found on the way: the legacy-SBAR e2e from phase 2 raced the app's first launch (it seeded `localStorage` while the empty migration was setting its done-flag) and passed by luck; it now waits for the app and clears the flag, as an old build would have no flag.
 
 ### 3A — Data that stays and means what it says · 11–15 h
 

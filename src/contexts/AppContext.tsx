@@ -2,8 +2,7 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from '
 import type { Entry, ViewState } from '../types';
 import type { PackId } from '../packs/packTypes';
 import { loadPackState, cleanupExpiredTrials, isPackEnabled, getRequiredPack } from '../packs';
-import { generateDailyPrompt } from '../services/aiService';
-import { offlineDailyPrompt } from '../utils/offlineDailyPrompt';
+import { generateDailyPrompt, initAI } from '../services/aiService';
 import { completeStep, type TutorialStep } from '../services/tutorialService';
 import { useUser } from './UserContext';
 import { useEntries } from './EntriesContext';
@@ -63,39 +62,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setIsLocked(true);
     }
 
+    // aiService decides offline vs provider itself (the one gate, phase 3E);
+    // it needs the person's key loaded from the keystore first.
     const generatePrompt = async () => {
       try {
-        if (profile.aiEnabled) {
-          setDailyPrompt(await generateDailyPrompt());
-        } else {
-          setDailyPrompt(offlineDailyPrompt());
-        }
+        await initAI();
       } catch {
-        setDailyPrompt(offlineDailyPrompt());
+        // no keystore: AI stays offline
       }
+      setDailyPrompt(await generateDailyPrompt());
       setIsInitDone(true);
     };
 
     generatePrompt();
   }, [isProfileLoaded, isEntriesLoaded]);
 
-  // Regenerate daily prompt when aiEnabled changes
+  // Regenerate the daily prompt when the AI toggle changes
   useEffect(() => {
     if (!isLoaded) return;
-
-    const regenerate = async () => {
-      try {
-        if (profile.aiEnabled) {
-          setDailyPrompt(await generateDailyPrompt());
-        } else {
-          setDailyPrompt(offlineDailyPrompt());
-        }
-      } catch {
-        setDailyPrompt(offlineDailyPrompt());
-      }
-    };
-
-    regenerate();
+    generateDailyPrompt().then(setDailyPrompt);
   }, [profile.aiEnabled]);
 
   // Auto-detect tutorial step completions

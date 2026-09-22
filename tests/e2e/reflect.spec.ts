@@ -113,8 +113,11 @@ test.describe('reflection composer', () => {
     // Seed the pre-IndexedDB storage the app migrates on launch: a saved
     // profile past onboarding and one entry written by the old professional
     // composer, whose framework no longer ships in the core.
-    await page.goto('/');
+    await openFresh(page); // wait for the app to be up before touching its storage
     await page.evaluate(() => {
+      // The first launch above already ran the (empty) migration and set its
+      // flag; an old build never had the flag, so clear it to model one.
+      localStorage.removeItem('reflexia.entries.idb_migrated');
       localStorage.setItem('reflexia.profile.v1', JSON.stringify({ name: 'Sam', profession: 'NURSING', isOnboarded: true, aiEnabled: false }));
       localStorage.setItem('reflexia.entries.v1', JSON.stringify([{
         id: 'reflection_1700000000000',
@@ -128,7 +131,7 @@ test.describe('reflection composer', () => {
     });
     await page.reload();
     await expect(page.getByRole('button', { name: /Capture$/ })).toBeVisible();
-    expect(await rawEntryRecords(page)).toHaveLength(1);
+    await expect.poll(async () => (await rawEntryRecords(page)).length).toBe(1);
 
     await page.getByRole('button', { name: 'View archive of past reflections' }).click();
     await expect(page.getByRole('heading', { name: 'SBAR' })).toBeVisible();

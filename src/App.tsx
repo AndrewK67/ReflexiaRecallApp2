@@ -256,7 +256,6 @@ function AppContent() {
         return (
           <Suspense fallback={<ComponentLoader />}>
             <ReflectionFlow
-              aiEnabled={profile.aiEnabled === true}
               onComplete={handleEntryComplete}
               onCancel={() => navigate("DASHBOARD")}
             />
@@ -274,7 +273,6 @@ function AppContent() {
         return (
           <Suspense fallback={<ComponentLoader />}>
             <QuickCapture
-              aiEnabled={profile.aiEnabled === true}
               onComplete={handleEntryComplete}
               onCancel={() => navigate("DASHBOARD")}
             />

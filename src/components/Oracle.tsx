@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { X, Sparkles, Loader2, AlertTriangle } from "lucide-react";
 import type { Entry } from "../types";
-import { askOracle } from "../services/aiService";
+import { askOracle, isAIActive } from "../services/aiService";
 import { storageService } from "../services/storageService";
 
 interface OracleProps {
@@ -17,6 +17,8 @@ const Oracle: React.FC<OracleProps> = ({ entries, onClose }) => {
 
   // Keep payload small-ish (Oracle only needs "recent" context to answer “lately” questions)
   const recentEntries = useMemo(() => entries.slice(0, 40), [entries]);
+  // Labels only; aiService decides whether the call reaches the network.
+  const aiActive = isAIActive();
 
   const handleAsk = async () => {
     setError(null);
@@ -38,12 +40,8 @@ const Oracle: React.FC<OracleProps> = ({ entries, onClose }) => {
 
       setAnswer(text);
     } catch (e: any) {
-      const msg = String(e?.message || e || "");
-      if (msg.includes("NO_API_KEY")) {
-        setError("Oracle is locked — no API key found. Add VITE_GEMINI_API_KEY to your .env file.");
-      } else {
-        setError("Oracle couldn’t respond just now. Try again.");
-      }
+      console.warn("Oracle error:", e);
+      setError("Oracle couldn’t respond just now. Try again.");
     } finally {
       setIsLoading(false);
     }
@@ -77,14 +75,29 @@ const Oracle: React.FC<OracleProps> = ({ entries, onClose }) => {
         </p>
       </div>
 
-      {/* AI Warning Banner */}
-      <div className="flex-shrink-0 mx-6 mb-4 bg-red-500/10 border border-red-500/30 rounded-xl p-3">
+      {/* What this screen does with your entries — true in both states */}
+      <div
+        className={`flex-shrink-0 mx-6 mb-4 rounded-xl p-3 border ${
+          aiActive ? "bg-amber-500/10 border-amber-500/30" : "bg-white/5 border-white/10"
+        }`}
+      >
         <div className="flex items-start gap-3">
-          <AlertTriangle size={18} className="text-red-400 flex-shrink-0 mt-0.5" />
-          <div className="text-xs text-red-300">
-            <strong className="block mb-1">⚠️ AI-GENERATED RESPONSES</strong>
-            Oracle uses AI and may produce errors, inaccuracies, or inappropriate suggestions. AI can hallucinate and make mistakes.
-            <strong> Do NOT rely on Oracle for professional, medical, or clinical decisions.</strong> All responses must be verified before use.
+          <AlertTriangle size={18} className={`flex-shrink-0 mt-0.5 ${aiActive ? "text-amber-400" : "text-white/50"}`} />
+          <div className={`text-xs ${aiActive ? "text-amber-200" : "text-white/70"}`}>
+            {aiActive ? (
+              <>
+                <strong className="block mb-1">AI is on</strong>
+                Asking sends your question and your most recent {recentEntries.length}{" "}
+                {recentEntries.length === 1 ? "entry" : "entries"} to Google's Gemini API under your key.
+                Answers can be wrong; they are suggestions, not advice.
+              </>
+            ) : (
+              <>
+                <strong className="block mb-1">AI is off</strong>
+                The Oracle answers from built-in prompts. Nothing leaves this device. To use AI here, add your key
+                and turn it on in Profile.
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -140,8 +153,10 @@ const Oracle: React.FC<OracleProps> = ({ entries, onClose }) => {
 
       {/* Footer */}
       <div className="flex-shrink-0 p-6 border-t border-white/10 bg-slate-950/80 backdrop-blur">
-        <p className="text-xs text-white/40 text-center">
-          Uses only your local entries • No data sent to cloud
+        <p className="text-xs text-white/50 text-center">
+          {aiActive
+            ? `Sends your question and your last ${recentEntries.length} entries to Gemini`
+            : "Offline • Nothing leaves this device"}
         </p>
       </div>
     </div>

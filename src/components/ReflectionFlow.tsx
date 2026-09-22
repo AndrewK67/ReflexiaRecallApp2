@@ -23,14 +23,13 @@ import { THREE_PART, OPEN_ENTRY, CATALOGUE, stageCoaching, type ReflectionFramew
 import CanvasBoard from "./CanvasBoard";
 import { storageService } from "../services/storageService";
 
-import { analyzeReflection, getStageCoaching } from "../services/aiService";
+import { analyzeReflection, getStageCoaching, isAIActive } from "../services/aiService";
 import { migrateBase64ToFile } from "../services/fileStorageService";
 import { startAudioRecording, stopAudioRecording, saveAudioToFile } from "../services/mediaService";
 
 interface ReflectionFlowProps {
   onComplete: (entry: ReflectionEntry) => void;
   onCancel: () => void;
-  aiEnabled?: boolean;
 }
 
 const MOODS = [
@@ -102,7 +101,7 @@ class AudioEngine {
 
 const audioEngine = new AudioEngine();
 
-export default function ReflectionFlow({ onComplete, onCancel, aiEnabled }: ReflectionFlowProps) {
+export default function ReflectionFlow({ onComplete, onCancel }: ReflectionFlowProps) {
   // One framework, never null. Three-Part is the default (CLAUDE.md, decision 5);
   // the catalogue picker and "Just write" swap it.
   const [framework, setFramework] = useState<ReflectionFramework>(THREE_PART);
@@ -126,7 +125,8 @@ export default function ReflectionFlow({ onComplete, onCancel, aiEnabled }: Refl
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
-  const AI_ON = aiEnabled === true;
+  // Labels only. Whether a call reaches the network is decided inside aiService.
+  const AI_ON = isAIActive();
 
   const stages = framework.stages;
   const stageData = stages[currentStageIndex];

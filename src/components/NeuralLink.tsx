@@ -4,6 +4,7 @@ import { APP_VERSION, APP_BUILD_DATE } from '../constants';
 import { storageService } from '../services/storageService';
 import { resetTutorial } from '../services/tutorialService';
 import { downloadTerms, downloadPrivacy, downloadDisclaimer } from '../utils/legalDownloads';
+import AISettings from './AISettings';
 import {
   Network,
   Briefcase,
@@ -66,7 +67,7 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
 
   const togglePrivacyLock = () => patchProfile({ privacyLockEnabled: !profile.privacyLockEnabled });
   const toggleBlurHistory = () => patchProfile({ blurHistory: !profile.blurHistory });
-  const toggleAI = () => patchProfile({ aiEnabled: !profile.aiEnabled });
+  const setAIEnabled = (enabled: boolean) => patchProfile({ aiEnabled: enabled });
   const toggleGamification = () => patchProfile({ gamificationEnabled: !profile.gamificationEnabled });
 
   const handleSave = () => {
@@ -180,20 +181,6 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
 
           <div className="space-y-3">
             <button
-              onClick={toggleAI}
-              className="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10"
-            >
-              <span className="font-bold">AI</span>
-              <span
-                className={`text-xs font-mono px-2 py-1 rounded ${
-                  profile.aiEnabled ? 'bg-emerald-500/20 text-emerald-300' : 'bg-white/10 text-white/60'
-                }`}
-              >
-                {profile.aiEnabled ? 'ON' : 'OFF'}
-              </span>
-            </button>
-
-            <button
               onClick={toggleGamification}
               className="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10"
             >
@@ -240,6 +227,9 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
             </button>
           </div>
         </div>
+
+        {/* AI: the key, the toggle and what is sent (phase 3E) */}
+        <AISettings aiEnabled={profile.aiEnabled === true} onSetEnabled={setAIEnabled} />
 
         {/* Progress Hub (visible only if gamification enabled) */}
         <div className="bg-white/10 backdrop-blur-xl p-6 rounded-2xl border border-white/15">

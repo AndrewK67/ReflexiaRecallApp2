@@ -8,7 +8,6 @@ import { savePhotoToFile, saveAudioToFile } from '../services/mediaService';
 import { saveMediaFile } from '../services/fileStorageService';
 
 type QuickCaptureProps = {
-  aiEnabled: boolean;
   onComplete: (e: Entry) => void | Promise<void>;
   onCancel: () => void;
 };
@@ -64,7 +63,7 @@ function localGuardianCheck(text: string): GuardianBadge | null {
   return null;
 }
 
-export default function QuickCapture({ aiEnabled, onComplete, onCancel }: QuickCaptureProps) {
+export default function QuickCapture({ onComplete, onCancel }: QuickCaptureProps) {
   const [notes, setNotes] = useState("");
   const [tab, setTab] = useState<"TEXT" | "PHOTO" | "AUDIO">("TEXT");
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);

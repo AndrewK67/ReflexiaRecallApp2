@@ -23,6 +23,26 @@ async function getKeystore() {
   });
 }
 
+/**
+ * Small secrets that must never travel in a backup or a bundle live in the
+ * same keystore database as the entry-encryption key (see aiKeyService.ts).
+ * Ids other than ENCRYPTION_KEY_ID are free for callers to use.
+ */
+export async function keystoreGet<T = unknown>(id: string): Promise<T | undefined> {
+  const db = await getKeystore();
+  return (await db.get(KEYSTORE_STORE, id)) as T | undefined;
+}
+
+export async function keystorePut(id: string, value: unknown): Promise<void> {
+  const db = await getKeystore();
+  await db.put(KEYSTORE_STORE, value, id);
+}
+
+export async function keystoreDelete(id: string): Promise<void> {
+  const db = await getKeystore();
+  await db.delete(KEYSTORE_STORE, id);
+}
+
 export async function generateKey(): Promise<CryptoKey> {
   return crypto.subtle.generateKey(
     { name: 'AES-GCM', length: 256 },
