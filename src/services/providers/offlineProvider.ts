@@ -2,6 +2,7 @@
 // Offline AI provider - always works, deterministic fallbacks
 
 import type { AIProvider } from "../aiProvider";
+import { stageCoaching } from "../../frameworks";
 
 export class OfflineProvider implements AIProvider {
   async generateDailyPrompt(dateIso?: string, _profession?: string): Promise<string> {
@@ -28,17 +29,8 @@ export class OfflineProvider implements AIProvider {
     return `${prompts[dayOfYear % prompts.length]} (${date})`;
   }
 
-  async getStageCoaching(stageId: string, _currentText: string, _profession?: string): Promise<string> {
-    const tips: Record<string, string> = {
-      Description: "Try adding one concrete detail and one honest 'why it mattered'.",
-      Feelings: "Name the emotion specifically. Was it frustration, disappointment, relief?",
-      Evaluation: "What went well? What could improve? Keep it balanced.",
-      Analysis: "What patterns do you notice? What would you tell a friend in this situation?",
-      Conclusion: "What's the one key insight you'll take forward from this?",
-      ActionPlan: "Pick one specific action. Make it something you can do this week.",
-    };
-
-    return tips[stageId] || `Reflect honestly on this ${stageId} stage. One concrete detail makes a difference.`;
+  async getStageCoaching(frameworkId: string, stageId: string, _currentText: string): Promise<string> {
+    return stageCoaching(frameworkId, stageId);
   }
 
   async analyzeReflection(

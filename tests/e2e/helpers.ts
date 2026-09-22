@@ -65,6 +65,9 @@ export async function dashboardCount(page: Page): Promise<number> {
 export async function setPacks(page: Page, state: Record<string, { enabled: boolean; isPermanent: boolean }>) {
   await page.evaluate((s) => localStorage.setItem('reflexia.packs.v2', JSON.stringify({ core: { enabled: true, isPermanent: true }, ...s })), state);
   await page.reload();
+  // Wait for the app to get past its loading screen; skipOnboarding() counts the
+  // Skip button without waiting, so calling it during the loading screen misses.
+  await expect(page.getByRole('button', { name: /^Skip|Capture$/ }).first()).toBeVisible();
 }
 
 /**

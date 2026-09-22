@@ -9,6 +9,7 @@ import {
   X,
 } from 'lucide-react';
 import type { Entry, ReflectionEntry } from '../types';
+import { frameworkName } from '../frameworks';
 
 interface ReportsProps {
   entries: Entry[];
@@ -48,10 +49,10 @@ export default function Reports({ entries, onClose }: ReportsProps) {
       .filter((m): m is number => typeof m === 'number');
     const avgMood = moods.length ? moods.reduce((a, b) => a + b, 0) / moods.length : 0;
 
-    // Model usage
+    // Framework usage
     const modelCounts = new Map<string, number>();
     reflections.forEach((r) => {
-      const model = r.model || 'Unknown';
+      const model = frameworkName(r.model);
       modelCounts.set(model, (modelCounts.get(model) || 0) + 1);
     });
 
@@ -75,11 +76,11 @@ export default function Reports({ entries, onClose }: ReportsProps) {
 
   const handleExportCSV = () => {
     const csvRows = [
-      ['Date', 'Time', 'Type', 'Model', 'Mood', 'Notes'],
+      ['Date', 'Time', 'Type', 'Framework', 'Mood', 'Notes'],
       ...filteredEntries.map((entry) => {
         const date = new Date(entry.date);
         const type = entry.type;
-        const model = type === 'REFLECTION' ? (entry as ReflectionEntry).model : 'N/A';
+        const model = type === 'REFLECTION' ? frameworkName((entry as ReflectionEntry).model) : 'N/A';
         const mood = type === 'REFLECTION' ? (entry as ReflectionEntry).mood || 'N/A' : 'N/A';
         const notes = type === 'INCIDENT' ? (entry as any).notes || '' : '';
 
@@ -131,7 +132,7 @@ export default function Reports({ entries, onClose }: ReportsProps) {
       ...filteredEntries.map((entry) => {
         const date = new Date(entry.date);
         const type = entry.type;
-        const model = type === 'REFLECTION' ? (entry as ReflectionEntry).model : 'Incident';
+        const model = type === 'REFLECTION' ? frameworkName((entry as ReflectionEntry).model) : 'Incident';
         const mood = type === 'REFLECTION' ? (entry as ReflectionEntry).mood : 'N/A';
 
         return `\n[${date.toLocaleString()}] ${model} - Mood: ${mood}`;
@@ -249,11 +250,11 @@ export default function Reports({ entries, onClose }: ReportsProps) {
           </div>
         </div>
 
-        {/* Model Usage */}
+        {/* Framework usage */}
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-3">
             <PieChart size={16} className="text-white/60" />
-            <h2 className="text-lg font-bold">Reflection Models Used</h2>
+            <h2 className="text-lg font-bold">Frameworks Used</h2>
           </div>
           <div className="space-y-2">
             {stats.modelCounts.map(([model, count]) => {

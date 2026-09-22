@@ -17,7 +17,7 @@ import {
   Pause,
   Volume2,
 } from 'lucide-react';
-import type { Entry, ReflectionModelId } from '../types';
+import type { Entry } from '../types';
 import {
   searchEntries,
   highlightSearchTerms,
@@ -28,7 +28,7 @@ import {
 } from '../services/searchService';
 import { isEntryLocked } from '../services/privacyService';
 import { storageService } from '../services/storageService';
-import { MODEL_CONFIG } from '../constants';
+import { ALL as FRAMEWORKS, frameworkName } from '../frameworks';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { readMediaFile } from '../services/fileStorageService';
@@ -413,21 +413,21 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
               </select>
             </div>
 
-            {/* Reflection Model (only show if type is reflection or all) */}
+            {/* Framework (only show if type is reflection or all) */}
             {(!filters.entryType || filters.entryType === 'all' || filters.entryType === 'reflection') && (
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5">Reflection Model</label>
+                <label className="block text-xs font-bold text-slate-600 mb-1.5">Framework</label>
                 <select
                   value={filters.reflectionModel || 'all'}
                   onChange={(e) =>
-                    handleFilterChange('reflectionModel', e.target.value as ReflectionModelId | 'all')
+                    handleFilterChange('reflectionModel', e.target.value)
                   }
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 >
                   <option value="all">All Models</option>
-                  {Object.keys(MODEL_CONFIG).map((modelId) => (
-                    <option key={modelId} value={modelId}>
-                      {MODEL_CONFIG[modelId as ReflectionModelId].title}
+                  {FRAMEWORKS.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name}
                     </option>
                   ))}
                 </select>
@@ -556,7 +556,7 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
                         </span>
                       </div>
                       <h3 className={`text-sm font-bold text-white line-clamp-1 ${blurEnabled ? 'blur-sm' : ''}`}>
-                        {entry.title || (isReflection ? (entry as any).model : 'Incident')}
+                        {entry.title || (isReflection ? frameworkName((entry as any).model) : 'Incident')}
                       </h3>
                     </div>
 

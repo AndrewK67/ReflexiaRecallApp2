@@ -1,6 +1,6 @@
 # Phase 2 scope — frameworks, not models
 
-**Branch:** `phase-1a/professional-module` at `36e7bf4` · **Written:** 22 September 2026 · **Status:** scoped, not started.
+**Branch:** `phase-1a/professional-module` at `36e7bf4` · **Written:** 22 September 2026 · **Status:** **done** (same day; §8 records what landed and where it differs from the plan).
 
 `CLAUDE.md` locked decision 5: *Gibbs is not the core. It comes out of the composer. Core built-ins become Open Entry (one field) and Three-Part (what happened / what it means / what now); Gibbs becomes one selectable framework among several.* Estimate on file: 15–20 h. This document says what the code actually needs, what it costs, and what I found on the way.
 
@@ -142,16 +142,47 @@ Sequence matters: 2.1 and 2.2 are pure data plus one signature and are safe to l
 
 ## 6. Success criteria
 
-- [ ] One `ReflectionFramework` definition per framework, in `src/frameworks/`, each stage carrying its own coaching text; `offlinePrompts.ts` and `SIMPLE_MODE_STAGES` gone
-- [ ] Reflect opens in Three-Part; Open Entry is one tap away; the catalogue picker names each framework and its origin
-- [ ] Every stage of every framework returns its own coaching text with AI off — proven by a unit test
-- [ ] No raw framework or stage id rendered anywhere; the Archive filter no longer lists Custom 1–3
-- [ ] `SBAR`, `SOAP` and `CUSTOM_*` entries already on a device still open and read cleanly
-- [ ] Stored `model` and `answers` shapes unchanged — `entryStorage.test.ts` and `reflect.spec.ts` prove it
-- [ ] `CLAUDE.md` decision 5 marked done and the word "model" retired in favour of "framework" where the code talks to a person
+- [x] One `ReflectionFramework` definition per framework, in `src/frameworks/`, each stage carrying its own coaching text; `offlinePrompts.ts` and `SIMPLE_MODE_STAGES` gone
+- [x] Reflect opens in Three-Part; Open Entry is one tap away; the catalogue picker names each framework and its origin
+- [x] Every stage of every framework returns its own coaching text with AI off — `frameworks.test.ts` asserts no stage falls through to the default
+- [x] No raw framework or stage id rendered anywhere; the Archive filter no longer lists Custom 1–3
+- [x] `SBAR`, `SOAP` and `CUSTOM_*` entries already on a device still open and read cleanly — `reflect.spec.ts` seeds a pre-IndexedDB SBAR entry and opens it
+- [x] Stored `model` and `answers` shapes unchanged — `frameworks.test.ts` pins every framework and stage id; `entryStorage.test.ts` and `reflect.spec.ts` exercise the save path
+- [x] `CLAUDE.md` decision 5 marked done and the word "model" retired in favour of "framework" where the code talks to a person
 
 ---
 
 ## 7. A small fix made while scoping
 
 `vitest.config.ts` now defines `__BUILD_DATE__`, which `constants.ts` reads at import time from Vite's `define`. Without it, any unit test importing `constants.ts` threw `ReferenceError` — which is why nothing had tested `MODEL_CONFIG`, and why the probe in §0.2 needed it. It is a two-line change and is committed with this document.
+
+---
+
+## 8. What landed (22 September 2026)
+
+All six steps, in the order scoped, one commit. `tsc -b`, `npm run build`, 80 unit tests (9 suites, up from 67), 20 e2e specs (up from 16; 19 pass, the empty-text CSV export stays the declared failure). Bundle: `ReflectionFlow` chunk 88.6 → 83.6 KB (gzip 22.6 → 20.4 KB); main chunk 306.3 → 306.6 KB (gzip 95.3 → 95.8 KB). The framework text that left `constants.ts` and `offlinePrompts.ts` came back as `src/frameworks/`, now in the main chunk because Archive and the entry modal read names from it; the composer chunk lost its duplicate stages and the picker's dead branches.
+
+### Files
+
+| | |
+| --- | --- |
+| **New** | `src/frameworks/types.ts`, `builtIn.ts`, `catalogue.ts`, `index.ts`; `src/modules/professional/data/frameworks.ts` (SBAR, SOAP); `tests/unit/frameworks.test.ts` (13 tests) |
+| **Deleted** | `src/data/offlinePrompts.ts`, `src/components/StageIcon.tsx`, `Guide.tsx`, `guideShapes.ts` |
+| **Reshaped** | `src/components/ReflectionFlow.tsx` (697 → 654 lines: one `framework` state, `showPicker`, `startFramework()`; `useSimpleMode`, `selectedModel`, `SIMPLE_MODE_STAGES`, `safeModel*` gone) |
+| **Migrated** | `src/constants.ts` (`MODEL_CONFIG` gone), `src/types.ts` (`StageId`, `ReflectionModelConfig`, `ReflectionModelId` gone; `model` is a documented plain string), `aiProvider.ts`, `aiService.ts`, `offlineProvider.ts`, `geminiProvider.ts`, `searchService.ts`, `tutorialService.ts`, `App.tsx`, `Archive.tsx`, `CalendarView.tsx`, `Reports.tsx`, `modules/professional/types.ts` |
+| **Tests** | `offlineProvider.test.ts` (new coaching signature), `reflect.spec.ts` rewritten (six specs), `helpers.ts` (`setPacks` now waits for the app to settle after reload — a pre-existing flake in `packs.spec.ts`, seen once in this run) |
+
+### Where it differs from §3
+
+1. **`MODEL_CONFIG` is gone, not re-exported.** §3 step 2.1 planned to keep it as a record over `ALL` for a transition. Nothing needed the transition: every consumer moved in the same commit, so the alias would have been a second name for the registry from day one.
+2. **`ReflectionModelId` is gone too**, not trimmed. After 2.4 nothing referenced it; a union that has to be kept in step with the registry by hand is the kind of duplication phase 2 exists to remove. `entry.model` is a plain `string` with a comment saying why.
+3. **A legacy SBAR entry shows "SBAR", not "Other".** §3 step 2.4 said "Other". The entry was written with SBAR; saying so is more honest than a bucket, and the stage labels (`Situation`, `Recommendation`) come out readable from the answer keys. `CUSTOM_1..3` show as "Custom framework". Unknown ids show the id.
+4. **Switching keeps what was typed.** Moving from Three-Part to "Just write" (or into the picker and out) on the first step carries the first box's text into the new framework's first stage. The old toggle threw it away. Small; it removes the one way the new links could lose someone's words.
+5. **Coach with AI on falls back to the offline tip** if the provider throws or returns nothing, instead of showing nothing.
+6. **The picker copy** says a framework is "a fixed set of questions in a fixed order" and that none is better than the three questions the person started with. §2.3's wording was looser; this is the version that went in.
+
+### Still open after phase 2
+
+- `services/subscriptionService.ts:251` advertises "All reflection models (Gibbs, SBAR, ERA, etc.)" in a paywall nothing reaches. Decision 6 says nothing commercial; it is dead text in dead code and was left alone.
+- `gamificationService.ts` "models used" count — phase 3 (XP rework), as §5 said.
+- The composer's look, the first-run experience and the `INCIDENT` data model — phase 3.

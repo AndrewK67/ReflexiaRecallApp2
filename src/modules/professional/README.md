@@ -19,7 +19,9 @@ components/   CPD.tsx, CompetencyMatrix.tsx, CrisisChecklist.tsx,
               CrisisProtocols.tsx, DisclaimerQuiz.tsx, IncidentCapture.tsx,
               LegalAcceptance.tsx, Library.tsx, ProfessionalDocExport.tsx,
               RewardsStore.tsx
-data/         cpdStandards.ts, learningResources.ts, professionConfig.ts
+data/         cpdStandards.ts, learningResources.ts, professionConfig.ts,
+              frameworks.ts (SBAR and SOAP — clinical structures, not
+              reflection frameworks; moved out of the core in phase 2)
 services/     cpdService.ts, disclaimerQuizService.ts,
               professionalDocService.ts, rewardsCatalogService.ts,
               rewardsRedemptionService.ts

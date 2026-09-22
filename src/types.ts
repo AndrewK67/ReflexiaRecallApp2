@@ -12,105 +12,6 @@ export type EntryType = "reflection" | "incident" | "REFLECTION" | "INCIDENT";
 
 export type ThemeMode = "DARK" | "LIGHT";
 
-/**
- * Reflection model IDs used throughout the UI.
- * Must be string unions (usable as Record keys).
- */
-export type ReflectionModelId =
-  | "SIMPLE"
-  | "GIBBS"
-  | "SBAR"
-  | "ERA"
-  | "ROLFE"
-  | "STAR"
-  | "SOAP"
-  | "MORNING"
-  | "EVENING"
-  | "FREE"
-  | "CUSTOM_1"
-  | "CUSTOM_2"
-  | "CUSTOM_3";
-
-/**
- * IMPORTANT:
- * Several files treat `ReflectionModel` as an ID string (not an object).
- * So `ReflectionModel` is the ID type.
- */
-export type ReflectionModel = ReflectionModelId;
-
-// ---------- Stage IDs ----------
-
-/**
- * StageId is referenced by Guide.tsx / StageIcon.tsx using dot access.
- * Keep it as a const object so StageId.SomeKey exists.
- */
-export const StageId = {
-  // Generic narrative stages (commonly referenced)
-  Description: "Description",
-  Feelings: "Feelings",
-  Evaluation: "Evaluation",
-  Analysis: "Analysis",
-  Conclusion: "Conclusion",
-  ActionPlan: "ActionPlan",
-
-  // Generic / alternate naming used elsewhere
-  Intent: "Intent",
-  Options: "Options",
-  Thoughts: "Thoughts",
-  Learnings: "Learnings",
-  Summary: "Summary",
-
-  // ROLFE
-  ROLFE_What: "ROLFE_What",
-  ROLFE_SoWhat: "ROLFE_SoWhat",
-  ROLFE_NowWhat: "ROLFE_NowWhat",
-
-  // STAR
-  STAR_Situation: "STAR_Situation",
-  STAR_Task: "STAR_Task",
-  STAR_Action: "STAR_Action",
-  STAR_Result: "STAR_Result",
-
-  // SOAP
-  SOAP_Subjective: "SOAP_Subjective",
-  SOAP_Objective: "SOAP_Objective",
-  SOAP_Assessment: "SOAP_Assessment",
-  SOAP_Plan: "SOAP_Plan",
-
-  // SBAR (referenced by Guide/StageIcon even if not used everywhere)
-  SBAR_Situation: "SBAR_Situation",
-  SBAR_Background: "SBAR_Background",
-  SBAR_Assessment: "SBAR_Assessment",
-  SBAR_Recommendation: "SBAR_Recommendation",
-
-  // ERA
-  ERA_Experience: "ERA_Experience",
-  ERA_Reflection: "ERA_Reflection",
-  ERA_Action: "ERA_Action",
-
-  // Morning/Evening
-  MORNING_Energy: "MORNING_Energy",
-  // Some UI components reference a "Gratitude" stage for morning prompts.
-  // Keep it here for backward compatibility (even if a given model doesn't use it).
-  MORNING_Gratitude: "MORNING_Gratitude",
-  MORNING_Focus: "MORNING_Focus",
-  MORNING_Intention: "MORNING_Intention",
-
-  EVENING_Wins: "EVENING_Wins",
-  EVENING_Growth: "EVENING_Growth",
-  EVENING_Unwind: "EVENING_Unwind",
-
-  // Free writing
-  FREE_Writing: "FREE_Writing",
-
-  // Custom placeholders referenced in codebase
-  CUSTOM_Stage1: "CUSTOM_Stage1",
-  CUSTOM_Stage2: "CUSTOM_Stage2",
-  CUSTOM_Stage3: "CUSTOM_Stage3",
-} as const;
-
-export type StageId = (typeof StageId)[keyof typeof StageId];
-
 // ---------- Domain objects ----------
 
 export interface MediaItem {
@@ -173,12 +74,15 @@ export interface BaseEntry {
 export interface ReflectionEntry extends BaseEntry {
   type: "reflection" | "REFLECTION";
 
-  modelId?: ReflectionModelId;
-
   /**
-   * Some code refers to `.model` (legacy). Keep alias.
+   * Framework id (src/frameworks/). A plain string, not a union: entries on
+   * devices may carry ids the core no longer ships (SBAR, SOAP, CUSTOM_1..3
+   * from earlier builds) and getFramework() resolves those to a legacy
+   * framework so they still open.
    */
-  model?: ReflectionModelId;
+  modelId?: string;
+  /** Same as modelId; the field most code and all saved entries use. */
+  model?: string;
 
   answers?: Record<string, string>;
 
@@ -324,18 +228,4 @@ export interface UserStats {
   streak?: number;
   totalReflections?: number;
   achievements?: Achievement[];
-}
-
-// ---------- Reflection model config shape (used by constants.ts) ----------
-
-export interface ReflectionModelConfig {
-  id: ReflectionModelId;
-  title: string;
-  description: string;
-  stages: Array<{
-    id: StageId | string;
-    label: string;
-    prompt: string;
-    placeholder?: string;
-  }>;
 }

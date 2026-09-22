@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import type { Entry, ReflectionEntry } from "../types";
 import { storageService } from "../services/storageService";
+import { frameworkName } from "../frameworks";
 
 interface CalendarViewProps {
   entries: Entry[];
@@ -328,7 +329,7 @@ export default function CalendarView({ entries, onOpenEntry }: CalendarViewProps
                       >
                         <div className="flex items-center justify-between">
                           <span className={`text-xs font-bold text-white ${blurEnabled ? 'blur-sm' : ''}`}>
-                            {e.type === "INCIDENT" ? "Incident" : (e as any).model}
+                            {e.type === "INCIDENT" ? "Incident" : frameworkName((e as ReflectionEntry).model)}
                           </span>
                           <span className="text-[10px] text-white/60 font-semibold">
                             {new Date(e.date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}

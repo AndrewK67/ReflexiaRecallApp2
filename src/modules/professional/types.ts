@@ -8,7 +8,7 @@
  * from that declaration rather than duplicated.
  */
 
-import type { ReflectionEntry, ReflectionModelId } from '../../types';
+import type { ReflectionEntry } from '../../types';
 
 export type CPDLog = NonNullable<ReflectionEntry['cpd']>;
 
@@ -17,7 +17,8 @@ export interface ProfessionConfig {
   description?: string;
   reflectionPromptPrefix: string;
   badgeColor?: string;
-  modelsAllowed?: ReflectionModelId[];
+  /** Framework ids, including the module's own (SBAR, SOAP). */
+  modelsAllowed?: string[];
   standards?: Array<{ id: string; label: string; category?: string }>;
 }
 

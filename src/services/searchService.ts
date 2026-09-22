@@ -3,12 +3,12 @@
  * Advanced search, filtering, and sorting for entries
  */
 
-import type { Entry, ReflectionEntry, IncidentEntry, ReflectionModelId } from '../types';
+import type { Entry, ReflectionEntry, IncidentEntry } from '../types';
 
 export interface SearchFilters {
   query?: string;
   entryType?: 'all' | 'reflection' | 'incident';
-  reflectionModel?: ReflectionModelId | 'all';
+  reflectionModel?: string | 'all';
   dateFrom?: string; // ISO date
   dateTo?: string; // ISO date
   tags?: string[];

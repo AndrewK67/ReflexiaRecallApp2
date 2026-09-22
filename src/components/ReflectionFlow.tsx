@@ -16,9 +16,8 @@ import {
   Info,
 } from "lucide-react";
 
-import { MODEL_CONFIG } from "../constants";
-import { StageId } from "../types";
-import type { MediaItem, ReflectionEntry, ReflectionModel } from "../types";
+import type { MediaItem, ReflectionEntry } from "../types";
+import { THREE_PART, OPEN_ENTRY, CATALOGUE, stageCoaching, type ReflectionFramework } from "../frameworks";
 
 // Guide character removed for cleaner UX
 import CanvasBoard from "./CanvasBoard";
@@ -27,7 +26,6 @@ import { storageService } from "../services/storageService";
 import { analyzeReflection, getStageCoaching } from "../services/aiService";
 import { migrateBase64ToFile } from "../services/fileStorageService";
 import { startAudioRecording, stopAudioRecording, saveAudioToFile } from "../services/mediaService";
-import { getOfflineStagePrompt } from "../data/offlinePrompts";
 
 interface ReflectionFlowProps {
   onComplete: (entry: ReflectionEntry) => void;
@@ -104,28 +102,11 @@ class AudioEngine {
 
 const audioEngine = new AudioEngine();
 
-// Simple mode stages (3 prompts)
-const SIMPLE_MODE_STAGES = [
-  {
-    id: "what_happened",
-    label: "What happened?",
-    prompt: "Describe the situation or event.",
-  },
-  {
-    id: "what_mattered",
-    label: "What stood out or mattered?",
-    prompt: "What feelings, thoughts, or details caught your attention?",
-  },
-  {
-    id: "what_forward",
-    label: "What will you carry forward?",
-    prompt: "What insight or action will you take with you?",
-  },
-];
-
 export default function ReflectionFlow({ onComplete, onCancel, aiEnabled }: ReflectionFlowProps) {
-  const [useSimpleMode, setUseSimpleMode] = useState(true);
-  const [selectedModel, setSelectedModel] = useState<ReflectionModel | null>(null);
+  // One framework, never null. Three-Part is the default (CLAUDE.md, decision 5);
+  // the catalogue picker and "Just write" swap it.
+  const [framework, setFramework] = useState<ReflectionFramework>(THREE_PART);
+  const [showPicker, setShowPicker] = useState(false);
   const [currentStageIndex, setCurrentStageIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [mood, setMood] = useState<number | undefined>();
@@ -147,36 +128,21 @@ export default function ReflectionFlow({ onComplete, onCancel, aiEnabled }: Refl
 
   const AI_ON = aiEnabled === true;
 
-  function safeModelLabel(model: string) {
-    return (MODEL_CONFIG as any)?.[model]?.title ?? model;
-  }
-
-  function safeModelStages(model: string) {
-    return (MODEL_CONFIG as any)?.[model]?.stages ?? [];
-  }
-
-  // Every framework is available to everyone. Which ones belong in the core
-  // at all is phase 2 (Gibbs, SBAR and SOAP are professional frameworks).
-  const models: ReflectionModel[] = [
-    "GIBBS",
-    "SBAR",
-    "ERA",
-    "ROLFE",
-    "STAR",
-    "SOAP",
-    "MORNING",
-    "EVENING",
-    "FREE",
-  ];
-
-  // Use simple mode stages or model stages
-  const stages = useSimpleMode
-    ? SIMPLE_MODE_STAGES
-    : (selectedModel ? safeModelStages(selectedModel) : []);
+  const stages = framework.stages;
   const stageData = stages[currentStageIndex];
 
-  // Auto-start reflection in simple mode
-  const isReflecting = useSimpleMode || selectedModel !== null;
+  /** Switch framework from the first stage. Whatever is already typed moves to the new first stage. */
+  const startFramework = (next: ReflectionFramework) => {
+    const carried = stageData?.id ? answers[stageData.id] ?? "" : "";
+    setFramework(next);
+    setShowPicker(false);
+    setCurrentStageIndex(0);
+    setAnswers(carried && next.stages[0] ? { [next.stages[0].id]: carried } : {});
+    setCoachTip(null);
+    setAnalysisResult(null);
+    setShowInsight(false);
+    audioEngine.playTone(0);
+  };
 
   const currentAnswer = stageData?.id ? answers[stageData.id] ?? "" : "";
 
@@ -257,18 +223,17 @@ export default function ReflectionFlow({ onComplete, onCancel, aiEnabled }: Refl
     if (!stageData) return;
 
     setCoachTip(null);
-    
 
-    const prompt = AI_ON
-      ? await getStageCoaching(stageData.id, currentAnswer)
-      : getOfflineStagePrompt(selectedModel!, stageData.id).prompt;
-
-    setCoachTip(prompt);
-    
-
-    setTimeout(() => {
-      
-    }, 2000);
+    const offline = stageCoaching(framework.id, stageData.id);
+    let tip = offline;
+    if (AI_ON) {
+      try {
+        tip = (await getStageCoaching(framework.id, stageData.id, currentAnswer)) || offline;
+      } catch {
+        tip = offline;
+      }
+    }
+    setCoachTip(tip);
   };
 
   const handleDrawingSave = (dataUrl: string) => {
@@ -292,27 +257,24 @@ export default function ReflectionFlow({ onComplete, onCancel, aiEnabled }: Refl
   };
 
   const handleUnlockInsight = async () => {
-    if (showInsight || !selectedModel) return;
-
-    
+    if (showInsight) return;
     setShowInsight(true);
 
     try {
-      const result = await analyzeReflection(answers, selectedModel);
+      const result = await analyzeReflection(answers, framework.id);
       setAnalysisResult(result);
     } catch {
       setAnalysisResult("Reflection saved. Insights can appear here when AI is enabled.");
     }
-
-    
   };
 
   const handleSave = async () => {
-    if (isSaving || (!selectedModel && !useSimpleMode)) return;
+    if (isSaving) return;
 
     setIsSaving(true);
 
-    const modelToSave = useSimpleMode ? "SIMPLE" : selectedModel!;
+    // entry.model is the framework id; it is what saved entries already carry.
+    const modelToSave = framework.id;
 
     const entry: ReflectionEntry = {
       id: `reflection_${Date.now()}`,
@@ -338,7 +300,7 @@ export default function ReflectionFlow({ onComplete, onCancel, aiEnabled }: Refl
     }
   }, [currentStageIndex, stageData]);
 
-  if (!selectedModel && !useSimpleMode) {
+  if (showPicker) {
     return (
       <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 flex flex-col overflow-y-auto custom-scrollbar animate-in fade-in duration-300 nav-safe relative">
         <div className="animated-backdrop-dark overflow-hidden">
@@ -351,7 +313,7 @@ export default function ReflectionFlow({ onComplete, onCancel, aiEnabled }: Refl
         <div className="p-6 pt-10 border-b border-white/10 relative z-10">
           <div className="flex items-center justify-between">
             <button
-              onClick={onCancel}
+              onClick={() => setShowPicker(false)}
               className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center transition"
               title="Back"
             >
@@ -363,78 +325,62 @@ export default function ReflectionFlow({ onComplete, onCancel, aiEnabled }: Refl
                 <Layers className="text-indigo-400" size={24} />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">Select Framework</h1>
+                <h1 className="text-xl font-bold text-white">Choose a framework</h1>
                 <p className="text-white/60 text-xs uppercase tracking-widest font-mono">Reflection</p>
               </div>
             </div>
 
             <div className="w-10" />
           </div>
-
-          <div className="mt-4 text-xs text-white/60">
-            AI: <span className={`font-bold ${AI_ON ? "text-emerald-400" : "text-white/60"}`}>{AI_ON ? "ON" : "OFF"}</span>
-          </div>
         </div>
 
-        {/* INSTRUCTIONS AT TOP - CLEANER UI */}
         <div className="px-6 pt-4 relative z-10">
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex items-start gap-3">
             <Info className="text-indigo-400 flex-shrink-0 mt-0.5" size={18} />
             <div className="text-sm text-white/90">
-              <span className="font-bold">How it works:</span> Tap any framework to start. You can use voice dictation and get optional coaching tips {AI_ON ? "powered by AI" : "with offline prompts"}.
+              A framework is a fixed set of questions in a fixed order. None of these is better than the
+              three questions you started with; they are just different ways in. Every step is optional.
             </div>
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 pb-40 custom-scrollbar relative z-10">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {models.map((m) => (
+            {CATALOGUE.map((f) => (
               <button
-                key={m}
-                onClick={() => {
-                  setSelectedModel(m);
-                  setCurrentStageIndex(0);
-                  setAnswers({});
-                  setMood(undefined);
-                  setCoachTip(null);
-                  setAnalysisResult(null);
-                  setShowInsight(false);
-                  audioEngine.playTone(0);
-                }}
+                key={f.id}
+                onClick={() => startFramework(f)}
                 className="text-left bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-5 hover:bg-white/10 hover:border-indigo-500/30 transition group"
               >
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-start justify-between gap-3 mb-2">
                   <div className="text-base font-extrabold text-white group-hover:text-indigo-400 transition">
-                    {safeModelLabel(m)}
+                    {f.name}
                   </div>
-                  <div className="text-[10px] font-bold text-white/60 bg-white/10 px-2 py-1 rounded-full">
-                    {safeModelStages(m).length} stages
+                  <div className="text-[10px] font-bold text-white/60 bg-white/10 px-2 py-1 rounded-full whitespace-nowrap">
+                    {f.stages.length} {f.stages.length === 1 ? "step" : "steps"}
                   </div>
                 </div>
-                <div className="flex items-center gap-2 text-sm font-bold text-indigo-400 group-hover:translate-x-1 transition">
+                <div className="text-sm text-white/70 leading-snug">{f.tagline}</div>
+                {f.origin && <div className="mt-2 text-[11px] text-white/40">{f.origin}</div>}
+                <div className="mt-3 flex items-center gap-2 text-sm font-bold text-indigo-400 group-hover:translate-x-1 transition">
                   Start <ArrowRight size={16} />
                 </div>
               </button>
             ))}
           </div>
 
-          <div className="mt-6 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-5">
-            <div className="text-sm font-bold text-white flex items-center gap-2">
-              <Sparkles className="text-indigo-400" size={18} /> Tip
-            </div>
-            <div className="mt-2 text-xs text-white/70">
-              If AI is OFF, the app uses built-in prompts for each stage (no internet required).
-              Turn AI ON in <span className="font-bold">Profile → Neural Link</span>.
-            </div>
-          </div>
-
-          {/* Back to Simple Mode Button */}
-          <div className="mt-4">
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
             <button
-              onClick={() => setUseSimpleMode(true)}
-              className="w-full px-4 py-3 rounded-xl bg-cyan-600/20 hover:bg-cyan-600/30 border border-cyan-500/30 text-cyan-300 font-semibold text-sm transition"
+              onClick={() => startFramework(THREE_PART)}
+              className="px-4 py-3 rounded-xl bg-cyan-600/20 hover:bg-cyan-600/30 border border-cyan-500/30 text-cyan-300 font-semibold text-sm transition"
             >
-              ← Back to Simple Mode (3 questions)
+              ← Three questions
+            </button>
+            <button
+              onClick={() => startFramework(OPEN_ENTRY)}
+              className="px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 font-semibold text-sm transition"
+            >
+              Just write
             </button>
           </div>
         </div>
@@ -548,7 +494,13 @@ export default function ReflectionFlow({ onComplete, onCancel, aiEnabled }: Refl
       <div className="p-5 border-b border-white/10 relative z-10">
         <div className="flex items-center justify-between">
           <button
-            onClick={currentStageIndex === 0 ? (useSimpleMode ? onCancel : () => setSelectedModel(null)) : handleStagePrev}
+            onClick={
+              currentStageIndex > 0
+                ? handleStagePrev
+                : framework.kind === "framework"
+                  ? () => setShowPicker(true)
+                  : onCancel
+            }
             className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center transition"
             title="Back"
           >
@@ -557,7 +509,8 @@ export default function ReflectionFlow({ onComplete, onCancel, aiEnabled }: Refl
 
           <div className="flex-1 text-center">
             <div className="text-xs text-white/60 font-bold uppercase tracking-wide mb-1">
-              {useSimpleMode ? "Simple Mode" : (selectedModel ? safeModelLabel(selectedModel) : "Reflection")} • Step {currentStageIndex + 1} of {stages.length}
+              {framework.name}
+              {stages.length > 1 && <> • Step {currentStageIndex + 1} of {stages.length}</>}
             </div>
             <div className="text-sm font-bold text-white">{stageData?.label}</div>
           </div>
@@ -571,18 +524,22 @@ export default function ReflectionFlow({ onComplete, onCancel, aiEnabled }: Refl
           </button>
         </div>
 
-        {/* Advanced Models Toggle - Only in Simple Mode */}
-        {useSimpleMode && currentStageIndex === 0 && (
-          <div className="mt-3">
-            <button
-              onClick={() => {
-                setUseSimpleMode(false);
-                setCurrentStageIndex(0);
-              }}
-              className="w-full px-3 py-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 text-xs font-semibold transition flex items-center justify-center gap-2"
-            >
-              <Layers size={14} />
-              <span>Switch to Advanced Models</span>
+        {/* Other ways in — only on the first step, so nothing typed further along is lost */}
+        {currentStageIndex === 0 && (
+          <div className="mt-3 flex items-center justify-center gap-4 text-xs font-semibold">
+            {framework.id !== THREE_PART.id && (
+              <button onClick={() => startFramework(THREE_PART)} className="text-cyan-300 hover:text-cyan-200 underline-offset-4 hover:underline">
+                Three questions
+              </button>
+            )}
+            {framework.id !== OPEN_ENTRY.id && (
+              <button onClick={() => startFramework(OPEN_ENTRY)} className="text-cyan-300 hover:text-cyan-200 underline-offset-4 hover:underline">
+                Just write
+              </button>
+            )}
+            <button onClick={() => setShowPicker(true)} className="text-indigo-300 hover:text-indigo-200 underline-offset-4 hover:underline flex items-center gap-1">
+              <Layers size={12} />
+              Use a framework
             </button>
           </div>
         )}
@@ -595,7 +552,7 @@ export default function ReflectionFlow({ onComplete, onCancel, aiEnabled }: Refl
         <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-4 mb-3">
           <div className="text-xs font-bold text-indigo-400 mb-2">Reflection Prompt</div>
           <div className="text-sm text-white/90 leading-relaxed">
-            {stageData?.prompt}
+            {stageData?.question}
           </div>
         </div>
 

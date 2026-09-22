@@ -66,7 +66,7 @@ const TUTORIAL_STEPS: TutorialStepConfig[] = [
     targetView: 'REFLECTION',
     instructions: [
       'Reflections help you learn from your experiences',
-      'Choose a reflection model (we recommend Gibbs for beginners)',
+      'Answer three questions: what happened, what mattered, what you take forward',
       'Answer the prompts thoughtfully - AI will help you along the way',
       'Save your reflection when done',
     ],

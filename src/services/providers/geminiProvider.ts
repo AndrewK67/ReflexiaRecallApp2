@@ -3,8 +3,8 @@
 
 import type { AIProvider } from "../aiProvider";
 import { OfflineProvider } from "./offlineProvider";
-import { MODEL_CONFIG, DEFAULT_COACH_PREFIX } from "../../constants";
-import type { ReflectionModelId } from "../../types";
+import { DEFAULT_COACH_PREFIX } from "../../constants";
+import { getFramework, DEFAULT_FRAMEWORK, isKnownFramework } from "../../frameworks";
 
 export class GeminiProvider implements AIProvider {
   private apiKey: string;
@@ -60,23 +60,9 @@ export class GeminiProvider implements AIProvider {
     return DEFAULT_COACH_PREFIX;
   }
 
-  private normalizeModelId(modelId?: string): ReflectionModelId {
-    const m = (modelId ?? "GIBBS").toUpperCase().trim();
-    const allowed: ReflectionModelId[] = [
-      "GIBBS",
-      "SBAR",
-      "ERA",
-      "ROLFE",
-      "STAR",
-      "SOAP",
-      "MORNING",
-      "EVENING",
-      "FREE",
-      "CUSTOM_1",
-      "CUSTOM_2",
-      "CUSTOM_3",
-    ];
-    return (allowed as string[]).includes(m) ? (m as ReflectionModelId) : "GIBBS";
+  private normalizeModelId(modelId?: string): string {
+    const m = (modelId ?? DEFAULT_FRAMEWORK.id).toUpperCase().trim();
+    return isKnownFramework(m) ? m : DEFAULT_FRAMEWORK.id;
   }
 
   async generateDailyPrompt(dateIso?: string, profession: string = "NONE"): Promise<string> {
@@ -99,12 +85,15 @@ export class GeminiProvider implements AIProvider {
     return this.offlineFallback.generateDailyPrompt(dateIso, profession);
   }
 
-  async getStageCoaching(stageId: string, currentText: string, profession: string = "NONE"): Promise<string> {
-    const prefix = this.safeProfessionPrefix(profession);
+  async getStageCoaching(frameworkId: string, stageId: string, currentText: string): Promise<string> {
+    const prefix = this.safeProfessionPrefix();
+    const framework = getFramework(frameworkId);
+    const stage = framework.stages.find((s) => s.id === stageId);
 
     const prompt = [
       prefix,
-      `You are coaching the user on a reflection stage: ${stageId}.`,
+      `You are coaching the user on the "${stage?.label ?? stageId}" step of the ${framework.name} reflection.`,
+      stage?.question ? `The question they are answering: ${stage.question}` : "",
       `User text so far:`,
       currentText || "(empty)",
       ``,
@@ -115,7 +104,7 @@ export class GeminiProvider implements AIProvider {
     if (ai) return ai;
 
     // Fallback to offline
-    return this.offlineFallback.getStageCoaching(stageId, currentText, profession);
+    return this.offlineFallback.getStageCoaching(frameworkId, stageId, currentText);
   }
 
   async analyzeReflection(
@@ -126,7 +115,7 @@ export class GeminiProvider implements AIProvider {
     const prof = profession ?? "NONE";
     const model = this.normalizeModelId(modelId);
     const prefix = this.safeProfessionPrefix(prof);
-    const modelConfig = MODEL_CONFIG[model];
+    const modelConfig = getFramework(model);
 
     const body = Object.entries(answers)
       .map(([k, v]) => `- ${k}: ${v}`)
@@ -134,7 +123,7 @@ export class GeminiProvider implements AIProvider {
 
     const prompt = [
       prefix,
-      `Summarise this reflection using the ${modelConfig.title} model.`,
+      `Summarise this reflection, written with the ${modelConfig.name} framework.`,
       `Return format:`,
       `Summary: ...`,
       `Insights:`,

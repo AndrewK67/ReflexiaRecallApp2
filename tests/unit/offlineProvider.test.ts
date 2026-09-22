@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { OfflineProvider } from '../../src/services/providers/offlineProvider';
 
-const MODELS = ['SIMPLE', 'GIBBS', 'SBAR', 'ERA', 'ROLFE', 'STAR', 'SOAP', 'MORNING', 'EVENING', 'FREE'];
+import { ALL, DEFAULT_COACHING, GIBBS, THREE_PART } from '../../src/frameworks';
+
+// Every id the core ships plus two legacy ids entries on devices may still carry.
+const MODELS = [...ALL.map((f) => f.id), 'SBAR', 'SOAP'];
 
 describe('OfflineProvider', () => {
   let fetchSpy: ReturnType<typeof vi.fn>;
@@ -11,7 +14,7 @@ describe('OfflineProvider', () => {
   it('never touches the network', async () => {
     const p = new OfflineProvider();
     await p.generateDailyPrompt();
-    await p.getStageCoaching('Description', 'text');
+    await p.getStageCoaching('GIBBS', 'Description', 'text');
     await p.analyzeReflection({ a: 'text' }, 'NONE', 'SIMPLE');
     await p.askOracle('what now?', '[]');
     expect(fetchSpy).not.toHaveBeenCalled();
@@ -26,10 +29,12 @@ describe('OfflineProvider', () => {
     expect(new Set(week).size).toBeGreaterThan(1);
   });
 
-  it('gives a non-empty coaching tip for known and unknown stages', async () => {
+  it('coaches from the framework registry, with a default for unknown stages', async () => {
     const p = new OfflineProvider();
-    expect((await p.getStageCoaching('Feelings', '')).length).toBeGreaterThan(10);
-    expect((await p.getStageCoaching('what_happened', '')).length).toBeGreaterThan(10);
+    expect(await p.getStageCoaching('GIBBS', 'Feelings', '')).toBe(GIBBS.stages[1].coaching);
+    expect(await p.getStageCoaching('SIMPLE', 'what_happened', 'some text')).toBe(THREE_PART.stages[0].coaching);
+    expect(await p.getStageCoaching('SBAR', 'SBAR_Situation', '')).toBe(DEFAULT_COACHING);
+    expect(await p.getStageCoaching('', '', '')).toBe(DEFAULT_COACHING);
   });
 
   it('analyses empty and non-empty reflections for every model', async () => {

@@ -11,13 +11,13 @@ export interface AIProvider {
   generateDailyPrompt(dateIso?: string, profession?: string): Promise<string>;
 
   /**
-   * Get coaching tips for a specific reflection stage
-   * @param stageId - The stage identifier
+   * Get a coaching tip for a stage of a framework
+   * @param frameworkId - The framework id (src/frameworks/)
+   * @param stageId - The stage identifier within that framework
    * @param currentText - User's current text for this stage
-   * @param profession - User's profession key
    * @returns A helpful tip (1-3 sentences)
    */
-  getStageCoaching(stageId: string, currentText: string, profession?: string): Promise<string>;
+  getStageCoaching(frameworkId: string, stageId: string, currentText: string): Promise<string>;
 
   /**
    * Analyze a completed reflection

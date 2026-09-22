@@ -4,6 +4,7 @@ import { UserProvider, EntriesProvider, AppProvider, useApp, useUser, useEntries
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { readMediaFile } from './services/fileStorageService';
+import { frameworkName, stageLabel } from "./frameworks";
 
 // Eager load critical components
 import SimplifiedOnboarding from "./components/SimplifiedOnboarding";
@@ -164,7 +165,7 @@ async function saveAudioToDownloads(audioUrl: string) {
 
 function formatReflection(entry: ReflectionEntry) {
   const lines: string[] = [];
-  lines.push(`Model: ${entry.model}`);
+  lines.push(`Framework: ${frameworkName(entry.model)}`);
   if (typeof entry.mood === "number") lines.push(`Mood: ${entry.mood}/5`);
   lines.push("");
 
@@ -175,7 +176,7 @@ function formatReflection(entry: ReflectionEntry) {
     for (const k of keys) {
       const v = (answers[k] || "").trim();
       if (!v) continue;
-      lines.push(`${k}`);
+      lines.push(stageLabel(entry.model, k));
       lines.push(v);
       lines.push("");
     }
@@ -370,7 +371,7 @@ function AppContent() {
   const renderEntryModal = () => {
     if (!openEntry) return null;
 
-    const title = openEntry.type === "INCIDENT" ? "Incident" : `Reflection • ${(openEntry as ReflectionEntry).model}`;
+    const title = openEntry.type === "INCIDENT" ? "Incident" : `Reflection • ${frameworkName((openEntry as ReflectionEntry).model)}`;
     const body = openEntry.type === "INCIDENT" ? formatIncident(openEntry as IncidentEntry) : formatReflection(openEntry as ReflectionEntry);
 
     const media = (openEntry as IncidentEntry).media || [];

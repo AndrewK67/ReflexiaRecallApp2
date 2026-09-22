@@ -4,6 +4,7 @@
 import type { AIProvider } from "./aiProvider";
 import { OfflineProvider } from "./providers/offlineProvider";
 import { GeminiProvider } from "./providers/geminiProvider";
+import { isKnownFramework } from "../frameworks";
 
 // Configuration
 const API_KEY = (import.meta as any).env?.VITE_GEMINI_API_KEY as string | undefined;
@@ -55,12 +56,8 @@ export async function generateDailyPrompt(dateIso?: string, profession?: string)
  * Get coaching tips for a reflection stage
  * UI Components: ReflectionFlow.tsx
  */
-export async function getStageCoaching(
-  stageId: string,
-  currentText: string,
-  profession?: string
-): Promise<string> {
-  return provider.getStageCoaching(stageId, currentText, profession);
+export async function getStageCoaching(frameworkId: string, stageId: string, currentText: string): Promise<string> {
+  return provider.getStageCoaching(frameworkId, stageId, currentText);
 }
 
 /**
@@ -78,8 +75,7 @@ export async function analyzeReflection(
   const maybe2 = (arg2 ?? "").toUpperCase();
   const maybe3 = (arg3 ?? "").toUpperCase();
 
-  const looksLikeModel = (v: string) =>
-    ["SIMPLE", "GIBBS", "SBAR", "ERA", "ROLFE", "STAR", "SOAP", "MORNING", "EVENING", "FREE", "CUSTOM_1", "CUSTOM_2", "CUSTOM_3"].includes(v);
+  const looksLikeModel = (v: string) => isKnownFramework(v);
 
   const modelId = looksLikeModel(maybe2) ? maybe2 : looksLikeModel(maybe3) ? maybe3 : undefined;
   const profession = looksLikeModel(maybe2) ? arg3 : arg2;

@@ -39,9 +39,10 @@ not belong in the core — however much work is already in it.
    `services/gamificationService.ts`; the points engine itself stays.
 5. **Gibbs is not the core.** The six-stage cycle (Description, Feelings,
    Evaluation, Analysis, Conclusion, Action Plan) is a nursing and teacher-
-   training framework. It comes out of the composer. Core built-ins become
-   Open Entry (one field) and Three-Part (what happened / what it means /
-   what now); Gibbs becomes one selectable framework among several.
+   training framework. **Done (phase 2, 22 Sep 2026):** the composer opens
+   in Three-Part (what happened / what stood out / what you carry forward),
+   Open Entry is one tap away ("Just write"), and Gibbs is one of six in the
+   catalogue behind "Use a framework". See "Frameworks" below.
 6. **Nothing commercial yet.** No entitlement, no paid tiers, no key pools, no
    storefront. `setUserTier()` is a localStorage bypass and stays broken for
    now — just do not build on it.
@@ -71,6 +72,31 @@ Quick Capture still saves every entry as `type: "INCIDENT"` with an
 Archive still offers an "Incident Severity" filter. That is a data-model
 change with a migration and belongs to phase 3.
 
+## Frameworks
+
+A framework is a fixed list of questions the composer walks someone through.
+One definition, `ReflectionFramework` in `src/frameworks/types.ts`; each stage
+carries its own label, question, placeholder and offline coaching text.
+
+- `src/frameworks/builtIn.ts` — **Three-Part** (id `SIMPLE`, the default) and
+  **Open Entry** (id `FREE`, one field).
+- `src/frameworks/catalogue.ts` — Gibbs, "What? So what? Now what?" (Rolfe),
+  ERA, STAR, Morning Check-in, Evening Review. Each names its origin so the
+  picker is honest about where it comes from.
+- `src/frameworks/index.ts` — `ALL`, `getFramework(id, answerKeys)`,
+  `frameworkName`, `stageLabel`, `stageCoaching`. Unknown ids (SBAR, SOAP,
+  `CUSTOM_1..3` from older builds) resolve to a `legacy` framework built from
+  the entry's own answer keys, so every saved entry still opens.
+- `src/modules/professional/data/frameworks.ts` — SBAR and SOAP. Clinical
+  structures, not reflection; out of the core.
+
+**Ids are stored data.** `entry.model` holds the framework id and
+`entry.answers` is keyed by stage id, on users' devices, today.
+`tests/unit/frameworks.test.ts` pins every id; if it fails because an id
+changed, that change needs a migration, not a test edit. Display text can
+change freely. Where the code talks to a person it says "framework"; `model`
+survives only as the stored field name.
+
 ## Phases
 
 | # | Phase | Estimate | Status |
@@ -78,7 +104,7 @@ change with a migration and belongs to phase 3.
 | 0 | Test harness — entry create/save/recover, IndexedDB, export | 17–22h (`docs/PHASE-0-SCOPE.md`) | **Done**: 67 unit tests, 16 e2e specs, CI workflow. First CI run happens on push |
 | 1A | Move the professional layer to `src/modules/professional/` | 8–11h | **Done** |
 | 1B | De-profession the live core (`PROFESSION_CONFIG`, onboarding, NMC block, AI prefixes, bug B1) | 10–13h | **Done** |
-| 2 | Demote Gibbs, framework interface, Open Entry + Three-Part | 15–20h | Note the existing SIMPLE mode in `ReflectionFlow.tsx` is already Three-Part in all but name |
+| 2 | Demote Gibbs, framework interface, Open Entry + Three-Part | 15–20h (`docs/PHASE-2-SCOPE.md`) | **Done** |
 | 3 | Make the core good for anyone — first-run experience, persistent storage, accessibility, XP rework to learning tracks, Quick Capture data model | to be scoped | |
 
 Deferred indefinitely: module runtime, manifests, entitlement, specialities.
@@ -87,9 +113,9 @@ Deferred indefinitely: module runtime, manifests, entitlement, specialities.
 
 - Branch `phase-1a/professional-module`, on top of `refactor/context-layer`.
   Both need pushing.
-- **Tests.** `npm test` — 8 vitest suites, 67 tests, ~3 s, in Node against
+- **Tests.** `npm test` — 9 vitest suites, 80 tests, ~3 s, in Node against
   the real services (fake-indexeddb, Node WebCrypto). `npm run test:e2e` —
-  16 Playwright specs in Chromium, ~40 s, starts the dev server itself.
+  20 Playwright specs in Chromium, ~50 s, starts the dev server itself.
   One e2e spec and two unit tests are declared expected failures: the
   empty-text CSV export (twice) and the plaintext dual-write decision
   (`docs/PHASE-0-SCOPE.md` §4.2). `.github/workflows/test.yml` runs build,
@@ -107,8 +133,11 @@ Deferred indefinitely: module runtime, manifests, entitlement, specialities.
 - `navigator.storage.persist()` is never called — entries are evictable.
 - `src/packs/` is a compile-time feature-flag system. The `professional`
   pack is gone; the other four and the trial mechanism are untouched.
-- 36 of 104 source files are unreachable from `main.tsx` (inventory in
-  `docs/PHASE-1-SCOPE.md` §4). The February refactor dropped six views from
+- Roughly a third of the source files are unreachable from `main.tsx`
+  (inventory in `docs/PHASE-1-SCOPE.md` §4; four of them were deleted in
+  phase 2). `services/subscriptionService.ts` still advertises "All
+  reflection models (Gibbs, SBAR, ERA, etc.)" in a paywall nobody can reach —
+  decision 6 territory, untouched. The February refactor dropped six views from
   `App.tsx` — DriveMode, GamificationHub, Library, MentalAtlas, RewardsStore
   and the standalone CanvasBoard — without recording why. Decide before
   phase 3.
