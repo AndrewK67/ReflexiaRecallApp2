@@ -22,11 +22,8 @@ const Holodeck = lazy(() => import("./components/Holodeck"));
 const BioRhythm = lazy(() => import("./components/BioRhythm"));
 const Grounding = lazy(() => import("./components/Grounding"));
 const CalendarView = lazy(() => import("./components/CalendarView"));
-const CrisisProtocols = lazy(() => import("./modules/professional/components/CrisisProtocols"));
 const Archive = lazy(() => import("./components/Archive"));
-const CPD = lazy(() => import("./modules/professional/components/CPD"));
 const Reports = lazy(() => import("./components/Reports"));
-const ProfessionalDocExport = lazy(() => import("./modules/professional/components/ProfessionalDocExport"));
 const Tutorial = lazy(() => import("./components/Tutorial"));
 const PackBrowser = lazy(() => import("./components/PackBrowser"));
 const PermissionsHelp = lazy(() => import("./components/PermissionsHelp"));
@@ -326,13 +323,6 @@ function AppContent() {
           </Suspense>
         );
 
-      case "CRISIS_PROTOCOLS":
-        return (
-          <Suspense fallback={<ComponentLoader />}>
-            <CrisisProtocols onClose={() => navigate("DASHBOARD")} />
-          </Suspense>
-        );
-
       case "ARCHIVE":
         return (
           <Suspense fallback={<ComponentLoader />}>
@@ -340,24 +330,10 @@ function AppContent() {
           </Suspense>
         );
 
-      case "CPD":
-        return (
-          <Suspense fallback={<ComponentLoader />}>
-            <CPD entries={entries} onClose={() => navigate("DASHBOARD")} />
-          </Suspense>
-        );
-
       case "REPORTS":
         return (
           <Suspense fallback={<ComponentLoader />}>
             <Reports entries={entries} onClose={() => navigate("DASHBOARD")} />
-          </Suspense>
-        );
-
-      case "PROFESSIONAL_DOC":
-        return (
-          <Suspense fallback={<ComponentLoader />}>
-            <ProfessionalDocExport entries={entries} onClose={() => navigate("DASHBOARD")} />
           </Suspense>
         );
 
