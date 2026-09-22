@@ -16,6 +16,9 @@ Long-form reasoning, schemas and the deferred module design:
 https://claude.ai/code/artifact/63c97b33-95d8-4e86-bf33-9b426bcdc4d5
 That spec predates the general-core decision in places. This file wins.
 
+Phase 1 scoping, the wiring trace and the dead-code inventory:
+`docs/PHASE-1-SCOPE.md`.
+
 ## The core question for every change
 
 **Could someone with no professional background use this and enjoy it?**
@@ -43,58 +46,95 @@ not belong in the core — however much work is already in it.
    storefront. `setUserTier()` is a localStorage bypass and stays broken for
    now — just do not build on it.
 
-## The main near-term job: strip the professional layer out
+## The professional layer
 
-About **22% of the source is profession-specific** — 281 KB across 15 files —
-and it is referenced from `App.tsx`, `AppContext.tsx` and `constants.ts`.
+**Phase 1A is done (22 Sep 2026).** Seventeen files live in
+`src/modules/professional/` (see its `README.md`), off the router, off the
+dashboard, out of the pack registry and the tutorial. Nothing in the core
+imports from that folder; the dependency arrow points one way. **Do not
+delete it** — it becomes a module later.
 
-Move to `src/modules/professional/`, off the navigation. **Do not delete** —
-it becomes a module later.
+Eleven of the seventeen were already unreachable from `main.tsx` before the
+move. The six that were live (CPD, Crisis Protocols, Professional Docs and
+their services) were pack-gated and off by default.
 
-- `components/CPD.tsx`, `CompetencyMatrix.tsx`, `CrisisChecklist.tsx`,
-  `CrisisProtocols.tsx`, `IncidentCapture.tsx`, `RewardsStore.tsx`,
-  `Library.tsx`, `LegalAcceptance.tsx`
-- `data/cpdStandards.ts`, `data/learningResources.ts`
-- `services/professionalDocService.ts`, `cpdService.ts`,
-  `rewardsCatalogService.ts`, `rewardsRedemptionService.ts`,
-  `disclaimerQuizService.ts`
+**Phase 1B is not done.** The profession concept is still in the live core:
 
-Note `rewardsCatalogService.ts` already declares
-`ProfessionType = 'nursing' | 'all'`. The redemption engine is core; only the
-catalogue entries marked `'nursing'` move.
+- `constants.ts` — `PROFESSION_CONFIG`, 75.8 KB, 32 profession presets, 93 %
+  of the file. Consumed by `SimplifiedOnboarding.tsx`, `NeuralLink.tsx`,
+  `ReflectionFlow.tsx`, `providers/geminiProvider.ts`, `data/offlinePrompts.ts`.
+- `SimplifiedOnboarding.tsx` asks "What's your profession?" with Healthcare
+  first and `NURSING` pre-selected. `NONE` is not offered. Skip makes the user
+  a nurse.
+- `ReflectionFlow.tsx` — `NMC_CODE_THEMES`, `NMC_PROFESSIONS`, and the
+  `nmcCodeThemes` written onto saved entries.
+- `types.ts` — `ProfessionConfig`, `ProfessionType`, `UserProfile.profession`;
+  the `cpd` and `nmcCodeThemes` fields on `ReflectionEntry` stay as labelled
+  stored-data shapes (entries on devices carry them).
+
+Quick Capture saves every entry as `type: "INCIDENT"` with an
+`IncidentCategory` of "Clinical Error", "Patient Safety" and so on. That is a
+data-model change with a migration and belongs to phase 3, not phase 1.
 
 ## Phases
 
-| # | Phase | Estimate |
-| - | ----- | -------- |
-| 0 | Test harness — entry create/save/recover, IndexedDB, export | 20–25h |
-| 1 | Strip the professional layer to `src/modules/professional/` | 35–45h, re-scope first |
-| 2 | Demote Gibbs, framework interface, Open Entry + Three-Part | 15–20h |
-| 3 | Make the core good for anyone — first-run experience, persistent storage, accessibility, XP rework to learning tracks | to be scoped |
+| # | Phase | Estimate | Status |
+| - | ----- | -------- | ------ |
+| 0 | Test harness — entry create/save/recover, IndexedDB, export | 20–25h | `tests/smoke-runtime.mjs` is the seed; nothing else |
+| 1A | Move the professional layer to `src/modules/professional/` | 8–11h | **Done** |
+| 1B | De-profession the live core (`PROFESSION_CONFIG`, onboarding, NMC block, AI prefixes, bug B1) | 10–13h | Not started. Phase 0 first — 1B edits the profile and entry save paths |
+| 2 | Demote Gibbs, framework interface, Open Entry + Three-Part | 15–20h | Note the existing SIMPLE mode in `ReflectionFlow.tsx` is already Three-Part in all but name |
+| 3 | Make the core good for anyone — first-run experience, persistent storage, accessibility, XP rework to learning tracks, Quick Capture data model | to be scoped | |
 
 Deferred indefinitely: module runtime, manifests, entitlement, specialities.
 
 ## Current state
 
-- On `refactor/context-layer`, pushed. A February refactor was recovered in
-  September: contexts layer, entry storage and crypto split out of
-  `storageService.ts`. `tsc -b` passes; **runtime unverified** — confirm
-  `npm run build` and `npm run dev` before trusting it.
-- **No test suite anywhere.** Top constraint. Phase 0 is a gate, not a phase.
+- Branch `phase-1a/professional-module`, on top of `refactor/context-layer`.
+  Both need pushing.
+- **Runtime verified 22 Sep 2026** from a clean clone: `npm run build` passes,
+  `npm run dev` boots in headless Chromium with zero page errors, a Quick
+  Capture entry saves to IndexedDB encrypted and survives a reload.
+  `node tests/smoke-runtime.mjs` reproduces this (run `npm run dev` first).
+- **No test suite.** Top constraint. Phase 0 is a gate for 1B and everything
+  after it.
+- **Bug B1, open:** the app shows onboarding on every launch, and tapping
+  Skip overwrites a returning user's name with `User` and profession with
+  `NURSING` (`AppContext.tsx` starts on `ONBOARDING`;
+  `SimplifiedOnboarding.tsx` `handleSkip`). Fix is 1B.2. The smoke script
+  fails three assertions on this by design until then.
 - `navigator.storage.persist()` is never called — entries are evictable.
-- `src/packs/` is a compile-time feature-flag system. Leave it alone for now.
+- `src/packs/` is a compile-time feature-flag system. The `professional`
+  pack is gone; the other four and the trial mechanism are untouched.
+- 36 of 104 source files are unreachable from `main.tsx` (inventory in
+  `docs/PHASE-1-SCOPE.md` §4). The February refactor dropped six views from
+  `App.tsx` — DriveMode, GamificationHub, Library, MentalAtlas, RewardsStore
+  and the standalone CanvasBoard — without recording why. Decide before
+  phase 3.
+- Dashboard still shows a streak tile and an AdSense placeholder, against
+  decisions 4 and 6. Half an hour; not done yet.
+- Most files under `src/` still have CRLF endings in the working tree from
+  before the `6bc0967` normalisation; the index holds LF. Cosmetic.
 
 ## Open questions
 
-1. The AI layer — `aiProvider.ts`, `aiService.ts`, `geminiService.ts`,
-   `providers/geminiProvider.ts`. What leaves the device, and is it opt-in?
-   An offline-first, privacy-focused app cannot quietly send entries to a
-   third-party model.
-2. `data/learningResources.ts` (43 KB) is healthcare-framed but its categories
-   span engineering, finance and creative arts. Probably moves out; confirm.
+1. The AI layer. Provider is chosen at **build time** from
+   `VITE_GEMINI_API_KEY`; if set, the key ships in the bundle. The user's
+   `aiEnabled` toggle guards the daily prompt and stage coaching only —
+   "Unlock Insight" and Oracle call the provider unconditionally, and Oracle
+   sends the last 40 entries as JSON while its screen says "No data sent to
+   cloud". No key is set in any build so far, so nothing has leaked. The fix
+   (runtime per-user key in the keystore, one gate in `aiService.ts`, a real
+   consent screen) is 4–6h in phase 3. Until then: never set that variable.
+2. ~~`data/learningResources.ts`~~ — moved with the module, dead code, no
+   rework. If the core ever wants a library it gets general content, not a
+   scrubbed nursing list.
 3. What does a first-time user with no background actually do in their first
-   90 seconds? Currently unanswered, and it is the most important question
-   in the project.
+   90 seconds? Observed: three slides, a name field, a profession dropdown,
+   then a dashboard with Capture / Reflect / Archive and the differentiator
+   (Holodeck) hidden behind a pack toggle. 1B removes the profession
+   question; phase 3 owns the rest. Still the most important question in
+   the project.
 
 ## Working preferences
 

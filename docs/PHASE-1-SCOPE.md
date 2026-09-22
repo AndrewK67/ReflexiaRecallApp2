@@ -1,7 +1,7 @@
 # Phase 1 scope — stripping the professional layer
 
 **Branch:** `refactor/context-layer` · **Verified against:** commit `49e2aa1` (origin) — identical source to your local `d9195d9`, which only changes `CLAUDE.md` and is **not yet pushed**.
-**Written:** 22 September 2026 · **Status:** scoping complete, no code changed.
+**Written:** 22 September 2026 · **Status:** scoping complete; **phase 1A executed the same day** (branch `phase-1a/professional-module`, current state in `CLAUDE.md`). Line numbers below refer to the tree *before* 1A.
 
 This document does three things: confirms the recovered branch actually runs, traces exactly how the professional layer is wired into the core, and re-costs phase 1 against the 35–45 hour figure in `CLAUDE.md`.
 
@@ -50,7 +50,7 @@ The smoke script that produced these results is delivered alongside this documen
 | B3 | **Dashboard shows a `STREAK` tile and an AdSense placeholder** — contradicting locked decisions 4 (no streaks) and 6 (nothing commercial) | `src/components/SimplifiedDashboard.tsx:75-77` (streak tile), `:7` and `:204` (AdBanner) | Visible in the screenshot after the first save: "1 REFLECTIONS · 1d STREAK" | 0.5 h (optional 1C) |
 | B4 | `shouldShowTutorial` imported, never called | `src/contexts/AppContext.tsx:7` | `noUnusedLocals` is off in `tsconfig.app.json` | 0 h (falls out of 1A) |
 
-Housekeeping from this session: my `git status` call left a stale `.git/index.lock` that this shell cannot delete, so I renamed it to `_to_delete/stale-git-index.lock` at the repo root. Delete that folder; git is unaffected.
+Housekeeping from this session: two `git status` calls each left a stale `.git/index.lock` that this shell cannot delete, so I renamed them into `_to_delete/` at the repo root. Delete that folder; git is unaffected. (Also: `scripts/` is gitignored — line 49 of `.gitignore` — which is why the smoke script lives in `tests/`.)
 
 ---
 
@@ -332,7 +332,7 @@ npx playwright install chromium
 node tests/smoke-runtime.mjs https://localhost:5173/
 ```
 
-It walks onboarding, saves a Quick Capture, reloads, asserts the entry survived in IndexedDB, opens Archive, opens the reflection composer, and writes screenshots to `.smoke/`. It exits non-zero on any page error or failed assertion. It also probes B1 and will keep failing on that assertion until 1B.2 lands — leave it failing; that is the point of a regression check.
+It walks onboarding, saves a Quick Capture, reloads, asserts the entry survived in IndexedDB, opens Archive, opens the reflection composer, and writes screenshots to `.smoke/` (add `.smoke/` to `.gitignore`). It exits non-zero on any page error or failed assertion. It also probes B1 and will keep failing on that assertion until 1B.2 lands — leave it failing; that is the point of a regression check.
 
 Treat it as the seed of phase 0, not phase 0. Phase 0 proper still needs unit coverage of `entryStorageService.ts` (IDB path, localStorage fallback, migration) and `cryptoService.ts`, and an export round-trip.
 
