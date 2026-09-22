@@ -115,14 +115,16 @@ async function migrateFromLocalStorage(): Promise<void> {
   }
 
   try {
+    // Encrypt everything BEFORE opening the transaction. An IndexedDB
+    // transaction auto-commits as soon as control leaves it, so awaiting
+    // crypto.subtle inside the loop makes every subsequent put() throw
+    // TransactionInactiveError (see tests/unit/entryStorage.test.ts).
+    const records = await Promise.all(lsEntries.map(encryptEntry));
+
     const db = await getDB();
     const tx = db.transaction(STORE_NAME, 'readwrite');
     const store = tx.objectStore(STORE_NAME);
-
-    for (const entry of lsEntries) {
-      const record = await encryptEntry(entry);
-      await store.put(record);
-    }
+    for (const record of records) store.put(record);
     await tx.done;
 
     localStorage.setItem(MIGRATION_KEY, 'true');
@@ -200,15 +202,16 @@ export async function deleteEntry(id: string): Promise<void> {
 export async function saveAllEntries(entries: Entry[]): Promise<void> {
   if (isIDBAvailable()) {
     try {
+      // Encrypt first, then clear and refill inside one short transaction.
+      // Awaiting encryption after clear() used to leave the store empty:
+      // the transaction had committed and every put() threw.
+      const records = await Promise.all(entries.map(encryptEntry));
+
       const db = await getDB();
       const tx = db.transaction(STORE_NAME, 'readwrite');
       const store = tx.objectStore(STORE_NAME);
-
-      await store.clear();
-      for (const entry of entries) {
-        const record = await encryptEntry(entry);
-        await store.put(record);
-      }
+      store.clear();
+      for (const record of records) store.put(record);
       await tx.done;
     } catch (e) {
       console.error('[entryStorageService] IDB saveAllEntries failed:', e);

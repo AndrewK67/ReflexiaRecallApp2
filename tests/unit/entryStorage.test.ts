@@ -98,10 +98,10 @@ describe('entryStorageService', () => {
   });
 
   describe('migration from the localStorage-only build', () => {
-    // KNOWN BUG (docs/PHASE-0-SCOPE.md §0.1): migrateFromLocalStorage awaits
-    // encrypt() inside an open transaction, which has auto-committed by then.
-    // Every put throws, the flag is never set, and the user sees no entries.
-    it.fails('shows the old entries on first launch and sets the migrated flag', async () => {
+    // Regression: migrateFromLocalStorage used to await encrypt() inside an
+    // open transaction, which had auto-committed by then; every put threw,
+    // the flag was never set, and users upgrading saw no entries.
+    it('shows the old entries on first launch and sets the migrated flag', async () => {
       resetBrowserStorage();
       localStorage.setItem(LS_ENTRIES, JSON.stringify([quickCapture('old1', 'from the old build'), quickCapture('old2', 'also old')]));
       const m = await loadEntryStorage();
@@ -117,9 +117,9 @@ describe('entryStorageService', () => {
   });
 
   describe('saveAllEntries / importEntries (backup restore)', () => {
-    // KNOWN BUG (docs/PHASE-0-SCOPE.md §0.1): same transaction-lifetime mistake.
-    // The store is cleared, the refill fails, and the app shows nothing.
-    it.fails('replaces the store with the imported entries', async () => {
+    // Regression: same transaction-lifetime mistake as the migration. The
+    // store was cleared, the refill failed, and a restored backup showed nothing.
+    it('replaces the store with the imported entries', async () => {
       silenceConsoleError();
       await s.saveEntry(quickCapture('live1', 'an entry the user already had'));
       await s.importEntries([quickCapture('b1', 'from backup'), quickCapture('b2', 'from backup too')]);
