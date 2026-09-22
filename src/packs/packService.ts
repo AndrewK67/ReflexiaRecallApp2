@@ -292,10 +292,6 @@ export function getRequiredPack(featureId: string): PackId | null {
     // Scenario
     'HOLODECK': 'scenario',
 
-    // Professional
-    'CPD': 'professional',
-    'PROFESSIONAL_DOC': 'professional',
-
     // Reports
     'REPORTS': 'reports',
   };

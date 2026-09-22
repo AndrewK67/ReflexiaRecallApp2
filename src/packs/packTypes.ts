@@ -8,7 +8,6 @@ export type PackId =
   | 'wellbeing'               // BioRhythm + Grounding exercises
   | 'aiReflectionCoach'       // Oracle AI assistant
   | 'scenario'                // Holodeck scenario practice
-  | 'professional'            // CPD tracking, professional docs, revalidation
   | 'reports';                // Analytics and Reports
 
 export interface PackDefinition {
@@ -16,7 +15,7 @@ export interface PackDefinition {
   name: string;
   description: string;
   icon: string;
-  category: 'core' | 'wellbeing' | 'productivity' | 'professional' | 'advanced';
+  category: 'core' | 'wellbeing' | 'productivity' | 'advanced';
   isCore: boolean;            // If true, cannot be disabled
   features: string[];         // List of features included
 }

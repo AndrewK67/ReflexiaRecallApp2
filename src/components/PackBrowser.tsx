@@ -71,14 +71,12 @@ export default function PackBrowser({ onClose, onPacksChanged }: PackBrowserProp
   const categories = {
     wellbeing: optionalPacks.filter(p => p.category === 'wellbeing'),
     productivity: optionalPacks.filter(p => p.category === 'productivity'),
-    professional: optionalPacks.filter(p => p.category === 'professional'),
     advanced: optionalPacks.filter(p => p.category === 'advanced'),
   };
 
   const categoryLabels = {
     wellbeing: 'Wellbeing',
     productivity: 'Productivity',
-    professional: 'Professional',
     advanced: 'Advanced',
   };
 

@@ -63,22 +63,6 @@ export const PACK_REGISTRY: Record<PackId, PackDefinition> = {
     ]
   },
 
-  professional: {
-    id: 'professional',
-    name: 'Professional Development',
-    description: 'CPD tracking and professional documentation. ⚠️ Not an official regulatory resource - verify requirements with your regulatory body.',
-    icon: '📋',
-    category: 'professional',
-    isCore: false,
-    features: [
-      'CPD time tracking',
-      'Professional document export',
-      'Revalidation portfolio support',
-      'Standards mapping reference',
-      '⚠️ Disclaimer: This assists with CPD tracking but does not replace official regulatory requirements. Always verify with NMC, HCPC, GPhC, or your regulatory body.'
-    ]
-  },
-
   reports: {
     id: 'reports',
     name: 'Analytics & Reports',
