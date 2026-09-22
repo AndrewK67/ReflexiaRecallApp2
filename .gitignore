@@ -62,3 +62,7 @@ nul
 
 # Runtime smoke-test screenshots (tests/smoke-runtime.mjs)
 .smoke/
+
+# Playwright
+playwright-report/
+test-results/

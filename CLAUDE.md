@@ -80,7 +80,7 @@ data-model change with a migration and belongs to phase 3, not phase 1.
 
 | # | Phase | Estimate | Status |
 | - | ----- | -------- | ------ |
-| 0 | Test harness — entry create/save/recover, IndexedDB, export | 20–25h | `tests/smoke-runtime.mjs` is the seed; nothing else |
+| 0 | Test harness — entry create/save/recover, IndexedDB, export | 17–22h (`docs/PHASE-0-SCOPE.md`) | Layers A–C done: 67 unit tests, 15 e2e specs. CI (Layer D) not yet |
 | 1A | Move the professional layer to `src/modules/professional/` | 8–11h | **Done** |
 | 1B | De-profession the live core (`PROFESSION_CONFIG`, onboarding, NMC block, AI prefixes, bug B1) | 10–13h | Not started. Phase 0 first — 1B edits the profile and entry save paths |
 | 2 | Demote Gibbs, framework interface, Open Entry + Three-Part | 15–20h | Note the existing SIMPLE mode in `ReflectionFlow.tsx` is already Three-Part in all but name |
@@ -92,12 +92,19 @@ Deferred indefinitely: module runtime, manifests, entitlement, specialities.
 
 - Branch `phase-1a/professional-module`, on top of `refactor/context-layer`.
   Both need pushing.
-- **Runtime verified 22 Sep 2026** from a clean clone: `npm run build` passes,
-  `npm run dev` boots in headless Chromium with zero page errors, a Quick
-  Capture entry saves to IndexedDB encrypted and survives a reload.
-  `node tests/smoke-runtime.mjs` reproduces this (run `npm run dev` first).
-- **No test suite.** Top constraint. Phase 0 is a gate for 1B and everything
-  after it.
+- **Tests.** `npm test` — 8 vitest suites, 67 tests, ~3 s, in Node against
+  the real services (fake-indexeddb, Node WebCrypto). `npm run test:e2e` —
+  15 Playwright specs in Chromium, ~40 s, starts the dev server itself.
+  Three e2e specs and two unit tests are declared expected failures: bug B1
+  (twice), the empty-text CSV export, and the plaintext dual-write decision
+  (`docs/PHASE-0-SCOPE.md` §4.2). No CI yet.
+- **Two data-loss bugs fixed 22 Sep 2026**: backup restore emptied the store
+  and the localStorage→IndexedDB migration failed on every launch, both from
+  awaiting `crypto.subtle.encrypt()` inside an open IndexedDB transaction.
+  Regression tests in `tests/unit/entryStorage.test.ts`.
+- **"Encrypted at rest" is not currently true**: `saveEntry` dual-writes the
+  plaintext to `localStorage` as a fallback. Decision pending, options in
+  `docs/PHASE-0-SCOPE.md` §4.2.
 - **Bug B1, open:** the app shows onboarding on every launch, and tapping
   Skip overwrites a returning user's name with `User` and profession with
   `NURSING` (`AppContext.tsx` starts on `ONBOARDING`;
@@ -111,8 +118,6 @@ Deferred indefinitely: module runtime, manifests, entitlement, specialities.
   `App.tsx` — DriveMode, GamificationHub, Library, MentalAtlas, RewardsStore
   and the standalone CanvasBoard — without recording why. Decide before
   phase 3.
-- Dashboard still shows a streak tile and an AdSense placeholder, against
-  decisions 4 and 6. Half an hour; not done yet.
 - Most files under `src/` still have CRLF endings in the working tree from
   before the `6bc0967` normalisation; the index holds LF. Cosmetic.
 
