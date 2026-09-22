@@ -9,7 +9,7 @@ const reflection = (id: string, answers: Record<string, string>, extra: Partial<
 
 const fixture: Entry[] = [
   capture('c1', 'The meeting with Priya went badly'),
-  capture('c2', 'Walked by the canal, felt calmer', { severity: 'LOW' } as Partial<Entry>),
+  capture('c2', 'Walked by the canal, felt calmer', { type: 'incident' } as Partial<Entry>), // older lower-case spelling
   reflection('r1', { what_happened: 'Presented the roadmap', what_mattered: 'Nobody asked about the budget' }),
   reflection('r2', { what_happened: 'Argued about the budget again' }, { model: 'GIBBS', date: '2026-01-05T10:00:00.000Z' } as Partial<Entry>),
 ];
@@ -25,11 +25,10 @@ describe('searchEntries', () => {
     expect(searchEntries(fixture, { query: 'budget canal' }).entries).toHaveLength(0);
   });
 
-  it('filters by entry type, reflection model, severity and date range', () => {
+  it('filters by entry type (both stored spellings), reflection model and date range', () => {
     expect(searchEntries(fixture, { entryType: 'reflection' }).filteredCount).toBe(2);
-    expect(searchEntries(fixture, { entryType: 'incident' }).filteredCount).toBe(2);
+    expect(searchEntries(fixture, { entryType: 'capture' }).entries.map((e) => e.id).sort()).toEqual(['c1', 'c2']);
     expect(searchEntries(fixture, { reflectionModel: 'GIBBS' }).entries.map((e) => e.id)).toEqual(['r2']);
-    expect(searchEntries(fixture, { severity: 'LOW' }).entries.map((e) => e.id)).toEqual(['c2']);
     expect(searchEntries(fixture, { dateFrom: '2026-03-11' }).entries.map((e) => e.id)).toEqual(['r1']);
     expect(searchEntries(fixture, { dateTo: '2026-01-31' }).entries.map((e) => e.id)).toEqual(['r2']);
   });

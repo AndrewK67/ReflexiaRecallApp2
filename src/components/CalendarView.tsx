@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from "react";
 import type { Entry, ReflectionEntry } from "../types";
 import { storageService } from "../services/storageService";
 import { frameworkName } from "../frameworks";
+import { isCapture, isReflection } from "../utils/entryKind";
 
 interface CalendarViewProps {
   entries: Entry[];
@@ -17,10 +18,13 @@ function toISODate(d: Date) {
   return `${y}-${m}-${day}`;
 }
 
-function moodToLevel(avgMood: number | null, hasIncident: boolean): number {
-  // Levels: 0 none, 1..5 scale.
-  if (hasIncident) return 1; // incident = critical at a glance
-  if (avgMood === null) return 2; // neutral-ish when no mood data
+// A day is coloured by the average mood of its reflections, and neutral when
+// nothing that day carried a mood. A capture is a note, not a crisis: it used
+// to paint the day rose ("critical at a glance") from the app's incident-form
+// origins (phase 3A.3).
+function moodToLevel(avgMood: number | null): number {
+  // Levels: 0 none (no entries), 6 neutral (entries, no mood), 1..5 mood.
+  if (avgMood === null) return 6;
   if (avgMood <= 1.5) return 1;
   if (avgMood <= 2.5) return 2;
   if (avgMood <= 3.5) return 3;
@@ -35,6 +39,7 @@ function levelClass(level: number): string {
     case 3: return "bg-yellow-300";
     case 4: return "bg-emerald-400";
     case 5: return "bg-teal-400";
+    case 6: return "bg-slate-400"; // written that day, no mood recorded
     default: return "bg-slate-200";
   }
 }
@@ -94,15 +99,13 @@ export default function CalendarView({ entries, onOpenEntry }: CalendarViewProps
     const summary = new Map<string, { level: number; count: number }>();
 
     for (const [day, arr] of byDay.entries()) {
-      const hasIncident = arr.some((e) => e.type === "INCIDENT");
-
       const moods = arr
-        .filter((e) => e.type === "REFLECTION")
-        .map((e) => (e as ReflectionEntry).mood)
+        .filter(isReflection)
+        .map((e) => e.mood)
         .filter((m): m is number => typeof m === "number");
 
       const avgMood = moods.length ? moods.reduce((a, b) => a + b, 0) / moods.length : null;
-      const level = moodToLevel(avgMood, hasIncident);
+      const level = moodToLevel(avgMood);
 
       summary.set(day, { level, count: arr.length });
     }
@@ -188,14 +191,19 @@ export default function CalendarView({ entries, onOpenEntry }: CalendarViewProps
           ))}
         </div>
 
-        <div className="mt-4 flex items-center justify-between text-[10px] text-white/60 font-bold">
-          <span>Less</span>
-          <div className="flex items-center gap-1">
-            {[0, 1, 2, 3, 4, 5].map((lvl) => (
+        {/* A day's colour is the mood of what was written that day */}
+        <div className="mt-4 flex items-center justify-between text-xs text-white/60 font-bold">
+          <span>Rough</span>
+          <div className="flex items-center gap-1" aria-hidden="true">
+            {[1, 2, 3, 4, 5].map((lvl) => (
               <div key={lvl} className={`w-3 h-3 rounded ${levelClass(lvl)}`} />
             ))}
           </div>
-          <span>More</span>
+          <span>Great</span>
+        </div>
+        <div className="mt-1 flex items-center gap-2 text-xs text-white/50">
+          <span className={`w-3 h-3 rounded ${levelClass(6)}`} aria-hidden="true" />
+          <span>written, no mood recorded</span>
         </div>
       </div>
 
@@ -329,7 +337,7 @@ export default function CalendarView({ entries, onOpenEntry }: CalendarViewProps
                       >
                         <div className="flex items-center justify-between">
                           <span className={`text-xs font-bold text-white ${blurEnabled ? 'blur-sm' : ''}`}>
-                            {e.type === "INCIDENT" ? "Incident" : frameworkName((e as ReflectionEntry).model)}
+                            {isCapture(e) ? "Capture" : frameworkName((e as ReflectionEntry).model)}
                           </span>
                           <span className="text-[10px] text-white/60 font-semibold">
                             {new Date(e.date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}

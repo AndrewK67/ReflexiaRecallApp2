@@ -107,36 +107,29 @@ export interface ReflectionEntry extends BaseEntry {
   nmcCodeThemes?: string[];
 }
 
-export type IncidentCategory =
-  | "Clinical Error"
-  | "Patient Safety"
-  | "Medication Error"
-  | "Communication Breakdown"
-  | "Equipment Failure"
-  | "Near Miss"
-  | "Adverse Event"
-  | "Procedural Complication"
-  | "Workplace Safety"
-  | "Other";
-
-export interface IncidentEntry extends BaseEntry {
+/**
+ * A Quick Capture: a note, with optional photo or audio, and the crisis
+ * keyword badge if the text tripped it.
+ *
+ * Stored with `type: "INCIDENT"`. That literal is from the app's nursing
+ * origins and is on users' devices, so it stays as the stored value; nothing
+ * a person sees says "incident" any more (phase 3A.3). Use isCapture() from
+ * src/utils/entryKind.ts rather than comparing the type by hand. The
+ * clinical fields the professional module writes (category, severity,
+ * location, people involved, outcome, actions, factors) are declared in
+ * src/modules/professional/types.ts; the core never reads them.
+ */
+export interface CaptureEntry extends BaseEntry {
   type: "incident" | "INCIDENT";
-  category?: IncidentCategory;
-  severity?: "LOW" | "MEDIUM" | "HIGH";
-  location?: string;
-  peopleInvolved?: string[];
-  // Free-text capture fields used by DriveMode/EntryDetail
   notes?: string;
-  // Optional media captured during an incident
   media?: MediaItem[];
   guardianBadge?: GuardianBadge;
-  // Enhanced fields for Phase 7
-  outcome?: string;
-  immediateActions?: string[];
-  contributingFactors?: string[];
 }
 
-export type Entry = ReflectionEntry | IncidentEntry;
+/** The old name; the professional module and older components still use it. */
+export type IncidentEntry = CaptureEntry;
+
+export type Entry = ReflectionEntry | CaptureEntry;
 
 // ---------- Profile / settings ----------
 

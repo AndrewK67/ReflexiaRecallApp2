@@ -29,6 +29,7 @@ import {
 import { isEntryLocked } from '../services/privacyService';
 import { storageService } from '../services/storageService';
 import { ALL as FRAMEWORKS, frameworkName } from '../frameworks';
+import { isCapture, isReflection } from '../utils/entryKind';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { readMediaFile } from '../services/fileStorageService';
@@ -309,7 +310,6 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
     if (filters.dateTo) count++;
     if (filters.tags && filters.tags.length > 0) count++;
     if (filters.hasMedia !== undefined) count++;
-    if (filters.severity && filters.severity !== 'all') count++;
     return count;
   }, [filters]);
 
@@ -403,13 +403,13 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
               <select
                 value={filters.entryType || 'all'}
                 onChange={(e) =>
-                  handleFilterChange('entryType', e.target.value as 'all' | 'reflection' | 'incident')
+                  handleFilterChange('entryType', e.target.value as 'all' | 'reflection' | 'capture')
                 }
                 className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-white focus:outline-none focus:border-cyan-500/50 focus:bg-white/10"
               >
                 <option value="all">All Types</option>
                 <option value="reflection">Reflections</option>
-                <option value="incident">Incidents</option>
+                <option value="capture">Captures</option>
               </select>
             </div>
 
@@ -430,23 +430,6 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
                       {f.name}
                     </option>
                   ))}
-                </select>
-              </div>
-            )}
-
-            {/* Severity (only show if type is incident or all) */}
-            {(!filters.entryType || filters.entryType === 'all' || filters.entryType === 'incident') && (
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5">Incident Severity</label>
-                <select
-                  value={filters.severity || 'all'}
-                  onChange={(e) => handleFilterChange('severity', e.target.value as 'LOW' | 'MEDIUM' | 'HIGH' | 'all')}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                >
-                  <option value="all">All Severities</option>
-                  <option value="LOW">Low</option>
-                  <option value="MEDIUM">Medium</option>
-                  <option value="HIGH">High</option>
                 </select>
               </div>
             )}
@@ -535,8 +518,8 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
           <div className="space-y-3">
             {searchResult.entries.map((entry) => {
               const isLocked = isEntryLocked(entry.id);
-              const isReflection = entry.type === 'REFLECTION' || entry.type === 'reflection';
-              const isIncident = entry.type === 'INCIDENT' || entry.type === 'incident';
+              const reflection = isReflection(entry);
+              const capture = isCapture(entry);
 
               return (
                 <button
@@ -548,15 +531,15 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        {isReflection && <FileText size={14} className="text-cyan-400" />}
-                        {isIncident && <Calendar size={14} className="text-rose-400" />}
+                        {reflection && <FileText size={14} className="text-cyan-400" />}
+                        {capture && <Camera size={14} className="text-cyan-400" />}
                         {isLocked && <Lock size={12} className="text-amber-400" />}
                         <span className="text-xs font-bold text-white/60">
                           {new Date(entry.date).toLocaleDateString()}
                         </span>
                       </div>
                       <h3 className={`text-sm font-bold text-white line-clamp-1 ${blurEnabled ? 'blur-sm' : ''}`}>
-                        {entry.title || (isReflection ? frameworkName((entry as any).model) : 'Incident')}
+                        {entry.title || (reflection ? frameworkName((entry as any).model) : 'Capture')}
                       </h3>
                     </div>
 

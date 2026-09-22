@@ -25,8 +25,26 @@ test.describe('archive', () => {
     await page.getByRole('button', { name: /Filters/ }).click();
     await page.locator('select').first().selectOption('reflection');
     await expect(page.getByText(/0 of 2 entries/)).toBeVisible();
+    await page.locator('select').first().selectOption('capture');
+    await expect(page.getByText(/2 of 2 entries/)).toBeVisible();
     await page.locator('select').first().selectOption('all');
     await expect(page.getByText(/2 of 2 entries/)).toBeVisible();
+  });
+
+  test('a capture is a capture on every screen, never an "incident"', async ({ page }) => {
+    // the rows
+    await expect(page.getByRole('heading', { name: 'Capture' })).toHaveCount(2);
+    await expect(page.getByText(/incident/i)).toHaveCount(0);
+    // the filter panel offers no severity
+    await page.getByRole('button', { name: /Filters/ }).click();
+    await expect(page.getByText(/severity/i)).toHaveCount(0);
+    await expect(page.locator('select option', { hasText: 'Captures' })).toHaveCount(1);
+    // the entry modal
+    await page.getByRole('heading', { name: 'Capture' }).first().click();
+    const modal = page.getByRole('dialog');
+    await expect(modal).toContainText('Capture');
+    await expect(modal).toContainText('The meeting with Priya went badly');
+    await expect(modal).not.toContainText(/incident/i);
   });
 
   // KNOWN BUG (docs/PHASE-0-SCOPE.md §0.3): the CSV reads entry.title/content, which nothing writes.

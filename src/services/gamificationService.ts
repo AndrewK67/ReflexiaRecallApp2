@@ -583,7 +583,7 @@ export function buildGamificationData(
   joinedDate?: string
 ): GamificationData {
   const reflections = entries.filter((e) => e.type === 'REFLECTION' || e.type === 'reflection');
-  const incidents = entries.filter((e) => e.type === 'INCIDENT' || e.type === 'incident');
+  const incidents = entries.filter((e) => e.type === 'INCIDENT' || e.type === 'incident'); // captures; this service is inert (phase 3D deletes it)
 
   // Extract unique reflection models
   const uniqueModels = new Set<string>();

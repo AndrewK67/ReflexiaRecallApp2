@@ -229,7 +229,6 @@ const DriveMode: React.FC<DriveModeProps> = ({ onComplete, onClose }) => {
       notes: notes || "Voice Notes capture.",
       media: [] as MediaItem[],
       keywords: ["voice-notes"],
-      location: undefined,
     };
 
     onComplete(entry);

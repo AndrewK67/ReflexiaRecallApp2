@@ -1,6 +1,7 @@
 // src/components/QuickCapture.tsx
 import React, { useMemo, useState } from "react";
-import type { Entry, GuardianBadge, IncidentEntry, MediaItem } from "../types";
+import type { Entry, GuardianBadge, CaptureEntry, MediaItem } from "../types";
+import { CAPTURE_TYPE } from "../utils/entryKind";
 import CameraCapture from "./media/CameraCapture";
 import AudioCapture from "./media/AudioCapture";
 import { Capacitor } from '@capacitor/core';
@@ -114,9 +115,10 @@ export default function QuickCapture({ onComplete, onCancel }: QuickCaptureProps
         });
       }
 
-      const entry: IncidentEntry = {
+      // Stored as INCIDENT (see CaptureEntry); the id prefix is stored data too.
+      const entry: CaptureEntry = {
         id: `incident_${Date.now()}`,
-        type: "INCIDENT",
+        type: CAPTURE_TYPE,
         date: new Date().toISOString(),
         notes: trimmed,
         media,

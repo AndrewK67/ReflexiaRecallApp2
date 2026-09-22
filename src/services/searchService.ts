@@ -3,18 +3,18 @@
  * Advanced search, filtering, and sorting for entries
  */
 
-import type { Entry, ReflectionEntry, IncidentEntry } from '../types';
+import type { Entry } from '../types';
+import { isCapture, isReflection } from '../utils/entryKind';
 
 export interface SearchFilters {
   query?: string;
-  entryType?: 'all' | 'reflection' | 'incident';
+  entryType?: 'all' | 'reflection' | 'capture';
   reflectionModel?: string | 'all';
   dateFrom?: string; // ISO date
   dateTo?: string; // ISO date
   tags?: string[];
   hasMedia?: boolean;
   isLocked?: boolean;
-  severity?: 'LOW' | 'MEDIUM' | 'HIGH' | 'all'; // For incidents
   sortBy?: 'date-desc' | 'date-asc' | 'relevance';
 }
 
@@ -44,8 +44,8 @@ function extractSearchableText(entry: Entry): string {
   if (entry.content) texts.push(entry.content);
 
   // Reflection-specific
-  if (entry.type === 'REFLECTION' || entry.type === 'reflection') {
-    const reflection = entry as ReflectionEntry;
+  if (isReflection(entry)) {
+    const reflection = entry;
     if (reflection.answers) {
       Object.values(reflection.answers).forEach((answer) => {
         if (typeof answer === 'string') {
@@ -58,15 +58,10 @@ function extractSearchableText(entry: Entry): string {
     if (reflection.aiInsight) texts.push(reflection.aiInsight);
   }
 
-  // Incident-specific
-  if (entry.type === 'INCIDENT' || entry.type === 'incident') {
-    const incident = entry as IncidentEntry;
-    if (incident.notes) texts.push(incident.notes);
-    if (incident.location) texts.push(incident.location);
-    if (incident.peopleInvolved) texts.push(...incident.peopleInvolved);
-    if (incident.outcome) texts.push(incident.outcome);
-    if (incident.immediateActions) texts.push(...incident.immediateActions);
-    if (incident.contributingFactors) texts.push(...incident.contributingFactors);
+  // Captures: the note. (Clinical fields the parked professional module
+  // wrote — location, people, outcome — are that module's to search.)
+  if (isCapture(entry)) {
+    if (entry.notes) texts.push(entry.notes);
   }
 
   return texts.join(' ').toLowerCase();
@@ -89,18 +84,14 @@ function matchesQuery(entry: Entry, query: string): boolean {
  * Check if entry matches filters
  */
 function matchesFilters(entry: Entry, filters: SearchFilters): boolean {
-  // Entry type filter
-  if (filters.entryType && filters.entryType !== 'all') {
-    const entryTypeLower = entry.type.toLowerCase();
-    if (entryTypeLower !== filters.entryType.toLowerCase()) {
-      return false;
-    }
-  }
+  // Entry type filter ("capture" is stored as INCIDENT; see entryKind.ts)
+  if (filters.entryType === 'reflection' && !isReflection(entry)) return false;
+  if (filters.entryType === 'capture' && !isCapture(entry)) return false;
 
   // Reflection model filter
   if (filters.reflectionModel && filters.reflectionModel !== 'all') {
-    if (entry.type === 'REFLECTION' || entry.type === 'reflection') {
-      const reflection = entry as ReflectionEntry;
+    if (isReflection(entry)) {
+      const reflection = entry;
       const model = reflection.model || reflection.modelId;
       if (model !== filters.reflectionModel) {
         return false;
@@ -145,24 +136,12 @@ function matchesFilters(entry: Entry, filters: SearchFilters): boolean {
   if (filters.hasMedia !== undefined) {
     const hasMedia =
       (entry.attachments && entry.attachments.length > 0) ||
-      ((entry as IncidentEntry).media && (entry as IncidentEntry).media!.length > 0);
+      (isCapture(entry) && !!entry.media && entry.media.length > 0);
     if (filters.hasMedia && !hasMedia) {
       return false;
     }
     if (!filters.hasMedia && hasMedia) {
       return false;
-    }
-  }
-
-  // Severity filter (for incidents)
-  if (filters.severity && filters.severity !== 'all') {
-    if (entry.type === 'INCIDENT' || entry.type === 'incident') {
-      const incident = entry as IncidentEntry;
-      if (incident.severity !== filters.severity) {
-        return false;
-      }
-    } else {
-      return false; // Not an incident
     }
   }
 

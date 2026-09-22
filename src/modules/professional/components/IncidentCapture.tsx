@@ -12,7 +12,8 @@ import {
   Plus,
   Trash2,
 } from 'lucide-react';
-import type { IncidentEntry, IncidentCategory, MediaItem } from '../../../types';
+import type { MediaItem } from '../../../types';
+import type { ProfessionalIncidentEntry as IncidentEntry, IncidentCategory } from '../types';
 import CameraCapture from '../../../components/media/CameraCapture';
 import AudioCapture from '../../../components/media/AudioCapture';
 import VideoCapture from '../../../components/media/VideoCapture';

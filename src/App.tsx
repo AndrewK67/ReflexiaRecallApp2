@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
-import type { Entry, IncidentEntry, ReflectionEntry } from "./types";
+import type { Entry, CaptureEntry, ReflectionEntry } from "./types";
+import { isCapture } from "./utils/entryKind";
 import { UserProvider, EntriesProvider, AppProvider, useApp, useUser, useEntries } from "./contexts";
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
@@ -184,9 +185,9 @@ function formatReflection(entry: ReflectionEntry) {
   return lines.join("\n").trim();
 }
 
-function formatIncident(entry: IncidentEntry) {
+function formatCapture(entry: CaptureEntry) {
   const lines: string[] = [];
-  lines.push("Incident");
+  lines.push("Capture");
   lines.push("");
   lines.push((entry.notes || "").trim() || "(No notes)");
 
@@ -369,10 +370,10 @@ function AppContent() {
   const renderEntryModal = () => {
     if (!openEntry) return null;
 
-    const title = openEntry.type === "INCIDENT" ? "Incident" : `Reflection • ${frameworkName((openEntry as ReflectionEntry).model)}`;
-    const body = openEntry.type === "INCIDENT" ? formatIncident(openEntry as IncidentEntry) : formatReflection(openEntry as ReflectionEntry);
+    const title = isCapture(openEntry) ? "Capture" : `Reflection • ${frameworkName((openEntry as ReflectionEntry).model)}`;
+    const body = isCapture(openEntry) ? formatCapture(openEntry) : formatReflection(openEntry as ReflectionEntry);
 
-    const media = (openEntry as IncidentEntry).media || [];
+    const media = (isCapture(openEntry) ? openEntry.media : undefined) || [];
     const hasMedia = media.length > 0;
 
     return (

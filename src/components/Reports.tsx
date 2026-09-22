@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import type { Entry, ReflectionEntry } from '../types';
 import { frameworkName } from '../frameworks';
+import { isCapture, isReflection } from '../utils/entryKind';
 
 interface ReportsProps {
   entries: Entry[];
@@ -38,10 +39,8 @@ export default function Reports({ entries, onClose }: ReportsProps) {
 
   // Calculate statistics
   const stats = useMemo(() => {
-    const reflections = filteredEntries.filter(
-      (e): e is ReflectionEntry => e.type === 'REFLECTION'
-    );
-    const incidents = filteredEntries.filter((e) => e.type === 'INCIDENT');
+    const reflections = filteredEntries.filter(isReflection);
+    const captures = filteredEntries.filter(isCapture);
 
     // Mood analysis
     const moods = reflections
@@ -66,7 +65,7 @@ export default function Reports({ entries, onClose }: ReportsProps) {
     return {
       totalEntries: filteredEntries.length,
       reflections: reflections.length,
-      incidents: incidents.length,
+      captures: captures.length,
       avgMood: avgMood.toFixed(1),
       modelCounts: Array.from(modelCounts.entries()).sort((a, b) => b[1] - a[1]),
       avgPerDay: (filteredEntries.length / Math.max(1, dailyCounts.size)).toFixed(1),
@@ -79,10 +78,10 @@ export default function Reports({ entries, onClose }: ReportsProps) {
       ['Date', 'Time', 'Type', 'Framework', 'Mood', 'Notes'],
       ...filteredEntries.map((entry) => {
         const date = new Date(entry.date);
-        const type = entry.type;
-        const model = type === 'REFLECTION' ? frameworkName((entry as ReflectionEntry).model) : 'N/A';
-        const mood = type === 'REFLECTION' ? (entry as ReflectionEntry).mood || 'N/A' : 'N/A';
-        const notes = type === 'INCIDENT' ? (entry as any).notes || '' : '';
+        const type = isReflection(entry) ? 'Reflection' : 'Capture';
+        const model = isReflection(entry) ? frameworkName(entry.model) : 'N/A';
+        const mood = isReflection(entry) ? entry.mood || 'N/A' : 'N/A';
+        const notes = isCapture(entry) ? entry.notes || '' : '';
 
         return [
           date.toLocaleDateString(),
@@ -118,7 +117,7 @@ export default function Reports({ entries, onClose }: ReportsProps) {
       '-'.repeat(50),
       `Total Entries: ${stats.totalEntries}`,
       `Reflections: ${stats.reflections}`,
-      `Incidents: ${stats.incidents}`,
+      `Captures: ${stats.captures}`,
       `Average Mood: ${stats.avgMood}/5`,
       `Average Entries Per Day: ${stats.avgPerDay}`,
       `Days with Entries: ${stats.daysWithEntries}`,
@@ -131,9 +130,8 @@ export default function Reports({ entries, onClose }: ReportsProps) {
       '-'.repeat(50),
       ...filteredEntries.map((entry) => {
         const date = new Date(entry.date);
-        const type = entry.type;
-        const model = type === 'REFLECTION' ? frameworkName((entry as ReflectionEntry).model) : 'Incident';
-        const mood = type === 'REFLECTION' ? (entry as ReflectionEntry).mood : 'N/A';
+        const model = isReflection(entry) ? frameworkName(entry.model) : 'Capture';
+        const mood = isReflection(entry) ? entry.mood : 'N/A';
 
         return `\n[${date.toLocaleString()}] ${model} - Mood: ${mood}`;
       }),
@@ -218,7 +216,7 @@ export default function Reports({ entries, onClose }: ReportsProps) {
             </div>
             <p className="text-3xl font-bold text-white">{stats.totalEntries}</p>
             <p className="text-xs text-white/50 mt-1">
-              {stats.reflections} reflections, {stats.incidents} incidents
+              {stats.reflections} reflections, {stats.captures} captures
             </p>
           </div>
 

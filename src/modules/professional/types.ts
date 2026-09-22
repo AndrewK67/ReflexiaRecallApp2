@@ -8,9 +8,37 @@
  * from that declaration rather than duplicated.
  */
 
-import type { ReflectionEntry } from '../../types';
+import type { ReflectionEntry, CaptureEntry } from '../../types';
 
 export type CPDLog = NonNullable<ReflectionEntry['cpd']>;
+
+/** Clinical incident categories. Moved here from the core in phase 3A.3. */
+export type IncidentCategory =
+  | "Clinical Error"
+  | "Patient Safety"
+  | "Medication Error"
+  | "Communication Breakdown"
+  | "Equipment Failure"
+  | "Near Miss"
+  | "Adverse Event"
+  | "Procedural Complication"
+  | "Workplace Safety"
+  | "Other";
+
+/**
+ * A capture with the clinical fields the module's IncidentCapture writes.
+ * Same stored `type: "INCIDENT"` as a core capture; the extra fields are
+ * simply absent on entries the core wrote.
+ */
+export interface ProfessionalIncidentEntry extends CaptureEntry {
+  category?: IncidentCategory;
+  severity?: "LOW" | "MEDIUM" | "HIGH";
+  location?: string;
+  peopleInvolved?: string[];
+  outcome?: string;
+  immediateActions?: string[];
+  contributingFactors?: string[];
+}
 
 export interface ProfessionConfig {
   label: string;
