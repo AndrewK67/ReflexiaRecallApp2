@@ -80,7 +80,7 @@ data-model change with a migration and belongs to phase 3, not phase 1.
 
 | # | Phase | Estimate | Status |
 | - | ----- | -------- | ------ |
-| 0 | Test harness — entry create/save/recover, IndexedDB, export | 17–22h (`docs/PHASE-0-SCOPE.md`) | Layers A–C done: 67 unit tests, 15 e2e specs. CI (Layer D) not yet |
+| 0 | Test harness — entry create/save/recover, IndexedDB, export | 17–22h (`docs/PHASE-0-SCOPE.md`) | **Done**: 67 unit tests, 15 e2e specs, CI workflow. First CI run happens on push |
 | 1A | Move the professional layer to `src/modules/professional/` | 8–11h | **Done** |
 | 1B | De-profession the live core (`PROFESSION_CONFIG`, onboarding, NMC block, AI prefixes, bug B1) | 10–13h | Not started. Phase 0 first — 1B edits the profile and entry save paths |
 | 2 | Demote Gibbs, framework interface, Open Entry + Three-Part | 15–20h | Note the existing SIMPLE mode in `ReflectionFlow.tsx` is already Three-Part in all but name |
@@ -97,7 +97,9 @@ Deferred indefinitely: module runtime, manifests, entitlement, specialities.
   15 Playwright specs in Chromium, ~40 s, starts the dev server itself.
   Three e2e specs and two unit tests are declared expected failures: bug B1
   (twice), the empty-text CSV export, and the plaintext dual-write decision
-  (`docs/PHASE-0-SCOPE.md` §4.2). No CI yet.
+  (`docs/PHASE-0-SCOPE.md` §4.2). `.github/workflows/test.yml` runs build,
+  unit and e2e on every push and PR; it has not run yet because nothing has
+  been pushed since it was added.
 - **Two data-loss bugs fixed 22 Sep 2026**: backup restore emptied the store
   and the localStorage→IndexedDB migration failed on every launch, both from
   awaiting `crypto.subtle.encrypt()` inside an open IndexedDB transaction.

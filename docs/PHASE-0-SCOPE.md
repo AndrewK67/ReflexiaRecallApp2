@@ -1,6 +1,6 @@
 # Phase 0 scope — the test harness
 
-**Branch:** `phase-1a/professional-module` at `b51baf1` · **Written:** 22 September 2026 · **Status:** scoped; a runner spike exists in the clone and is described in §5. Nothing is committed yet.
+**Branch:** `phase-1a/professional-module` at `b51baf1` · **Written:** 22 September 2026 · **Status:** scoped, then **executed the same day** in seven commits: harness, the two data-loss fixes, eight unit suites (67 tests), the Playwright runner (15 specs), CI. Line numbers below refer to the tree *before* those fixes. Open items: the plaintext dual-write decision (§4.2) and the CSV text fix (§0.3).
 
 `CLAUDE.md` says phase 0 is "entry create/save/recover, IndexedDB, export — 20–25 h". This document says what that actually means for this codebase, what it costs, and what the spike found on the way.
 
