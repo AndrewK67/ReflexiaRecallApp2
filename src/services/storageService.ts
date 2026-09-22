@@ -38,6 +38,14 @@ const DEFAULT_STATS: UserStats = {
   achievements: [],
 };
 
+export interface BackupFile {
+  profile: UserProfile;
+  entries: Entry[];
+  stats: UserStats | null;
+  exportedAt: string;
+  version: 1;
+}
+
 function safeJsonParse<T>(raw: string | null, fallback: T): T {
   if (!raw) return fallback;
   try {
@@ -186,8 +194,13 @@ export const storageService = {
   },
 
   // ---- Backup / Restore ----
-  async exportBackup() {
-    // Load entries from IndexedDB (primary) with localStorage fallback
+
+  /**
+   * Assemble the backup object without touching the DOM, so it can be
+   * tested and reused. Entries come from IndexedDB (primary) with the
+   * localStorage copy as fallback.
+   */
+  async buildBackup(): Promise<BackupFile> {
     let entries: Entry[];
     try {
       const entryStorage = await import('./entryStorageService');
@@ -196,13 +209,17 @@ export const storageService = {
       entries = storageService.loadEntries();
     }
 
-    const backup = {
+    return {
       profile: storageService.loadProfile(),
       entries,
       stats: safeJsonParse<UserStats | null>(localStorage.getItem(KEYS.stats), null),
       exportedAt: new Date().toISOString(),
       version: 1,
     };
+  },
+
+  async exportBackup() {
+    const backup = await storageService.buildBackup();
     downloadTextFile(`reflexia-backup-${Date.now()}.json`, JSON.stringify(backup, null, 2));
   },
 
