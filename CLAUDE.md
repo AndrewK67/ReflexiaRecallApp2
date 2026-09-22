@@ -30,8 +30,14 @@ not belong in the core — however much work is already in it.
 1. **Profession-independent core.** See the question above.
 2. **The game-like feel is the point.** It is the mechanism that makes the app
    approachable to someone with no training in reflective practice.
-3. **The spatial layer is the differentiator** — `holodeck/`, `Interior3D.tsx`,
-   `CanvasBoard.tsx`. "A place you go", not "a form you fill in".
+3. **Spaces are the differentiator.** Twenty guided spaces, each a place you
+   go with a specific situation — a difficult conversation, a decision, a
+   loss (`src/frameworks/spaces.ts`, the hub in `components/holodeck/`) —
+   plus the sketch pad (`CanvasBoard.tsx`). "A place you go", not "a form you
+   fill in". *Reworded 22 Sep 2026* (`docs/PHASE-3-SCOPE.md` §4.1): the old
+   wording named an `Interior3D.tsx` that never existed. A navigable 3D room
+   is a question for after phase 3, once someone has been watched using the
+   spaces — not a commitment. On screen they are called **Spaces**.
 4. **XP and achievements attach to learning the app, never to reflecting.**
    Nothing rewards entry count. No streaks. Lessons complete by doing the real
    thing once, not by clicking through a tour. Progression is invisible while
@@ -115,7 +121,7 @@ survives only as the stored field name.
 | 1A | Move the professional layer to `src/modules/professional/` | 8–11h | **Done** |
 | 1B | De-profession the live core (`PROFESSION_CONFIG`, onboarding, NMC block, AI prefixes, bug B1) | 10–13h | **Done** |
 | 2 | Demote Gibbs, framework interface, Open Entry + Three-Part | 15–20h (`docs/PHASE-2-SCOPE.md`) | **Done** |
-| 3 | Make the core good for anyone — first-run experience, persistent storage, accessibility, XP rework to learning tracks, Quick Capture data model, the AI gate | 46–63h (`docs/PHASE-3-SCOPE.md`), in five parts: 3E AI boundary 5–7h, 3A data 11–15h, 3C accessibility 8–11h, 3B front door 12–16h, 3D learning tracks 10–14h | **3E, 3A and 3C done** (22 Sep 2026). 3B and 3D not started; §4 of the scope has eight decisions, the first of which (what the differentiator is) shapes 3B |
+| 3 | Make the core good for anyone — first-run experience, persistent storage, accessibility, XP rework to learning tracks, Quick Capture data model, the AI gate | 46–63h (`docs/PHASE-3-SCOPE.md`), in five parts: 3E AI boundary 5–7h, 3A data 11–15h, 3C accessibility 8–11h, 3B front door 12–16h, 3D learning tracks 10–14h | **3E, 3A and 3C done** (22 Sep 2026). All eight §4 decisions made the same day. 3B and 3D not started |
 
 Deferred indefinitely: module runtime, manifests, entitlement, specialities.
 
@@ -162,10 +168,11 @@ Deferred indefinitely: module runtime, manifests, entitlement, specialities.
   (inventory in `docs/PHASE-1-SCOPE.md` §4; four of them were deleted in
   phase 2). `services/subscriptionService.ts` still advertises "All
   reflection models (Gibbs, SBAR, ERA, etc.)" in a paywall nobody can reach —
-  decision 6 territory, untouched. The February refactor dropped six views from
-  `App.tsx` — DriveMode, GamificationHub, Library, MentalAtlas, RewardsStore
-  and the standalone CanvasBoard — without recording why. Decide before
-  phase 3.
+  decision 6 territory, untouched. Of the six views the February refactor
+  dropped from `App.tsx`, Library and RewardsStore are in the module;
+  **decided 22 Sep 2026:** GamificationHub and CanvasBoardBasic are deleted in
+  3D.5, DriveMode is parked (a rebuild on frameworks later, 6–8 h),
+  MentalAtlas is kept for a later "Patterns" screen.
 - Most files under `src/` still have CRLF endings in the working tree from
   before the `6bc0967` normalisation; the index holds LF. Cosmetic.
 
@@ -192,14 +199,9 @@ Deferred indefinitely: module runtime, manifests, entitlement, specialities.
    behind a pack toggle. The profession question is gone (1B); phase 3 owns
    the rest. Still the most important question in the project. Traced
    second by second in `docs/PHASE-3-SCOPE.md` §1.1.
-4. **Decision 3 names a file that does not exist.** `Interior3D.tsx` is not
-   in the repository or in any commit in its history. The "spatial layer" as
-   built is `holodeck/` (twenty guided question sets, saved to plaintext
-   `localStorage` outside the entry store and never read back) and
-   `CanvasBoard.tsx` (a sketch pad). Whether the 3D "place you go" is the
-   destination or the wording is the thing to change is decision 1 of
-   `docs/PHASE-3-SCOPE.md` §4. Until it is made, decision 3 should be read
-   as an intention.
+4. ~~Decision 3 names a file that does not exist.~~ **Closed 22 Sep 2026:**
+   decision 3 reworded to what exists (the spaces); a 3D room is a question
+   for after phase 3.
 
 ## Working preferences
 

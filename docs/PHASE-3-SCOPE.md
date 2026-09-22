@@ -298,6 +298,8 @@ The `CLAUDE.md` row said "to be scoped". This is two and a half to three times p
 
 ## 4. Decisions for you
 
+**All eight decided by Andrew on 22 September 2026, each as recommended below.** In short: (1) spaces now, the 3D room a question for after phase 3 — `CLAUDE.md` decision 3 reworded; (2) on screen they are **Spaces**; (3) plaintext dual-write removed (done, 3A.2); (4) captures by read-time alias, no migration (done, 3A.3); (5) the trial mechanism goes in 3B.3; (6) the dashboard shows "Last written: <day>" instead of an entry count; (7) delete `GamificationHub` and `CanvasBoardBasic`, park `DriveMode`, keep `MentalAtlas`; (8) neither video nor PDF is planned — the promises go in 3B.1 and demand decides later. The options as they were put are kept below for the record.
+
 1. **What is the differentiator?** `CLAUDE.md` decision 3 describes a spatial, 3D, "place you go" layer, and names a file that has never existed in this repository. The code has twenty well-written guided spaces and a sketch pad. Three honest options:
    - **(a) Reword decision 3 to what exists** — "Spaces: guided rooms for specific situations" — and promote it to the front door (this document assumes (a); §2.2, 3A.4, 3B.2).
    - **(b) Keep the 3D ambition as phase 4**, do (a) now so the spaces stop being wasted, and budget the real thing separately: a `three.js`/`react-three-fiber` scene with a navigable room, spaces as places in it, on a PWA that must work on a mid-range phone. My estimate for a first version that is *not* embarrassing: 40–60 h, plus design you do not yet have. It would roughly double the bundle.
@@ -317,8 +319,8 @@ The `CLAUDE.md` row said "to be scoped". This is two and a half to three times p
 
 | Item | Why | When |
 | --- | --- | --- |
-| The 3D spatial layer | §4.1 | phase 4, if chosen |
-| Video capture, PDF export | §4.8 | phase 4, if wanted |
+| A navigable 3D room for the spaces | §4.1: decided to revisit after phase 3, once someone has been watched using the spaces | after phase 3, not committed |
+| Video capture, PDF export | §4.8: decided neither for now | only if people ask |
 | Light theme | `themeMode: 'LIGHT'` exists in the profile and changes one class name (`App.tsx:475`); every component hard-codes dark | later — 8–12 h, no one has asked |
 | Android (Capacitor) | `@capacitor/*` are dependencies; nothing here has been run as an APK; `fileStorageService` has a native path that is untested | later |
 | Mental Atlas revival | §1.7 | after 3D, as "Patterns" |
