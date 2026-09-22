@@ -12,10 +12,10 @@ import {
   Plus,
   Trash2,
 } from 'lucide-react';
-import type { IncidentEntry, IncidentCategory, MediaItem } from '../types';
-import CameraCapture from './media/CameraCapture';
-import AudioCapture from './media/AudioCapture';
-import VideoCapture from './media/VideoCapture';
+import type { IncidentEntry, IncidentCategory, MediaItem } from '../../../types';
+import CameraCapture from '../../../components/media/CameraCapture';
+import AudioCapture from '../../../components/media/AudioCapture';
+import VideoCapture from '../../../components/media/VideoCapture';
 
 interface IncidentCaptureProps {
   onSave: (incident: IncidentEntry) => void;

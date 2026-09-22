@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { storageService } from '../services/storageService';
+import { storageService } from '../../../services/storageService';
 import { FileText, Download, Copy, Check, ChevronDown, X, FileCheck, AlertTriangle } from 'lucide-react';
 import {
   generateProfessionalDoc,
@@ -9,7 +9,7 @@ import {
   DocumentTemplate,
   getTemplateInfo,
 } from '../services/professionalDocService';
-import type { Entry, ReflectionEntry } from '../types';
+import type { Entry, ReflectionEntry } from '../../../types';
 
 interface ProfessionalDocExportProps {
   entries: Entry[];

@@ -5,7 +5,7 @@
  * such as NHS Revalidation, GMC Appraisal, regulatory submissions, etc.
  */
 
-import type { ReflectionEntry } from '../types';
+import type { ReflectionEntry } from '../../../types';
 
 export type DocumentTemplate =
   | 'NMC_REVALIDATION'          // NMC Revalidation (Nurses/Midwives)

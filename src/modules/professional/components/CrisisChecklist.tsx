@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import type { IncidentProtocol } from '../types';
+import type { IncidentProtocol } from '../../../types';
 import { AlertTriangle, CheckSquare, Square, X } from 'lucide-react';
 
 interface CrisisChecklistProps {

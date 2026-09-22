@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Shield, FileText, AlertTriangle, Check, Trophy, Brain } from 'lucide-react';
 import DisclaimerQuiz from './DisclaimerQuiz';
-import { downloadTerms, downloadPrivacy, downloadDisclaimer } from '../utils/legalDownloads';
+import { downloadTerms, downloadPrivacy, downloadDisclaimer } from '../../../utils/legalDownloads';
 
 interface LegalAcceptanceProps {
   onAccept: () => void;

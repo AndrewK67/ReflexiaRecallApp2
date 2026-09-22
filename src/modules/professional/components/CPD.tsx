@@ -12,8 +12,8 @@ import {
   Save,
   ArrowLeft,
 } from 'lucide-react';
-import type { Entry } from '../types';
-import type { HolodeckEntry } from './holodeck/types';
+import type { Entry } from '../../../types';
+import type { HolodeckEntry } from '../../../components/holodeck/types';
 import type { CPDCountry, CPDCategoryType, CPDRecord } from '../data/cpdStandards';
 import { CPD_STANDARDS, getCategoryInfo } from '../data/cpdStandards';
 import {
@@ -25,7 +25,7 @@ import {
   loadManualCPDRecords,
   getSuggestedHours,
 } from '../services/cpdService';
-import { storageService } from '../services/storageService';
+import { storageService } from '../../../services/storageService';
 
 interface CPDProps {
   entries: Entry[];

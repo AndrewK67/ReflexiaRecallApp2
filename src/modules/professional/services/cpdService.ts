@@ -4,8 +4,8 @@
  * Automatically converts reflections and activities into CPD credits
  */
 
-import type { Entry, ReflectionEntry } from '../types';
-import type { HolodeckEntry } from '../components/holodeck/types';
+import type { Entry, ReflectionEntry } from '../../../types';
+import type { HolodeckEntry } from '../../../components/holodeck/types';
 import {
   type CPDRecord,
   type CPDSummary,
