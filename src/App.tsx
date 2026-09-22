@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
 import type { Entry, CaptureEntry, ReflectionEntry } from "./types";
 import { isCapture } from "./utils/entryKind";
 import { UserProvider, EntriesProvider, AppProvider, useApp, useUser, useEntries } from "./contexts";
@@ -218,6 +218,19 @@ function AppContent() {
   const { profile, updateProfile, completeOnboarding } = useUser();
   const { entries, addEntry, awardXP } = useEntries();
 
+  // Keyboard: when the screen changes, start the tab order at the top of the
+  // new screen. Without this, focus stays wherever the removed button was and
+  // Tab lands on the tab bar, skipping the whole screen (phase 3C.3). A screen
+  // that focuses one of its own controls on mount keeps that focus.
+  const mainRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const main = mainRef.current;
+    if (!main) return;
+    const active = document.activeElement;
+    if (active && active !== document.body && main.contains(active)) return;
+    main.focus({ preventScroll: true });
+  }, [currentView, isLoaded, isLocked]);
+
   const handleEntryComplete = (entry: Entry) => {
     addEntry(entry);
     navigate("DASHBOARD");
@@ -390,6 +403,7 @@ function AppContent() {
               <div id="entry-modal-title" className="text-base font-extrabold text-slate-800">{title}</div>
             </div>
             <button
+              autoFocus
               onClick={() => setOpenEntry(null)}
               className="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200"
               aria-label="Close entry details"
@@ -493,7 +507,7 @@ function AppContent() {
             <>
               <div className="fade-in h-full flex flex-col">
                 {/* One landmark for the screen; the nav below is its own (phase 3C.1) */}
-                <main id="main" className="flex-1 overflow-y-auto custom-scrollbar">
+                <main id="main" ref={mainRef} tabIndex={-1} className="flex-1 overflow-y-auto custom-scrollbar outline-none">
                   {renderScreen()}
                   {renderEntryModal()}
                 </main>
