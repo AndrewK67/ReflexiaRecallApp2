@@ -38,10 +38,9 @@ export default function SimplifiedDashboard({
   const hasWellbeing = isPackEnabled('wellbeing');
   const hasAI = isPackEnabled('aiReflectionCoach');
   const hasScenario = isPackEnabled('scenario');
-  const hasProfessional = isPackEnabled('professional');
   const hasReports = isPackEnabled('reports');
 
-  const hasAnyPacks = hasWellbeing || hasAI || hasScenario || hasProfessional || hasReports;
+  const hasAnyPacks = hasWellbeing || hasAI || hasScenario || hasReports;
 
   return (
     <div className="h-full overflow-y-auto flex flex-col items-center p-4 pt-6 nav-safe relative">
@@ -154,26 +153,6 @@ export default function SimplifiedDashboard({
                   <span className="text-base">🎭</span>
                   <span className="text-[8px] font-semibold text-white/80">Holodeck</span>
                 </button>
-              )}
-
-              {/* Professional */}
-              {hasProfessional && (
-                <>
-                  <button
-                    onClick={() => onNavigate("CPD")}
-                    className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg p-1.5 transition flex flex-col items-center gap-0.5"
-                  >
-                    <span className="text-base">📋</span>
-                    <span className="text-[8px] font-semibold text-white/80">CPD</span>
-                  </button>
-                  <button
-                    onClick={() => onNavigate("PROFESSIONAL_DOC")}
-                    className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg p-1.5 transition flex flex-col items-center gap-0.5"
-                  >
-                    <span className="text-base">📄</span>
-                    <span className="text-[8px] font-semibold text-white/80">Docs</span>
-                  </button>
-                </>
               )}
 
               {/* Reports */}
