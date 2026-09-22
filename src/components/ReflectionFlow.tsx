@@ -24,6 +24,7 @@ import CanvasBoard from "./CanvasBoard";
 import { storageService } from "../services/storageService";
 
 import { analyzeReflection, getStageCoaching, isAIActive } from "../services/aiService";
+import { notify } from "../services/noticeService";
 import { migrateBase64ToFile } from "../services/fileStorageService";
 import { startAudioRecording, stopAudioRecording, saveAudioToFile } from "../services/mediaService";
 
@@ -176,7 +177,7 @@ export default function ReflectionFlow({ onComplete, onCancel, initialFramework 
 
   const handleVoiceStart = async () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      alert("Voice recording not supported in your browser.");
+      notify("This browser cannot record audio.", "error");
       return;
     }
 
@@ -188,7 +189,7 @@ export default function ReflectionFlow({ onComplete, onCancel, initialFramework 
       setIsRecording(true);
     } catch (err) {
       console.error("Voice error:", err);
-      alert("Could not access microphone.");
+      notify("Could not use the microphone. Check the browser's permission for this site.", "error");
     }
   };
 

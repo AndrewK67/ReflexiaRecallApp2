@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Shield, Lock, Unlock, Settings, Eye, EyeOff } from 'lucide-react';
 import PINPad from './PINPad';
+import { notify } from '../services/noticeService';
 import {
   isPINSetup,
   setupPIN,
@@ -23,6 +24,8 @@ interface PrivacyLockProps {
 export default function PrivacyLock({ onUnlock }: PrivacyLockProps) {
   const [showPINPad, setShowPINPad] = useState(false);
   const [pinMode, setPinMode] = useState<'setup' | 'verify' | 'change'>('verify');
+  // 'unlockAll' reuses the verify pad, then unlocks every locked entry (phase 3C.4: no prompt())
+  const [padPurpose, setPadPurpose] = useState<'session' | 'unlockAll'>('session');
   const [showSettings, setShowSettings] = useState(false);
   const [settings, setSettings] = useState<PrivacySettings>(getPrivacySettings());
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
@@ -33,6 +36,11 @@ export default function PrivacyLock({ onUnlock }: PrivacyLockProps) {
 
   const handlePINSuccess = () => {
     setShowPINPad(false);
+    if (pinMode === 'verify' && padPurpose === 'unlockAll') {
+      setPadPurpose('session');
+      notify(`Unlocked ${lockedCount} ${lockedCount === 1 ? 'entry' : 'entries'}`, 'success');
+      return;
+    }
     setSessionAuthenticated();
     if (pinMode === 'verify') {
       onUnlock();
@@ -58,7 +66,7 @@ export default function PrivacyLock({ onUnlock }: PrivacyLockProps) {
       setShowRemoveConfirm(false);
       setRemovePin('');
     } else {
-      alert('Incorrect PIN');
+      notify('Incorrect PIN', 'error', 4000);
       setRemovePin('');
     }
   };
@@ -70,12 +78,9 @@ export default function PrivacyLock({ onUnlock }: PrivacyLockProps) {
   };
 
   const handleUnlockAll = () => {
-    const pin = prompt('Enter PIN to unlock all entries:');
-    if (pin && unlockAllEntries(pin)) {
-      alert(`Unlocked ${lockedCount} entries`);
-    } else {
-      alert('Incorrect PIN');
-    }
+    setPinMode('verify');
+    setPadPurpose('unlockAll');
+    setShowPINPad(true);
   };
 
   return (
@@ -309,8 +314,11 @@ export default function PrivacyLock({ onUnlock }: PrivacyLockProps) {
         <PINPad
           mode={pinMode}
           onSuccess={handlePINSuccess}
-          onCancel={() => setShowPINPad(false)}
-          onVerify={verifyPIN}
+          onCancel={() => {
+            setShowPINPad(false);
+            setPadPurpose('session');
+          }}
+          onVerify={padPurpose === 'unlockAll' ? (pin: string) => unlockAllEntries(pin) : verifyPIN}
           onSetup={handleSetupPIN}
           onChange={handleChangePIN}
         />

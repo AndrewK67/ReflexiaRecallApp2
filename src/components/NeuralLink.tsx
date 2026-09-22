@@ -6,6 +6,7 @@ import { resetTutorial } from '../services/tutorialService';
 import { downloadTerms, downloadPrivacy, downloadDisclaimer } from '../utils/legalDownloads';
 import AISettings from './AISettings';
 import StorageStatus from './StorageStatus';
+import { notify, confirmAction } from '../services/noticeService';
 import {
   Network,
   Briefcase,
@@ -85,33 +86,53 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
     if (!f) return;
     const ok = await storageService.importBackup(f);
     if (ok) window.location.reload();
-    else alert('Backup import failed (file format not recognised).');
+    else notify('That file is not a Reflexia backup, so nothing was changed.', 'error');
   };
 
-  const handleReturnToOnboarding = () => {
-    if (confirm('Return to onboarding screen? Your entries will remain safe.')) {
+  const handleReturnToOnboarding = async () => {
+    const ok = await confirmAction({
+      title: 'See the welcome screens again?',
+      body: 'Your entries and settings stay exactly as they are.',
+      confirmLabel: 'Show them',
+    });
+    if (ok) {
       storageService.setOnboarded(false);
       onNavigateToWelcome();
     }
   };
 
-  const handleResetStats = () => {
-    if (confirm('Reset all stats (XP, level, streak, achievements)? This cannot be undone.')) {
+  const handleResetStats = async () => {
+    const ok = await confirmAction({
+      title: 'Reset stats?',
+      body: 'XP, level, streak and achievements go back to zero. This cannot be undone.',
+      confirmLabel: 'Reset',
+      destructive: true,
+    });
+    if (ok) {
       const reset = storageService.resetStats();
       setStats(reset);
+      notify('Stats reset.', 'success');
     }
   };
 
-  const handleResetToggles = () => {
-    if (confirm('Reset all feature toggles to OFF (AI, Gamification, Privacy, Blur)?')) {
+  const handleResetToggles = async () => {
+    const ok = await confirmAction({
+      title: 'Turn every switch off?',
+      body: 'AI, Gamification, Privacy Lock and Blur History all go to OFF.',
+      confirmLabel: 'Turn them off',
+    });
+    if (ok) {
       const updated = storageService.resetToggles();
       onUpdateProfile(updated);
+      notify('All switches are off.', 'success');
     }
   };
 
-  const handleResetAI = () => {
-    if (confirm('Turn OFF AI features?')) {
+  const handleResetAI = async () => {
+    const ok = await confirmAction({ title: 'Turn AI off?', confirmLabel: 'Turn off' });
+    if (ok) {
       patchProfile({ aiEnabled: false });
+      notify('AI is off. Everything runs on this device.', 'success');
     }
   };
 

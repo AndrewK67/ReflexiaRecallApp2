@@ -14,6 +14,7 @@ import {
   type PackId,
   type TrialDuration
 } from '../packs';
+import { notify } from '../services/noticeService';
 
 interface PackBrowserProps {
   onClose: () => void;
@@ -155,7 +156,7 @@ export default function PackBrowser({ onClose, onPacksChanged }: PackBrowserProp
 
               {/* Pro Subscription */}
               <button
-                onClick={() => alert('Pro subscription coming soon!')}
+                onClick={() => notify('Not available in this version.')}
                 className="w-full p-4 rounded-2xl bg-gradient-to-br from-cyan-500/10 to-blue-500/10 hover:from-cyan-500/20 hover:to-blue-500/20 border border-cyan-500/30 hover:border-cyan-500/50 transition"
               >
                 <div className="flex items-center justify-between">
@@ -174,7 +175,7 @@ export default function PackBrowser({ onClose, onPacksChanged }: PackBrowserProp
 
               {/* Lifetime Purchase */}
               <button
-                onClick={() => alert('Lifetime purchase coming soon!')}
+                onClick={() => notify('Not available in this version.')}
                 className="w-full p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 hover:from-amber-500/20 hover:to-orange-500/20 border border-amber-500/30 hover:border-amber-500/50 transition"
               >
                 <div className="flex items-center justify-between">
@@ -193,7 +194,7 @@ export default function PackBrowser({ onClose, onPacksChanged }: PackBrowserProp
 
               {/* Enterprise */}
               <button
-                onClick={() => alert('Contact us for Enterprise pricing')}
+                onClick={() => notify('Not available in this version.')}
                 className="w-full p-4 rounded-2xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 hover:from-purple-500/20 hover:to-pink-500/20 border border-purple-500/30 hover:border-purple-500/50 transition"
               >
                 <div className="flex items-center justify-between">

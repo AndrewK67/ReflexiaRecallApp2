@@ -3,6 +3,7 @@ import type { Entry } from '../types';
 import * as entryStorage from '../services/entryStorageService';
 import { awardBonusXP } from '../services/gamificationService';
 import { requestPersistenceOnce } from '../services/durabilityService';
+import { notify } from '../services/noticeService';
 
 interface EntriesContextType {
   entries: Entry[];
@@ -34,12 +35,20 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
   // every change fed nothing on screen (docs/PHASE-3-SCOPE.md §1.3); phase 3D
   // replaces that service with learning tracks.
 
-  // A failed write is logged, not swallowed: the service throws and there is
-  // no plaintext copy to fall back on any more (3A.2). Surfacing it to the
-  // person needs the in-app notice component from 3C.4.
+  // A failed write is shown, not swallowed: the service throws (there is no
+  // plaintext copy to fall back on since 3A.2) and the person sees a notice
+  // telling them what to do, because the entry is still on screen.
+  const writeFailed = (what: string) => (e: unknown) => {
+    console.error(`[entries] ${what} failed`, e);
+    notify(
+      `Could not ${what} on this device. Copy your text somewhere safe before leaving this screen, then try again.`,
+      'error',
+    );
+  };
+
   const persistEntriesFn = (next: Entry[]) => {
     setEntries(next);
-    entryStorage.saveAllEntries(next).catch((e) => console.error('[entries] saveAll failed', e));
+    entryStorage.saveAllEntries(next).catch(writeFailed('save your entries'));
   };
 
   const addEntry = (entry: Entry) => {
@@ -50,13 +59,13 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
       // The first thing worth keeping is the moment to ask the browser to
       // keep it (phase 3A.1). Asked once per device.
       .then(() => requestPersistenceOnce())
-      .catch((e) => console.error('[entries] save failed', e));
+      .catch(writeFailed('save this entry'));
   };
 
   const deleteEntry = (id: string) => {
     const updated = entries.filter((e) => e.id !== id);
     setEntries(updated);
-    entryStorage.deleteEntry(id).catch((e) => console.error('[entries] delete failed', e));
+    entryStorage.deleteEntry(id).catch(writeFailed('delete that entry'));
   };
 
   const awardXP = (amount: number) => {

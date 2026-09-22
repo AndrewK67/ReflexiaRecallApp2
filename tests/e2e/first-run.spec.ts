@@ -30,10 +30,11 @@ test.describe('first run', () => {
   test('Skip never overwrites an existing name (return to onboarding from Profile, then skip)', async ({ page }) => {
     await openFresh(page);
     await completeOnboarding(page, 'Smoke');
-    // The only way back into onboarding now is the profile screen's button.
-    page.once('dialog', (d) => d.accept());
+    // The only way back into onboarding now is the profile screen's button,
+    // behind an in-app confirmation (3C.4).
     await page.getByRole('button', { name: 'View profile and settings' }).click();
     await page.getByRole('button', { name: /Return to Onboarding/ }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Show them' }).click();
     await expect(page.getByRole('heading', { name: 'Capture Anything' })).toBeVisible();
     await page.getByRole('button', { name: /Skip/ }).click();
     await expect(page.getByRole('button', { name: /Capture$/ })).toBeVisible();

@@ -2,6 +2,7 @@
 import React, { useMemo, useState } from "react";
 import type { Entry, GuardianBadge, CaptureEntry, MediaItem } from "../types";
 import { CAPTURE_TYPE } from "../utils/entryKind";
+import { notify } from "../services/noticeService";
 import CameraCapture from "./media/CameraCapture";
 import AudioCapture from "./media/AudioCapture";
 import { Capacitor } from '@capacitor/core';
@@ -178,7 +179,7 @@ export default function QuickCapture({ onComplete, onCancel }: QuickCaptureProps
       if (item.type === 'PHOTO') {
         if (Capacitor.isNativePlatform()) {
           const path = await savePhotoToFile(blob);
-          alert(`Saved photo: ${path}`);
+          notify(`Photo saved to ${path}`, 'success');
         } else {
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
@@ -192,7 +193,7 @@ export default function QuickCapture({ onComplete, onCancel }: QuickCaptureProps
       } else if (item.type === 'AUDIO') {
         if (Capacitor.isNativePlatform()) {
           const path = await saveAudioToFile(blob);
-          alert(`Saved audio: ${path}`);
+          notify(`Audio saved to ${path}`, 'success');
         } else {
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
@@ -206,7 +207,7 @@ export default function QuickCapture({ onComplete, onCancel }: QuickCaptureProps
       }
     } catch (e) {
       console.error('Save media failed', e);
-      alert('Failed to save media: ' + (e instanceof Error ? e.message : String(e)));
+      notify('Could not save that file: ' + (e instanceof Error ? e.message : String(e)), 'error');
     }
   };
 

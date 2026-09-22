@@ -96,6 +96,20 @@ describe('storageService', () => {
       expect((await entryStorage.loadEntries()).map((e) => e.id).sort()).toEqual(['b1', 'b2']);
     });
 
+    it('refuses a file that is not a backup, and writes nothing', async () => {
+      const s = await loadStorage();
+      s.saveProfile({ ...s.loadProfile(), name: 'Keep me' });
+      const bad = (text: string) => new File([text], 'x.json', { type: 'application/json' });
+      expect(await s.importBackup(bad('{"nope": true}'))).toBe(false);
+      expect(await s.importBackup(bad('[1,2,3]'))).toBe(false);
+      expect(await s.importBackup(bad('{"entries": [{"notes": "no id or type"}]}'))).toBe(false);
+      expect(await s.importBackup(bad('not json at all'))).toBe(false);
+      expect(s.loadProfile().name).toBe('Keep me');
+      expect(s.looksLikeBackup({ version: 1, profile: { name: 'A' }, entries: [] })).toBe(true);
+      expect(s.looksLikeBackup({ profile: { name: 'A' } })).toBe(true);
+      expect(s.looksLikeBackup({ entries: [{ id: 'e1', type: 'INCIDENT' }] })).toBe(true);
+    });
+
     it('a backup round-trips through build → import unchanged', async () => {
       const s = await loadStorage();
       s.saveProfile({ name: 'Andrew', themeMode: 'LIGHT' });

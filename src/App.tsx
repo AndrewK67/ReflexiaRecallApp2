@@ -2,9 +2,9 @@ import { lazy, Suspense, useEffect, useRef } from "react";
 import type { Entry, CaptureEntry, ReflectionEntry } from "./types";
 import { isCapture } from "./utils/entryKind";
 import { UserProvider, EntriesProvider, AppProvider, useApp, useUser, useEntries } from "./contexts";
-import { Capacitor } from '@capacitor/core';
-import { Filesystem, Directory } from '@capacitor/filesystem';
-import { readMediaFile } from './services/fileStorageService';
+import { saveAudioToDownloads } from './services/audioExport';
+import { notify } from './services/noticeService';
+import Notices from './components/Notices';
 import { frameworkName, stageLabel } from "./frameworks";
 
 // Eager load critical components
@@ -32,137 +32,6 @@ const PermissionsHelp = lazy(() => import("./components/PermissionsHelp"));
 
 // Eager load update notification (needs to be available immediately)
 import UpdateNotification from "./components/UpdateNotification";
-
-// Helper function to open Documents folder
-async function openDocumentsFolder() {
-  try {
-    if (Capacitor.getPlatform() === 'android') {
-      try {
-        window.location.href = 'content://com.android.externalstorage.documents/document/primary%3ADocuments';
-      } catch (e) {
-        // silently ignore - fallback methods below
-      }
-
-      setTimeout(() => {
-        try {
-          const intent = 'intent:#Intent;' +
-            'action=android.intent.action.GET_CONTENT;' +
-            'type=*/*;' +
-            'end';
-          window.open(intent, '_system');
-        } catch (e) {
-          // silently ignore - fallback methods below
-        }
-      }, 500);
-
-      setTimeout(() => {
-        try {
-          window.location.href = 'intent:#Intent;action=android.intent.action.VIEW;end';
-        } catch (e) {
-          alert('Could not open file manager. Please open My Files app and go to Documents folder manually.');
-        }
-      }, 1000);
-    } else {
-      alert('Please open your Files app and navigate to the Documents folder.');
-    }
-  } catch (error) {
-    console.error('Error opening folder:', error);
-    alert('Please open your Files/My Files app manually and go to Documents folder.');
-  }
-}
-
-// Helper function to save audio to Downloads folder
-async function saveAudioToDownloads(audioUrl: string) {
-  try {
-    if (audioUrl.startsWith('file://')) {
-      if (Capacitor.getPlatform() === 'android') {
-        try {
-          const originalPath = audioUrl.replace('file://', '');
-
-          const fileData = await Filesystem.readFile({
-            path: originalPath,
-          });
-
-          const dataSize = typeof fileData.data === 'string' ? fileData.data.length : fileData.data.size;
-
-          if (!fileData.data || dataSize === 0) {
-            alert('Error: Audio file is empty or could not be read.');
-            return;
-          }
-
-          const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-          const publicFileName = `Reflexia_Audio_${timestamp}.webm`;
-
-          await Filesystem.writeFile({
-            path: publicFileName,
-            data: fileData.data,
-            directory: Directory.Documents,
-          });
-
-          const verification = await Filesystem.readFile({
-            path: publicFileName,
-            directory: Directory.Documents,
-          });
-          const verifySize = typeof verification.data === 'string' ? verification.data.length : verification.data.size;
-
-          alert(
-            `✅ Audio saved successfully!\n\n` +
-            `📂 Location: Documents folder\n` +
-            `📄 File: ${publicFileName}\n` +
-            `File size: ${Math.round(verifySize / 1024)}KB\n\n` +
-            `🎵 How to play:\n` +
-            `1. Open "My Files" or "Files" app on your phone\n` +
-            `2. Tap "Documents" folder\n` +
-            `3. Look for file: ${publicFileName}\n` +
-            `4. Tap the file to play\n\n` +
-            `📱 Recommended players:\n` +
-            `• VLC for Android (free from Play Store)\n` +
-            `• Chrome browser\n` +
-            `• MX Player\n\n` +
-            `💡 Tip: All Reflexia audio files start with "Reflexia_Audio_"`
-          );
-
-        } catch (err) {
-          console.error('Error saving file:', err);
-          alert(`Error saving audio: ${err instanceof Error ? err.message : 'Unknown error'}`);
-        }
-      } else {
-        window.open(audioUrl, '_system');
-      }
-    } else if (audioUrl.startsWith('idb://')) {
-      try {
-        const resolvedUrl = await readMediaFile(audioUrl);
-        const response = await fetch(resolvedUrl);
-        const blob = await response.blob();
-        const blobUrl = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = blobUrl;
-        a.download = `audio_${Date.now()}.${blob.type.split('/')[1] || 'webm'}`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(blobUrl);
-      } catch (err) {
-        console.error('Error reading audio from IndexedDB:', err);
-        alert('Could not read audio file. It may have been deleted.');
-      }
-    } else if (audioUrl.startsWith('blob:')) {
-      alert('This audio is not yet saved. Please use the "Save to Device" button in the capture screen first.');
-    } else if (audioUrl.startsWith('data:')) {
-      const a = document.createElement('a');
-      a.href = audioUrl;
-      a.download = `audio_${Date.now()}.webm`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    } else {
-      alert('Could not download audio: unsupported format.');
-    }
-  } catch (error) {
-    console.error('Error saving audio file:', error);
-    alert('Could not save audio file. Please try again.');
-  }
-}
 
 function formatReflection(entry: ReflectionEntry) {
   const lines: string[] = [];
@@ -451,7 +320,7 @@ function AppContent() {
                             if (item.url) {
                               saveAudioToDownloads(item.url);
                             } else {
-                              alert('No audio file URL available.');
+                              notify('This attachment has no audio file.', 'error');
                             }
                           }}
                           className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold flex items-center gap-2 transition shadow-lg"
@@ -491,6 +360,7 @@ function AppContent() {
   return (
     <>
       <UpdateNotification />
+      <Notices />
       <div className={bgMode} />
 
       <div className="app-shell">

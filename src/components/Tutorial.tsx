@@ -22,6 +22,7 @@ import {
   type TutorialStep,
 } from '../services/tutorialService';
 import type { ViewState } from '../types';
+import { confirmAction } from '../services/noticeService';
 
 interface TutorialProps {
   onClose: () => void;
@@ -98,8 +99,13 @@ export default function Tutorial({ onClose, onNavigate, onAwardXP }: TutorialPro
     onClose();
   };
 
-  const handleSkip = () => {
-    if (confirm('Are you sure you want to skip the tutorial? You can restart it anytime from settings.')) {
+  const handleSkip = async () => {
+    const ok = await confirmAction({
+      title: 'Skip the tutorial?',
+      body: 'You can start it again any time from Profile.',
+      confirmLabel: 'Skip',
+    });
+    if (ok) {
       skipTutorial();
       onClose();
     }

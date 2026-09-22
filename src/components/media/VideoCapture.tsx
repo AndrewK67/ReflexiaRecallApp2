@@ -9,6 +9,7 @@ import {
   saveVideoToFile,
 } from '../../services/mediaService';
 import { Capacitor } from '@capacitor/core';
+import { notify } from '../../services/noticeService';
 
 interface VideoCaptureProps {
   onCapture: (dataUrl: string) => void;
@@ -213,7 +214,7 @@ export default function VideoCapture({ onCapture, onCancel, maxDuration = 60 }: 
                 try {
                   if (Capacitor.isNativePlatform()) {
                     const path = await saveVideoToFile(lastVideoBlob);
-                    alert(`Saved video: ${path}`);
+                    notify(`Video saved to ${path}`, 'success');
                   } else {
                     const url = URL.createObjectURL(lastVideoBlob);
                     const a = document.createElement('a');
@@ -226,7 +227,7 @@ export default function VideoCapture({ onCapture, onCancel, maxDuration = 60 }: 
                   }
                 } catch (e) {
                   console.error('Save video failed', e);
-                  alert('Failed to save video');
+                  notify('Could not save the video.', 'error');
                 }
               }}
               className="w-full py-2 landscape:py-3 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm flex items-center justify-center gap-2 transition"

@@ -212,10 +212,24 @@ export const storageService = {
     downloadTextFile(`reflexia-backup-${Date.now()}.json`, JSON.stringify(backup, null, 2));
   },
 
+  /**
+   * Is this JSON a Reflexia backup? Anything else is refused before a byte
+   * is written: importBackup() used to accept any JSON, report success and
+   * reload (found in phase 3C.4).
+   */
+  looksLikeBackup(data: unknown): data is Partial<BackupFile> {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
+    const d = data as Record<string, unknown>;
+    const entriesOk = Array.isArray(d.entries) && d.entries.every((e) => e && typeof e === 'object' && typeof (e as Entry).id === 'string' && typeof (e as Entry).type === 'string');
+    const profileOk = !!d.profile && typeof d.profile === 'object' && typeof (d.profile as UserProfile).name === 'string';
+    return entriesOk || (profileOk && d.entries === undefined);
+  },
+
   async importBackup(file: File): Promise<boolean> {
     try {
       const text = await file.text();
       const data = JSON.parse(text);
+      if (!storageService.looksLikeBackup(data)) return false;
 
       if (data?.profile) localStorage.setItem(KEYS.profile, JSON.stringify(data.profile));
       if (data?.stats) localStorage.setItem(KEYS.stats, JSON.stringify(data.stats));
