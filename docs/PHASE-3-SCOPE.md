@@ -1,6 +1,6 @@
 # Phase 3 scope — make the core good for anyone
 
-**Branch:** `phase-1a/professional-module` at `c8bd10a` · **Written:** 22 September 2026 · **Status:** scoped; **3E and 3A done** the same day (§3), 3C, 3B and 3D not started.
+**Branch:** `phase-1a/professional-module` at `c8bd10a` · **Written:** 22 September 2026 · **Status:** scoped; **3E, 3A and 3C done** the same day (§3), 3B and 3D not started.
 
 `CLAUDE.md` lists phase 3 as *first-run experience, persistent storage, accessibility, XP rework to learning tracks, Quick Capture data model — to be scoped*. It also carries open question 1 (the AI gate) and open question 3 (*what does a first-time user with no background actually do in their first 90 seconds?* — "still the most important question in the project"). This document traces all of it against the code as it stands after phase 2, says what each piece costs, and splits the phase into five parts that can land one at a time.
 
@@ -248,6 +248,16 @@ Numbers: 111 unit (was 92), 33 e2e (was 24); main chunk 314.8 KB (was 306.6; the
 | 3C.5 | Audit becomes a gate: `tests/audit` runs in CI, fails on critical/serious | 0.5 | `.github/workflows/test.yml` |
 | | **Sum** | **8.0** → **8–11 h** | |
 
+**3C landed (22 Sep 2026), five commits.**
+
+- **3C.1** `c91a8f6` — labels on Archive's six controls (and its leftover light-theme colours fixed), a named search field, named pagination, `<main>`/`<nav>` landmarks, rows as `h2`, the empty list keyboard-scrollable, names on every icon-only button in the composer, capture, camera, recorder, PIN pad, hub, Oracle, BioRhythm, Grounding and Profile. The audit went from 6 critical + 1 serious + 37 moderate to **zero**, and now also scans the empty Archive a first-time user sees.
+- **3C.2** `ddbd3b1` — 79 uses of 7–11 px text in live components → 12 px; secondary text that carries meaning `/40` → `/60`; placeholders `/50`. The dashboard's 8 px pack tiles wrap to two readable rows.
+- **3C.3** `a418f6a` — global `:focus-visible` ring; reduced motion covers pulse, bounce, tap scale, hover slide and transitions. *Found on the way:* after opening the composer or Archive from the keyboard, Tab landed on the tab bar and skipped the entire screen (React inserts the new screen before removing the old, so the browser's focus starting point ended up after it). `App.tsx` now moves focus to `<main>` on every screen change unless the screen focused its own control; the entry modal focuses Close. `tests/e2e/keyboard.spec.ts` completes a capture and a three-question reflection with Tab and Enter only, checking every focused element shows its ring.
+- **3C.4** `f30aeb0` — `services/noticeService.ts` + `components/Notices.tsx`; all 38 native dialogs gone and the one `prompt()` replaced by the PIN pad; the duplicated audio-export helpers in `App.tsx` and `Archive.tsx` became one module (their `openDocumentsFolder()` had no caller); a failed entry write shows a notice. *Found on the way:* `importBackup()` accepted any JSON, reported success and reloaded; it now refuses anything that is not a backup before writing.
+- **3C.5** — the audit fails on critical or serious and runs in CI after e2e; verified by removing one label and watching it fail.
+
+Numbers: 115 unit (was 111), 38 e2e (was 33). Not done, deliberately: the module's own `alert()`s (parked code gets its pass when it is built), and a screen-reader walk by hand — the automated checks are necessary, not sufficient, and that walk is yours to do on a phone with VoiceOver or TalkBack.
+
 ### 3B — The front door · 12–16 h
 
 | Step | Work | Hours | Done when |
@@ -327,7 +337,7 @@ The `CLAUDE.md` row said "to be scoped". This is two and a half to three times p
 - [x] No "incident" wording on any screen; a capture never colours a calendar day as critical; stored `type` unchanged (3A.3)
 - [x] After the first save, persistence has been requested and Profile says whether it was granted; no plaintext entry copy exists in `localStorage` (3A.1, 3A.2)
 - [x] AI can only be reached with the person's own key and their toggle, through one gate; the consent screen names what is sent; no `VITE_GEMINI` in the build (3E)
-- [ ] `npm run audit:a11y` reports 0 critical and 0 serious nodes and runs in CI; no text under 12 px in live components; every interactive element has a visible focus state; no native `alert()`/`confirm()`
+- [x] `npm run audit:a11y` reports 0 critical and 0 serious nodes and runs in CI; no text under 12 px in live components; every interactive element has a visible focus state; no native `alert()`/`confirm()` (3C)
 - [ ] No levels, XP totals, achievements or streaks anywhere; "What you've tried" reflects real actions only; the nudge follows its rule
 - [ ] `CLAUDE.md` decision 3 reworded per §4.1, decision 4 marked done, open questions 1 and 3 closed
 - [ ] Unreachable core files reduced to the parked set; unit and e2e counts recorded in `CLAUDE.md`

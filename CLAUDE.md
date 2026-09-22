@@ -115,7 +115,7 @@ survives only as the stored field name.
 | 1A | Move the professional layer to `src/modules/professional/` | 8–11h | **Done** |
 | 1B | De-profession the live core (`PROFESSION_CONFIG`, onboarding, NMC block, AI prefixes, bug B1) | 10–13h | **Done** |
 | 2 | Demote Gibbs, framework interface, Open Entry + Three-Part | 15–20h (`docs/PHASE-2-SCOPE.md`) | **Done** |
-| 3 | Make the core good for anyone — first-run experience, persistent storage, accessibility, XP rework to learning tracks, Quick Capture data model, the AI gate | 46–63h (`docs/PHASE-3-SCOPE.md`), in five parts: 3E AI boundary 5–7h, 3A data 11–15h, 3C accessibility 8–11h, 3B front door 12–16h, 3D learning tracks 10–14h | **3E and 3A done** (22 Sep 2026). 3C, 3B, 3D not started; §4 of the scope has eight decisions, the first of which (what the differentiator is) shapes 3B |
+| 3 | Make the core good for anyone — first-run experience, persistent storage, accessibility, XP rework to learning tracks, Quick Capture data model, the AI gate | 46–63h (`docs/PHASE-3-SCOPE.md`), in five parts: 3E AI boundary 5–7h, 3A data 11–15h, 3C accessibility 8–11h, 3B front door 12–16h, 3D learning tracks 10–14h | **3E, 3A and 3C done** (22 Sep 2026). 3B and 3D not started; §4 of the scope has eight decisions, the first of which (what the differentiator is) shapes 3B |
 
 Deferred indefinitely: module runtime, manifests, entitlement, specialities.
 
@@ -123,14 +123,15 @@ Deferred indefinitely: module runtime, manifests, entitlement, specialities.
 
 - Branch `phase-1a/professional-module`, on top of `refactor/context-layer`.
   Both need pushing.
-- **Tests.** `npm test` — 13 vitest suites, 111 tests, ~3 s, in Node against
+- **Tests.** `npm test` — 14 vitest suites, 115 tests, ~3 s, in Node against
   the real services (fake-indexeddb, Node WebCrypto). `npm run test:e2e` —
-  33 Playwright specs in Chromium, ~75 s, starts the dev server itself.
+  38 Playwright specs in Chromium, ~90 s, starts the dev server itself.
   One e2e spec and one unit test are declared expected failures: the
-  empty-text CSV export (`docs/PHASE-0-SCOPE.md` §0.3). `.github/workflows/test.yml` runs build,
-  unit and e2e on every push and PR; it has not run yet because nothing has
-  been pushed since it was added. `npm run audit:a11y` is an axe scan of
-  fifteen screens (a scoping probe, not in CI yet); `node
+  empty-text CSV export (`docs/PHASE-0-SCOPE.md` §0.3). `npm run audit:a11y`
+  runs axe on seventeen screens and **fails on any critical or serious
+  violation** (3C.5); today it finds none. `.github/workflows/test.yml` runs
+  build, unit, e2e and the audit on every push and PR; it has not run yet
+  because nothing has been pushed since it was added. `node
   tests/audit/reachability.mjs` lists the files unreachable from `main.tsx`.
 - **Three data-loss bugs fixed 22 Sep 2026**: backup restore emptied the
   store and the localStorage→IndexedDB migration failed on every launch
@@ -149,6 +150,12 @@ Deferred indefinitely: module runtime, manifests, entitlement, specialities.
   installable; `tests/unit/pwa.test.ts` guards it now.
 - **Bug B1 fixed (1B):** a returning user lands on the dashboard; Skip
   never overwrites a name. `tests/e2e/first-run.spec.ts` guards it.
+- **Accessibility (3C):** every control has a name, every screen sits in a
+  landmark, nothing a person reads is under 12 px, keyboard focus is always
+  visible and moves to the top of each new screen, and there are no native
+  `alert()`/`confirm()`/`prompt()` calls — `services/noticeService.ts` +
+  `components/Notices.tsx` are the in-app notice and confirm dialog, and
+  `tests/unit/notices.test.ts` fails if a native dialog comes back.
 - `src/packs/` is a compile-time feature-flag system. The `professional`
   pack is gone; the other four and the trial mechanism are untouched.
 - Roughly a third of the source files are unreachable from `main.tsx`

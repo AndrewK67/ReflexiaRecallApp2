@@ -39,6 +39,11 @@ jobs:
         env:
           CI: true
 
+      - name: Accessibility gate (axe on every live screen)
+        run: npm run audit:a11y
+        env:
+          CI: true
+
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v4

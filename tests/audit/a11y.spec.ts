@@ -1,7 +1,9 @@
-// Phase 3 scoping probe, not a regression test: runs axe on each live screen and
-// writes a summary to test-results/a11y-audit.json. Run with:
-//   npm run audit:a11y   (needs the dev server's Chromium; PW_CHROMIUM as for e2e)
-import { test } from '@playwright/test';
+// The accessibility gate (phase 3C.5; a scoping probe before that): runs axe
+// on every live screen, writes test-results/a11y-audit.json, and FAILS on any
+// critical or serious violation. Moderate and minor ones are listed, not
+// fatal. Runs in CI after the e2e suite. Locally:
+//   npm run audit:a11y   (PW_CHROMIUM as for e2e)
+import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import fs from 'node:fs/promises';
 import { openFresh, skipOnboarding, quickCapture, setPacks } from '../e2e/helpers';
@@ -76,4 +78,9 @@ test('axe audit of the live screens', async ({ page }) => {
 
   await fs.mkdir('test-results', { recursive: true });
   await fs.writeFile('test-results/a11y-audit.json', JSON.stringify(rows, null, 2));
+
+  const fatal = rows.filter((r) => r.impact === 'critical' || r.impact === 'serious');
+  const describe = (r: Row) => `${r.impact} ${r.id} on ${r.screen} (${r.nodes}): ${r.help} — ${r.sample}`;
+  if (rows.length) console.log('axe findings:\n' + rows.map(describe).join('\n'));
+  expect(fatal.map(describe), 'critical or serious accessibility violations').toEqual([]);
 });
