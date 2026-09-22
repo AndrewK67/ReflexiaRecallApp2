@@ -9,11 +9,8 @@ export type TutorialStep =
   | 'QUICK_CAPTURE'
   | 'ORACLE_CHAT'
   | 'HOLODECK'
-  | 'CPD_TRACKING'
-  | 'PROFESSIONAL_DOCS'
   | 'BIO_RHYTHM'
   | 'GROUNDING'
-  | 'CRISIS_PROTOCOLS'
   | 'CALENDAR_VIEW'
   | 'REPORTS'
   | 'ARCHIVE'
@@ -127,39 +124,6 @@ const TUTORIAL_STEPS: TutorialStepConfig[] = [
     funFact: 'Practicing scenarios improves real-world performance by up to 40%!',
   },
   {
-    id: 'CPD_TRACKING',
-    title: 'CPD Tracking 📋',
-    description: 'Track professional development for 29+ regulatory bodies',
-    icon: '📊',
-    xpReward: 100,
-    badge: 'CPD Champion',
-    targetView: 'CPD',
-    instructions: [
-      'Reflexia tracks CPD automatically from your reflections',
-      'Supports NMC, GMC, HCPC, and 26+ other regulators',
-      'Export CPD logs for revalidation and compliance',
-      'Track hours, categories, and evidence',
-    ],
-    completionCriteria: 'View your CPD dashboard and select your regulatory body',
-    funFact: 'Reflexia supports professionals from healthcare, law, finance, engineering, and more!',
-  },
-  {
-    id: 'PROFESSIONAL_DOCS',
-    title: 'Professional Documentation 📄',
-    description: 'Generate ready-to-submit documentation',
-    icon: '📑',
-    xpReward: 100,
-    targetView: 'PROFESSIONAL_DOC',
-    instructions: [
-      'Turn reflections into professional documentation instantly',
-      'Supports NMC Revalidation, GMC Appraisal, HCPC CPD, and more',
-      'Select a template, choose reflections, and generate',
-      'Copy or download ready-to-submit text',
-    ],
-    completionCriteria: 'Generate one professional document',
-    funFact: 'Save hours on paperwork - generate compliant documentation in seconds!',
-  },
-  {
     id: 'BIO_RHYTHM',
     title: 'BioRhythm Tracker 📈',
     description: 'Track your physical, emotional, and intellectual cycles',
@@ -190,22 +154,6 @@ const TUTORIAL_STEPS: TutorialStepConfig[] = [
     ],
     completionCriteria: 'Try one grounding exercise',
     funFact: 'Just 2 minutes of deep breathing can reduce cortisol by 20%!',
-  },
-  {
-    id: 'CRISIS_PROTOCOLS',
-    title: 'Crisis Protocols 🚨',
-    description: 'Emergency support and resources',
-    icon: '🆘',
-    xpReward: 50,
-    targetView: 'CRISIS_PROTOCOLS',
-    instructions: [
-      'Crisis Protocols provide immediate support resources',
-      'Access emergency contacts and helplines',
-      'Step-by-step guidance for different crisis types',
-      'Always available when you need help',
-    ],
-    completionCriteria: 'View Crisis Protocols (just to know where they are)',
-    funFact: 'Having a crisis plan increases safety and reduces anxiety!',
   },
   {
     id: 'CALENDAR_VIEW',
@@ -265,7 +213,7 @@ const TUTORIAL_STEPS: TutorialStepConfig[] = [
     instructions: [
       'Neural Link is your settings and profile hub',
       'Customize AI features, privacy, and preferences',
-      'Set up your profession and regulatory body',
+      'Turn the privacy lock and history blur on or off',
       'Manage data and privacy settings',
     ],
     completionCriteria: 'Open Neural Link',
