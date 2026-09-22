@@ -45,21 +45,24 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
     setCurrentXP(stats.totalPoints);
   }, [stats.totalPoints]);
 
+  // A failed write is logged, not swallowed: the service throws and there is
+  // no plaintext copy to fall back on any more (3A.2). Surfacing it to the
+  // person needs the in-app notice component from 3C.4.
   const persistEntriesFn = (next: Entry[]) => {
     setEntries(next);
-    entryStorage.saveAllEntries(next);
+    entryStorage.saveAllEntries(next).catch((e) => console.error('[entries] saveAll failed', e));
   };
 
   const addEntry = (entry: Entry) => {
     const updated = [entry, ...entries];
     setEntries(updated);
-    entryStorage.saveEntry(entry);
+    entryStorage.saveEntry(entry).catch((e) => console.error('[entries] save failed', e));
   };
 
   const deleteEntry = (id: string) => {
     const updated = entries.filter((e) => e.id !== id);
     setEntries(updated);
-    entryStorage.deleteEntry(id);
+    entryStorage.deleteEntry(id).catch((e) => console.error('[entries] delete failed', e));
   };
 
   const awardXP = (amount: number) => {

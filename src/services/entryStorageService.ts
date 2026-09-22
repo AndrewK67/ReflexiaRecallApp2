@@ -1,8 +1,15 @@
 /**
  * Entry Storage Service
- * IndexedDB-based entry storage with localStorage fallback, migration, and encryption.
+ * IndexedDB-based entry storage with migration and encryption.
  * Uses the `idb` library for a clean async API.
  * Entries are encrypted at rest using AES-256-GCM via cryptoService.
+ *
+ * Where IndexedDB exists (every browser this app targets) entries live only
+ * there, encrypted. The old plaintext copy in localStorage
+ * (`reflexia.entries.v1`) is read once by the migration and then removed;
+ * nothing writes it any more (phase 3A.2, docs/PHASE-0-SCOPE.md §4.2).
+ * Only a browser with no IndexedDB at all falls back to plaintext
+ * localStorage, and Profile says so.
  */
 
 import { openDB, type IDBPDatabase } from 'idb';
@@ -46,16 +53,28 @@ function isIDBAvailable(): boolean {
   }
 }
 
-async function getCryptoKey(): Promise<CryptoKey | null> {
-  if (cryptoKey) return cryptoKey;
-  if (!isCryptoAvailable()) return null;
-  try {
-    cryptoKey = await getOrCreateKey();
-    return cryptoKey;
-  } catch (e) {
-    console.error('[entryStorageService] Failed to get crypto key:', e);
-    return null;
+// Memoise the *promise*, not the result: two concurrent first calls (for
+// example saveAllEntries encrypting a whole backup before init has run)
+// must share one getOrCreateKey(), or each generates its own key and the
+// entries encrypted with the loser can never be read again.
+let cryptoKeyPromise: Promise<CryptoKey | null> | null = null;
+
+function getCryptoKey(): Promise<CryptoKey | null> {
+  if (cryptoKey) return Promise.resolve(cryptoKey);
+  if (!isCryptoAvailable()) return Promise.resolve(null);
+  if (!cryptoKeyPromise) {
+    cryptoKeyPromise = getOrCreateKey()
+      .then((k) => {
+        cryptoKey = k;
+        return k;
+      })
+      .catch((e) => {
+        console.error('[entryStorageService] Failed to get crypto key:', e);
+        cryptoKeyPromise = null;
+        return null;
+      });
   }
+  return cryptoKeyPromise;
 }
 
 // --- Encrypt/Decrypt helpers ---
@@ -128,8 +147,21 @@ async function migrateFromLocalStorage(): Promise<void> {
     await tx.done;
 
     localStorage.setItem(MIGRATION_KEY, 'true');
+    // The plaintext copy has served its purpose; the encrypted store is
+    // now the only copy on the device.
+    localStorage.removeItem(LS_ENTRIES_KEY);
   } catch (e) {
     console.error('[entryStorageService] Migration from localStorage failed:', e);
+  }
+}
+
+/**
+ * Builds before 3A.2 kept writing the plaintext copy after migrating. On a
+ * device that already migrated, drop that copy on the next launch.
+ */
+function dropStalePlaintextCopy(): void {
+  if (localStorage.getItem(MIGRATION_KEY) && localStorage.getItem(LS_ENTRIES_KEY) !== null) {
+    localStorage.removeItem(LS_ENTRIES_KEY);
   }
 }
 
@@ -140,6 +172,12 @@ export async function initEntryStorage(): Promise<void> {
   // Pre-load the crypto key so it's cached for all operations
   await getCryptoKey();
   await migrateFromLocalStorage();
+  dropStalePlaintextCopy();
+}
+
+/** True when entries can only be kept as plaintext in localStorage (no IndexedDB). */
+export function isPlaintextFallback(): boolean {
+  return !isIDBAvailable();
 }
 
 export async function loadEntries(): Promise<Entry[]> {
@@ -168,57 +206,57 @@ export async function loadEntries(): Promise<Entry[]> {
 }
 
 export async function saveEntry(entry: Entry): Promise<void> {
-  // IDB: encrypt and store
-  if (isIDBAvailable()) {
-    try {
-      const db = await getDB();
-      const record = await encryptEntry(entry);
-      await db.put(STORE_NAME, record);
-    } catch (e) {
-      console.error('[entryStorageService] IDB saveEntry failed:', e);
-    }
+  if (!isIDBAvailable()) {
+    // No IndexedDB at all: plaintext localStorage is the only place there is.
+    const lsEntries = loadFromLocalStorage().filter((e) => e.id !== entry.id);
+    saveToLocalStorage([entry, ...lsEntries]);
+    return;
   }
-
-  // Dual-write to localStorage (unencrypted, for fallback)
-  const lsEntries = loadFromLocalStorage();
-  const filtered = lsEntries.filter((e) => e.id !== entry.id);
-  saveToLocalStorage([entry, ...filtered]);
+  try {
+    const db = await getDB();
+    const record = await encryptEntry(entry);
+    await db.put(STORE_NAME, record);
+  } catch (e) {
+    console.error('[entryStorageService] IDB saveEntry failed:', e);
+    throw e;
+  }
 }
 
 export async function deleteEntry(id: string): Promise<void> {
-  if (isIDBAvailable()) {
-    try {
-      const db = await getDB();
-      await db.delete(STORE_NAME, id);
-    } catch (e) {
-      console.error('[entryStorageService] IDB deleteEntry failed:', e);
-    }
+  if (!isIDBAvailable()) {
+    saveToLocalStorage(loadFromLocalStorage().filter((e) => e.id !== id));
+    return;
   }
-
-  const lsEntries = loadFromLocalStorage();
-  saveToLocalStorage(lsEntries.filter((e) => e.id !== id));
+  try {
+    const db = await getDB();
+    await db.delete(STORE_NAME, id);
+  } catch (e) {
+    console.error('[entryStorageService] IDB deleteEntry failed:', e);
+    throw e;
+  }
 }
 
 export async function saveAllEntries(entries: Entry[]): Promise<void> {
-  if (isIDBAvailable()) {
-    try {
-      // Encrypt first, then clear and refill inside one short transaction.
-      // Awaiting encryption after clear() used to leave the store empty:
-      // the transaction had committed and every put() threw.
-      const records = await Promise.all(entries.map(encryptEntry));
-
-      const db = await getDB();
-      const tx = db.transaction(STORE_NAME, 'readwrite');
-      const store = tx.objectStore(STORE_NAME);
-      store.clear();
-      for (const record of records) store.put(record);
-      await tx.done;
-    } catch (e) {
-      console.error('[entryStorageService] IDB saveAllEntries failed:', e);
-    }
+  if (!isIDBAvailable()) {
+    saveToLocalStorage(entries);
+    return;
   }
+  try {
+    // Encrypt first, then clear and refill inside one short transaction.
+    // Awaiting encryption after clear() used to leave the store empty:
+    // the transaction had committed and every put() threw.
+    const records = await Promise.all(entries.map(encryptEntry));
 
-  saveToLocalStorage(entries);
+    const db = await getDB();
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    store.clear();
+    for (const record of records) store.put(record);
+    await tx.done;
+  } catch (e) {
+    console.error('[entryStorageService] IDB saveAllEntries failed:', e);
+    throw e;
+  }
 }
 
 export async function exportEntries(): Promise<Entry[]> {

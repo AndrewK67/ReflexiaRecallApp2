@@ -13,6 +13,11 @@ test.describe('quick capture', () => {
     expect(Object.keys(raw[0]).sort()).toEqual(['_encrypted', 'id']);
     expect(JSON.stringify(raw)).not.toContain('Smoke test entry');
 
+    // and nowhere in plaintext: the localStorage copy went in phase 3A.2
+    const ls = await page.evaluate(() => JSON.stringify(Object.entries(localStorage)));
+    expect(ls).not.toContain('Smoke test entry');
+    expect(ls).not.toContain('reflexia.entries.v1');
+
     await page.reload();
     expect(await rawEntryRecords(page)).toHaveLength(1);
   });

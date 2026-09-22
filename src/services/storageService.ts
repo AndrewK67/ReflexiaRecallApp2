@@ -77,22 +77,11 @@ function safeSetItem(key: string, value: string): boolean {
 
 export const storageService = {
   // ---- Entries ----
+  // Entries live in entryStorageService (IndexedDB, encrypted). This reads
+  // the pre-IndexedDB plaintext copy, which exists only on a browser with no
+  // IndexedDB or before the one-time migration has run. Nothing here writes it.
   loadEntries(): Entry[] {
     return safeJsonParse<Entry[]>(localStorage.getItem(KEYS.entries), []);
-  },
-
-  saveEntries(entries: Entry[]) {
-    safeSetItem(KEYS.entries, JSON.stringify(entries));
-  },
-
-  saveEntry(entry: Entry) {
-    const entries = storageService.loadEntries();
-    storageService.saveEntries([entry, ...entries]);
-  },
-
-  deleteEntry(entryId: string) {
-    const entries = storageService.loadEntries().filter((e) => e.id !== entryId);
-    storageService.saveEntries(entries);
   },
 
   // ---- Profile ----
@@ -231,15 +220,11 @@ export const storageService = {
       if (data?.profile) localStorage.setItem(KEYS.profile, JSON.stringify(data.profile));
       if (data?.stats) localStorage.setItem(KEYS.stats, JSON.stringify(data.stats));
 
-      // Import entries to both IDB and localStorage
-      if (data?.entries) {
-        localStorage.setItem(KEYS.entries, JSON.stringify(data.entries));
-        try {
-          const entryStorage = await import('./entryStorageService');
-          await entryStorage.importEntries(data.entries);
-        } catch {
-          // localStorage write above is the fallback
-        }
+      // Entries go to the encrypted store; entryStorageService itself falls
+      // back to plaintext localStorage only where there is no IndexedDB.
+      if (Array.isArray(data?.entries)) {
+        const entryStorage = await import('./entryStorageService');
+        await entryStorage.importEntries(data.entries);
       }
 
       return true;

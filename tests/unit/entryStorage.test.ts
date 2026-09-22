@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { resetBrowserStorage, loadEntryStorage, quickCapture, rawEntryRecords, silenceConsoleError } from './helpers';
 
 const LS_ENTRIES = 'reflexia.entries.v1';
@@ -87,13 +87,12 @@ describe('entryStorageService', () => {
   });
 
   describe('delete', () => {
-    it('removes the entry from IndexedDB and from the localStorage copy', async () => {
+    it('removes the entry from IndexedDB', async () => {
       await s.saveEntry(quickCapture('e1', 'a'));
       await s.saveEntry(quickCapture('e2', 'b'));
       await s.deleteEntry('e1');
       expect((await s.loadEntries()).map((e) => e.id)).toEqual(['e2']);
-      const ls = JSON.parse(localStorage.getItem(LS_ENTRIES) ?? '[]') as Array<{ id: string }>;
-      expect(ls.map((e) => e.id)).toEqual(['e2']);
+      expect((await rawEntryRecords()).map((r) => r.id)).toEqual(['e2']);
     });
   });
 
@@ -101,13 +100,24 @@ describe('entryStorageService', () => {
     // Regression: migrateFromLocalStorage used to await encrypt() inside an
     // open transaction, which had auto-committed by then; every put threw,
     // the flag was never set, and users upgrading saw no entries.
-    it('shows the old entries on first launch and sets the migrated flag', async () => {
+    it('shows the old entries on first launch, sets the migrated flag and removes the plaintext copy', async () => {
       resetBrowserStorage();
       localStorage.setItem(LS_ENTRIES, JSON.stringify([quickCapture('old1', 'from the old build'), quickCapture('old2', 'also old')]));
       const m = await loadEntryStorage();
       await m.initEntryStorage();
       expect(localStorage.getItem(MIGRATED_FLAG)).toBe('true');
       expect((await m.loadEntries()).map((e) => e.id).sort()).toEqual(['old1', 'old2']);
+      expect(localStorage.getItem(LS_ENTRIES)).toBeNull();
+    });
+
+    it('removes a plaintext copy left behind by a build that had already migrated', async () => {
+      // Builds between the migration and 3A.2 kept dual-writing after the flag was set.
+      resetBrowserStorage();
+      localStorage.setItem(MIGRATED_FLAG, 'true');
+      localStorage.setItem(LS_ENTRIES, JSON.stringify([quickCapture('leftover', 'still here in plaintext')]));
+      const m = await loadEntryStorage();
+      await m.initEntryStorage();
+      expect(localStorage.getItem(LS_ENTRIES)).toBeNull();
     });
 
     it('sets the flag and does nothing when there is nothing to migrate', async () => {
@@ -161,13 +171,48 @@ describe('entryStorageService', () => {
     });
   });
 
+  describe('key initialisation', () => {
+    // Regression: getCryptoKey() memoised the resolved key, not the promise,
+    // so two concurrent first calls each generated a key; whichever lost the
+    // keystore write left its entries unreadable. importBackup() before
+    // initEntryStorage() hit this (saveAllEntries encrypts in parallel).
+    it('concurrent first writes share one key, so every entry decrypts afterwards', async () => {
+      resetBrowserStorage();
+      const m = await loadEntryStorage();
+      await m.saveAllEntries([quickCapture('k1', 'one'), quickCapture('k2', 'two'), quickCapture('k3', 'three')]);
+      vi.resetModules();
+      const again = await loadEntryStorage();
+      await again.initEntryStorage();
+      expect((await again.loadEntries()).map((e) => e.id).sort()).toEqual(['k1', 'k2', 'k3']);
+    });
+  });
+
   describe('at-rest guarantee', () => {
-    // DESIGN DECISION PENDING (docs/PHASE-0-SCOPE.md §4.2): saveEntry dual-writes
-    // the plaintext entry to localStorage as a fallback, so "encrypted at rest"
-    // is not currently true. This pins today's behaviour until the decision.
-    it.fails('keeps no plaintext copy of the entry in localStorage', async () => {
+    // Decided in phase 3A.2 (docs/PHASE-0-SCOPE.md §4.2): no plaintext copy.
+    it('keeps no plaintext copy of the entry anywhere in localStorage', async () => {
       await s.saveEntry(quickCapture('e1', 'secret words'));
-      expect(localStorage.getItem(LS_ENTRIES) ?? '').not.toContain('secret words');
+      await s.saveAllEntries([quickCapture('e1', 'secret words'), quickCapture('e2', 'more secret words')]);
+      expect(localStorage.getItem(LS_ENTRIES)).toBeNull();
+      for (let i = 0; i < localStorage.length; i++) {
+        expect(localStorage.getItem(localStorage.key(i)!)).not.toContain('secret words');
+      }
+    });
+
+    it('is only plaintext where the browser has no IndexedDB at all', async () => {
+      resetBrowserStorage();
+      const saved = globalThis.indexedDB;
+      (globalThis as unknown as { indexedDB: unknown }).indexedDB = undefined;
+      try {
+        const m = await loadEntryStorage();
+        expect(m.isPlaintextFallback()).toBe(true);
+        await m.saveEntry(quickCapture('e1', 'no idb here'));
+        expect(localStorage.getItem(LS_ENTRIES) ?? '').toContain('no idb here');
+        expect((await m.loadEntries()).map((e) => e.id)).toEqual(['e1']);
+        await m.deleteEntry('e1');
+        expect(await m.loadEntries()).toEqual([]);
+      } finally {
+        (globalThis as unknown as { indexedDB: unknown }).indexedDB = saved;
+      }
     });
   });
 });
