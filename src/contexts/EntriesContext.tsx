@@ -3,6 +3,7 @@ import type { Entry } from '../types';
 import * as entryStorage from '../services/entryStorageService';
 import { buildGamificationData, getGamificationStats, getHolodeckSessionCount, awardBonusXP } from '../services/gamificationService';
 import { getGroundingSessions } from '../services/groundingService';
+import { requestPersistenceOnce } from '../services/durabilityService';
 
 interface EntriesContextType {
   entries: Entry[];
@@ -56,7 +57,12 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
   const addEntry = (entry: Entry) => {
     const updated = [entry, ...entries];
     setEntries(updated);
-    entryStorage.saveEntry(entry).catch((e) => console.error('[entries] save failed', e));
+    entryStorage
+      .saveEntry(entry)
+      // The first thing worth keeping is the moment to ask the browser to
+      // keep it (phase 3A.1). Asked once per device.
+      .then(() => requestPersistenceOnce())
+      .catch((e) => console.error('[entries] save failed', e));
   };
 
   const deleteEntry = (id: string) => {

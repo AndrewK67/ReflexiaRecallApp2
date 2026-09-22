@@ -5,6 +5,7 @@ import { storageService } from '../services/storageService';
 import { resetTutorial } from '../services/tutorialService';
 import { downloadTerms, downloadPrivacy, downloadDisclaimer } from '../utils/legalDownloads';
 import AISettings from './AISettings';
+import StorageStatus from './StorageStatus';
 import {
   Network,
   Briefcase,
@@ -300,6 +301,9 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
             </div>
           )}
         </div>
+
+        {/* Where the data lives and whether the browser will keep it (phase 3A.1) */}
+        <StorageStatus entryCount={entries.length} />
 
         {/* Backup */}
         <div className="bg-white/10 backdrop-blur-xl p-6 rounded-2xl border border-white/15">

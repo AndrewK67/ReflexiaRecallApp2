@@ -12,17 +12,21 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'prompt', // Changed from 'autoUpdate' to give users control
-      includeAssets: ['favicon.svg'],
+      includeAssets: ['icon-192.png', 'icon-512.png'],
       manifest: {
-        name: 'Reflexia Recall',
+        name: 'Reflexia',
+        description: 'A place to write down what happened and think it through. Everything stays on your device.',
         short_name: 'Reflexia',
         start_url: '/',
         display: 'standalone',
         background_color: '#0b1220',
         theme_color: '#0b1220',
+        // These two files are the ones in public/. The manifest used to name
+        // /pwa-192.png and /pwa-512.png, which never existed, so no browser
+        // ever considered the app installable (phase 3A.1).
         icons: [
-          { src: '/pwa-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/pwa-512.png', sizes: '512x512', type: 'image/png' }
+          { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' }
         ]
       },
       workbox: {

@@ -1,4 +1,4 @@
-// Central app types for ReflectApp2 / Reflexia Recall
+// Central app types for Reflexia
 // Backwards-compatible schema to stop type drift from breaking the build.
 
 // ---------- Core primitive unions ----------
