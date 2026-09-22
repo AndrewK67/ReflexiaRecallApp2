@@ -19,11 +19,12 @@ components/   CPD.tsx, CompetencyMatrix.tsx, CrisisChecklist.tsx,
               CrisisProtocols.tsx, DisclaimerQuiz.tsx, IncidentCapture.tsx,
               LegalAcceptance.tsx, Library.tsx, ProfessionalDocExport.tsx,
               RewardsStore.tsx
-data/         cpdStandards.ts, learningResources.ts
+data/         cpdStandards.ts, learningResources.ts, professionConfig.ts
 services/     cpdService.ts, disclaimerQuizService.ts,
               professionalDocService.ts, rewardsCatalogService.ts,
               rewardsRedemptionService.ts
-types.ts      CPDLog, CrisisCategory, CrisisProtocol, IncidentProtocol
+types.ts      CPDLog, CrisisCategory, CrisisProtocol, IncidentProtocol,
+              ProfessionConfig, ProfessionType
 ```
 
 Every file still compiles (`tsc -b` checks the whole of `src/`), so it cannot
@@ -43,13 +44,15 @@ because entries already on users' devices carry them:
 and `UserStats.cpdMinutesTotal`. The core does not read them. `CPDLog` in
 `types.ts` here is derived from that declaration rather than duplicated.
 
-## Still in the core, and not this module's problem
+## Still in the core
 
-`PROFESSION_CONFIG` in `src/constants.ts` (32 profession presets), the
-profession dropdown in `SimplifiedOnboarding.tsx`, the NMC Code themes block
-in `ReflectionFlow.tsx` and the per-profession AI prompt prefixes are
-phase 1B. Quick Capture saving entries as `INCIDENT` with clinical categories
-is phase 3. See `docs/PHASE-1-SCOPE.md` §3.
+Quick Capture saving entries as `INCIDENT` with clinical categories is
+phase 3 (a data-model change with a migration). `UserProfile.profession` is
+kept as a stored string the core never reads. The `profession?` parameter on
+the `AIProvider` interface is accepted and ignored. Everything else that was
+profession-shaped — the presets, the onboarding picker, the NMC Code Themes
+block, per-profession model filtering and prompt prefixes — left the core in
+phase 1B (September 2026).
 
 ## Reachability, for the record
 

@@ -48,41 +48,36 @@ not belong in the core — however much work is already in it.
 
 ## The professional layer
 
-**Phase 1A is done (22 Sep 2026).** Seventeen files live in
-`src/modules/professional/` (see its `README.md`), off the router, off the
-dashboard, out of the pack registry and the tutorial. Nothing in the core
-imports from that folder; the dependency arrow points one way. **Do not
-delete it** — it becomes a module later.
+**Phase 1 is done (22 Sep 2026).** Everything profession-specific lives in
+`src/modules/professional/` (see its `README.md`): seventeen components,
+data files and services, the 32 profession presets (`data/professionConfig.ts`),
+and the module's own types. It is off the router, the dashboard, the pack
+registry and the tutorial. Nothing in the core imports from that folder; the
+dependency arrow points one way. **Do not delete it** — it becomes a module
+later.
 
-Eleven of the seventeen were already unreachable from `main.tsx` before the
-move. The six that were live (CPD, Crisis Protocols, Professional Docs and
-their services) were pack-gated and off by default.
+What the core keeps, and why:
 
-**Phase 1B is not done.** The profession concept is still in the live core:
+- `UserProfile.profession` (`types.ts`) — saved profiles carry values like
+  `'NURSING'`; the core never reads it. New users get `'NONE'`.
+- `ReflectionEntry.cpd` and `.nmcCodeThemes`, `UserStats.cpdMinutesTotal` —
+  saved entries carry them; nothing in the core writes or reads them.
+- The `profession?` parameter on the `AIProvider` interface — accepted and
+  ignored; a later module can pass it.
+- `DEFAULT_COACH_PREFIX` in `constants.ts` — the one coaching voice.
 
-- `constants.ts` — `PROFESSION_CONFIG`, 75.8 KB, 32 profession presets, 93 %
-  of the file. Consumed by `SimplifiedOnboarding.tsx`, `NeuralLink.tsx`,
-  `ReflectionFlow.tsx`, `providers/geminiProvider.ts`, `data/offlinePrompts.ts`.
-- `SimplifiedOnboarding.tsx` asks "What's your profession?" with Healthcare
-  first and `NURSING` pre-selected. `NONE` is not offered. Skip makes the user
-  a nurse.
-- `ReflectionFlow.tsx` — `NMC_CODE_THEMES`, `NMC_PROFESSIONS`, and the
-  `nmcCodeThemes` written onto saved entries.
-- `types.ts` — `ProfessionConfig`, `ProfessionType`, `UserProfile.profession`;
-  the `cpd` and `nmcCodeThemes` fields on `ReflectionEntry` stay as labelled
-  stored-data shapes (entries on devices carry them).
-
-Quick Capture saves every entry as `type: "INCIDENT"` with an
-`IncidentCategory` of "Clinical Error", "Patient Safety" and so on. That is a
-data-model change with a migration and belongs to phase 3, not phase 1.
+Quick Capture still saves every entry as `type: "INCIDENT"` with an
+`IncidentCategory` of "Clinical Error", "Patient Safety" and so on, and
+Archive still offers an "Incident Severity" filter. That is a data-model
+change with a migration and belongs to phase 3.
 
 ## Phases
 
 | # | Phase | Estimate | Status |
 | - | ----- | -------- | ------ |
-| 0 | Test harness — entry create/save/recover, IndexedDB, export | 17–22h (`docs/PHASE-0-SCOPE.md`) | **Done**: 67 unit tests, 15 e2e specs, CI workflow. First CI run happens on push |
+| 0 | Test harness — entry create/save/recover, IndexedDB, export | 17–22h (`docs/PHASE-0-SCOPE.md`) | **Done**: 67 unit tests, 16 e2e specs, CI workflow. First CI run happens on push |
 | 1A | Move the professional layer to `src/modules/professional/` | 8–11h | **Done** |
-| 1B | De-profession the live core (`PROFESSION_CONFIG`, onboarding, NMC block, AI prefixes, bug B1) | 10–13h | Not started. Phase 0 first — 1B edits the profile and entry save paths |
+| 1B | De-profession the live core (`PROFESSION_CONFIG`, onboarding, NMC block, AI prefixes, bug B1) | 10–13h | **Done** |
 | 2 | Demote Gibbs, framework interface, Open Entry + Three-Part | 15–20h | Note the existing SIMPLE mode in `ReflectionFlow.tsx` is already Three-Part in all but name |
 | 3 | Make the core good for anyone — first-run experience, persistent storage, accessibility, XP rework to learning tracks, Quick Capture data model | to be scoped | |
 
@@ -94,9 +89,9 @@ Deferred indefinitely: module runtime, manifests, entitlement, specialities.
   Both need pushing.
 - **Tests.** `npm test` — 8 vitest suites, 67 tests, ~3 s, in Node against
   the real services (fake-indexeddb, Node WebCrypto). `npm run test:e2e` —
-  15 Playwright specs in Chromium, ~40 s, starts the dev server itself.
-  Three e2e specs and two unit tests are declared expected failures: bug B1
-  (twice), the empty-text CSV export, and the plaintext dual-write decision
+  16 Playwright specs in Chromium, ~40 s, starts the dev server itself.
+  One e2e spec and two unit tests are declared expected failures: the
+  empty-text CSV export (twice) and the plaintext dual-write decision
   (`docs/PHASE-0-SCOPE.md` §4.2). `.github/workflows/test.yml` runs build,
   unit and e2e on every push and PR; it has not run yet because nothing has
   been pushed since it was added.
@@ -107,11 +102,8 @@ Deferred indefinitely: module runtime, manifests, entitlement, specialities.
 - **"Encrypted at rest" is not currently true**: `saveEntry` dual-writes the
   plaintext to `localStorage` as a fallback. Decision pending, options in
   `docs/PHASE-0-SCOPE.md` §4.2.
-- **Bug B1, open:** the app shows onboarding on every launch, and tapping
-  Skip overwrites a returning user's name with `User` and profession with
-  `NURSING` (`AppContext.tsx` starts on `ONBOARDING`;
-  `SimplifiedOnboarding.tsx` `handleSkip`). Fix is 1B.2. The smoke script
-  fails three assertions on this by design until then.
+- **Bug B1 fixed (1B):** a returning user lands on the dashboard; Skip
+  never overwrites a name. `tests/e2e/first-run.spec.ts` guards it.
 - `navigator.storage.persist()` is never called — entries are evictable.
 - `src/packs/` is a compile-time feature-flag system. The `professional`
   pack is gone; the other four and the trial mechanism are untouched.
@@ -137,11 +129,10 @@ Deferred indefinitely: module runtime, manifests, entitlement, specialities.
    rework. If the core ever wants a library it gets general content, not a
    scrubbed nursing list.
 3. What does a first-time user with no background actually do in their first
-   90 seconds? Observed: three slides, a name field, a profession dropdown,
-   then a dashboard with Capture / Reflect / Archive and the differentiator
-   (Holodeck) hidden behind a pack toggle. 1B removes the profession
-   question; phase 3 owns the rest. Still the most important question in
-   the project.
+   90 seconds? Observed: three slides, a name field, then a dashboard with
+   Capture / Reflect / Archive and the differentiator (Holodeck) hidden
+   behind a pack toggle. The profession question is gone (1B); phase 3 owns
+   the rest. Still the most important question in the project.
 
 ## Working preferences
 

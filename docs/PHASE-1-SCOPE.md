@@ -1,7 +1,7 @@
 # Phase 1 scope — stripping the professional layer
 
 **Branch:** `refactor/context-layer` · **Verified against:** commit `49e2aa1` (origin) — identical source to your local `d9195d9`, which only changes `CLAUDE.md` and is **not yet pushed**.
-**Written:** 22 September 2026 · **Status:** scoping complete; **phase 1A executed the same day** (branch `phase-1a/professional-module`, current state in `CLAUDE.md`). Line numbers below refer to the tree *before* 1A.
+**Written:** 22 September 2026 · **Status:** scoping complete; **phases 1A and 1B both executed the same day** (branch `phase-1a/professional-module`, current state in `CLAUDE.md`). Line numbers below refer to the tree *before* 1A.
 
 This document does three things: confirms the recovered branch actually runs, traces exactly how the professional layer is wired into the core, and re-costs phase 1 against the 35–45 hour figure in `CLAUDE.md`.
 
