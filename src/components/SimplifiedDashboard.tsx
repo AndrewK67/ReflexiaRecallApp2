@@ -4,7 +4,6 @@
  */
 
 import { isPackEnabled } from '../packs';
-import AdBanner from './AdBanner';
 
 interface SimplifiedDashboardProps {
   userName: string;
@@ -12,7 +11,6 @@ interface SimplifiedDashboardProps {
   onNavigate: (view: string) => void;
   onShowPackSettings?: () => void;
   totalEntries?: number;
-  currentStreak?: number;
 }
 
 export default function SimplifiedDashboard({
@@ -21,7 +19,6 @@ export default function SimplifiedDashboard({
   onNavigate,
   onShowPackSettings,
   totalEntries = 0,
-  currentStreak = 0,
 }: SimplifiedDashboardProps) {
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -71,12 +68,6 @@ export default function SimplifiedDashboard({
             <div className="text-sm font-bold text-white">{totalEntries}</div>
             <div className="text-[9px] text-white/50 uppercase tracking-wider">Reflections</div>
           </div>
-          {currentStreak > 0 && (
-            <div className="text-center px-3 py-1.5 bg-white/5 rounded-lg border border-white/10">
-              <div className="text-sm font-bold text-orange-400">{currentStreak}d</div>
-              <div className="text-[9px] text-white/50 uppercase tracking-wider">Streak</div>
-            </div>
-          )}
         </div>
       )}
 
@@ -177,15 +168,6 @@ export default function SimplifiedDashboard({
         >
           ✨ Explore Optional Packs
         </button>
-
-        {/* Ad Banner (if configured with Publisher ID) */}
-        <div className="mt-6 w-full max-w-xs">
-          <AdBanner 
-            slotId="0000000000"
-            format="horizontal"
-            className="justify-center"
-          />
-        </div>
       </div>
 
       {/* Data Notice */}

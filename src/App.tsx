@@ -363,7 +363,6 @@ function AppContent() {
             onNavigate={(viewName) => navigateWithGating(viewName)}
             onShowPackSettings={() => navigate("PACK_BROWSER")}
             totalEntries={entries.length}
-            currentStreak={stats.currentStreak ?? 0}
           />
         );
     }
