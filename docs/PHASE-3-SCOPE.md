@@ -1,6 +1,6 @@
 # Phase 3 scope — make the core good for anyone
 
-**Branch:** `phase-1a/professional-module` at `c8bd10a` · **Written:** 22 September 2026 · **Status:** scoped; **3E done** the same day (§3, 3E), the other four parts not started.
+**Branch:** `phase-1a/professional-module` at `c8bd10a` · **Written:** 22 September 2026 · **Status:** scoped; **3E and 3A done** the same day (§3), 3C, 3B and 3D not started.
 
 `CLAUDE.md` lists phase 3 as *first-run experience, persistent storage, accessibility, XP rework to learning tracks, Quick Capture data model — to be scoped*. It also carries open question 1 (the AI gate) and open question 3 (*what does a first-time user with no background actually do in their first 90 seconds?* — "still the most important question in the project"). This document traces all of it against the code as it stands after phase 2, says what each piece costs, and splits the phase into five parts that can land one at a time.
 
@@ -228,6 +228,15 @@ Five parts. Each is one branch-worth of work with its own tests and can be revie
 | 3A.5 | `EntriesContext` stops computing gamification on every change (moves to 3D if 3D is next; otherwise a one-line removal here) | 0.5 | — |
 | | **Sum** | **11.0** → **11–15 h** | |
 
+**3A landed (22 Sep 2026), four commits, in the order 3A.2 → 3A.1 → 3A.3 → 3A.4+3A.5.**
+
+- **3A.2** `d6e69de` — no plaintext copy. The migration removes `reflexia.entries.v1` after moving it; a copy left by an already-migrated build goes on the next launch; backup import writes only the encrypted store; the service throws on a failed write (the context logs it — 3C.4's notice will show it). Only a browser with no IndexedDB falls back to plaintext (`isPlaintextFallback()`). *Found on the way:* `getCryptoKey()` memoised the resolved key, not the promise, so two concurrent first calls each generated a key and whichever lost the keystore write left its entries unreadable for good; `saveAllEntries()` encrypts in parallel, so a backup restored before init lost entries. Third data-loss bug of the day; regression test fails against the old code.
+- **3A.1** `565b917` — `services/durabilityService.ts`, `components/StorageStatus.tsx` ("Your data" in Profile). *Found on the way:* the manifest named `/pwa-192.png` and `/pwa-512.png`, which have never existed in `public/` (the files are `icon-192.png`, `icon-512.png`), so no browser has ever offered to install the app and `beforeinstallprompt` could never fire. Fixed, with `tests/unit/pwa.test.ts` checking every icon the manifest names exists. Stale hand-written `public/manifest.json` ("Professional Reflection & Revalidation Companion") and `public/service-worker.js` removed; `index.html` gets a favicon, `apple-touch-icon`, iOS web-app meta, the title "Reflexia", and loses the AdSense comment.
+- **3A.3** `1a072c1` — captures. `CaptureEntry` (notes, media, guardianBadge); the seven clinical fields and `IncidentCategory` moved to the module as `ProfessionalIncidentEntry`; `utils/entryKind.ts`; severity filter gone; the Archive type filter value is `'capture'`. *Found on the way:* `CalendarView` is not reachable from any live screen — only the old tutorial navigated to it — so nobody has seen the red days. Fixed anyway (mood colours only, legend reads Rough…Great), ready for 3B to wire it in.
+- **3A.4 + 3A.5** `60aae17` — `src/frameworks/spaces.ts`, the space skin in `ReflectionFlow` (`initialFramework` prop), `Holodeck.tsx` hands the hub's choice to the composer, three space screens deleted, `holodeckEntries` migration, Archive filter grouped. Guided Stillness had an empty fifth prompt; dropped before any entry could carry the id. `EntriesContext` no longer runs the inert gamification computation.
+
+Numbers: 111 unit (was 92), 33 e2e (was 24); main chunk 314.8 KB (was 306.6; the spaces are now in the registry). Departures from the plan: none of substance. The `beforeinstallprompt` button can only be seen in a browser that fires the event, which headless Chromium does not, so its e2e coverage is the unit test of the service plus the Profile line in both persistence states.
+
 ### 3C — Readable, reachable, labelled · 8–11 h
 
 | Step | Work | Hours | Done when |
@@ -314,10 +323,10 @@ The `CLAUDE.md` row said "to be scoped". This is two and a half to three times p
 
 - [ ] Every sentence on the first screen and the dashboard is true of the build (e2e asserts the specific words that were false)
 - [ ] Capture, Reflect, Spaces and Archive are each one tap from the dashboard on a fresh profile
-- [ ] A finished space is an encrypted entry: in Archive, searchable, in the backup, opening with readable labels
-- [ ] No "incident" wording on any screen; a capture never colours a calendar day as critical; stored `type` unchanged
-- [ ] After the first save, persistence has been requested and Profile says whether it was granted; no plaintext entry copy exists in `localStorage`
-- [ ] AI can only be reached with the person's own key and their toggle, through one gate; the consent screen names what is sent; no `VITE_GEMINI` in the build
+- [x] A finished space is an encrypted entry: in Archive, searchable, in the backup, opening with readable labels (3A.4)
+- [x] No "incident" wording on any screen; a capture never colours a calendar day as critical; stored `type` unchanged (3A.3)
+- [x] After the first save, persistence has been requested and Profile says whether it was granted; no plaintext entry copy exists in `localStorage` (3A.1, 3A.2)
+- [x] AI can only be reached with the person's own key and their toggle, through one gate; the consent screen names what is sent; no `VITE_GEMINI` in the build (3E)
 - [ ] `npm run audit:a11y` reports 0 critical and 0 serious nodes and runs in CI; no text under 12 px in live components; every interactive element has a visible focus state; no native `alert()`/`confirm()`
 - [ ] No levels, XP totals, achievements or streaks anywhere; "What you've tried" reflects real actions only; the nudge follows its rule
 - [ ] `CLAUDE.md` decision 3 reworded per §4.1, decision 4 marked done, open questions 1 and 3 closed

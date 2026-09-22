@@ -67,10 +67,13 @@ What the core keeps, and why:
   ignored; a later module can pass it.
 - `DEFAULT_COACH_PREFIX` in `constants.ts` — the one coaching voice.
 
-Quick Capture still saves every entry as `type: "INCIDENT"` with an
-`IncidentCategory` of "Clinical Error", "Patient Safety" and so on, and
-Archive still offers an "Incident Severity" filter. That is a data-model
-change with a migration and belongs to phase 3.
+Quick Capture saves a **capture** — a note with optional photo or audio.
+The stored `type` is still the literal `"INCIDENT"` (on devices; it stays),
+but since phase 3A.3 nothing a person sees says "incident": the type is
+`CaptureEntry`, `isCapture()` / `isReflection()` in `utils/entryKind.ts`
+are the only way code tells kinds apart, and the clinical fields
+(`IncidentCategory`, severity, location, people, outcome…) live in the
+module's `types.ts` as `ProfessionalIncidentEntry`.
 
 ## Frameworks
 
@@ -89,6 +92,13 @@ carries its own label, question, placeholder and offline coaching text.
   the entry's own answer keys, so every saved entry still opens.
 - `src/modules/professional/data/frameworks.ts` — SBAR and SOAP. Clinical
   structures, not reflection; out of the core.
+- `src/frameworks/spaces.ts` — the twenty **spaces** (Holodeck), generated
+  from `data/holodeckSpaces.ts` as frameworks of `kind: 'space'`
+  (`SPACE_DIFFICULT_CONVERSATION`, stages `…_1`–`…_5`), each with its
+  colour, its guide's role as the Coach line, and a "gentle" flag. A
+  finished space is an ordinary encrypted entry (phase 3A.4); before that it
+  went to plaintext `localStorage['holodeckEntries']` and nothing read it
+  back. Those migrate on launch.
 
 **Ids are stored data.** `entry.model` holds the framework id and
 `entry.answers` is keyed by stage id, on users' devices, today.
@@ -105,7 +115,7 @@ survives only as the stored field name.
 | 1A | Move the professional layer to `src/modules/professional/` | 8–11h | **Done** |
 | 1B | De-profession the live core (`PROFESSION_CONFIG`, onboarding, NMC block, AI prefixes, bug B1) | 10–13h | **Done** |
 | 2 | Demote Gibbs, framework interface, Open Entry + Three-Part | 15–20h (`docs/PHASE-2-SCOPE.md`) | **Done** |
-| 3 | Make the core good for anyone — first-run experience, persistent storage, accessibility, XP rework to learning tracks, Quick Capture data model, the AI gate | 46–63h (`docs/PHASE-3-SCOPE.md`), in five parts: 3E AI boundary 5–7h, 3A data 11–15h, 3C accessibility 8–11h, 3B front door 12–16h, 3D learning tracks 10–14h | **3E done** (22 Sep 2026). 3A, 3C, 3B, 3D not started; §4 of the scope has eight decisions, the first of which (what the differentiator is) shapes 3B |
+| 3 | Make the core good for anyone — first-run experience, persistent storage, accessibility, XP rework to learning tracks, Quick Capture data model, the AI gate | 46–63h (`docs/PHASE-3-SCOPE.md`), in five parts: 3E AI boundary 5–7h, 3A data 11–15h, 3C accessibility 8–11h, 3B front door 12–16h, 3D learning tracks 10–14h | **3E and 3A done** (22 Sep 2026). 3C, 3B, 3D not started; §4 of the scope has eight decisions, the first of which (what the differentiator is) shapes 3B |
 
 Deferred indefinitely: module runtime, manifests, entitlement, specialities.
 
@@ -113,26 +123,32 @@ Deferred indefinitely: module runtime, manifests, entitlement, specialities.
 
 - Branch `phase-1a/professional-module`, on top of `refactor/context-layer`.
   Both need pushing.
-- **Tests.** `npm test` — 10 vitest suites, 92 tests, ~3 s, in Node against
+- **Tests.** `npm test` — 13 vitest suites, 111 tests, ~3 s, in Node against
   the real services (fake-indexeddb, Node WebCrypto). `npm run test:e2e` —
-  24 Playwright specs in Chromium, ~60 s, starts the dev server itself.
-  One e2e spec and two unit tests are declared expected failures: the
-  empty-text CSV export (twice) and the plaintext dual-write decision
-  (`docs/PHASE-0-SCOPE.md` §4.2). `.github/workflows/test.yml` runs build,
+  33 Playwright specs in Chromium, ~75 s, starts the dev server itself.
+  One e2e spec and one unit test are declared expected failures: the
+  empty-text CSV export (`docs/PHASE-0-SCOPE.md` §0.3). `.github/workflows/test.yml` runs build,
   unit and e2e on every push and PR; it has not run yet because nothing has
   been pushed since it was added. `npm run audit:a11y` is an axe scan of
   fifteen screens (a scoping probe, not in CI yet); `node
   tests/audit/reachability.mjs` lists the files unreachable from `main.tsx`.
-- **Two data-loss bugs fixed 22 Sep 2026**: backup restore emptied the store
-  and the localStorage→IndexedDB migration failed on every launch, both from
-  awaiting `crypto.subtle.encrypt()` inside an open IndexedDB transaction.
-  Regression tests in `tests/unit/entryStorage.test.ts`.
-- **"Encrypted at rest" is not currently true**: `saveEntry` dual-writes the
-  plaintext to `localStorage` as a fallback. Decision pending, options in
-  `docs/PHASE-0-SCOPE.md` §4.2.
+- **Three data-loss bugs fixed 22 Sep 2026**: backup restore emptied the
+  store and the localStorage→IndexedDB migration failed on every launch
+  (both from awaiting `crypto.subtle.encrypt()` inside an open IndexedDB
+  transaction), and `getCryptoKey()` memoised the key rather than the
+  promise, so concurrent first writes could encrypt under two different keys
+  (3A.2). Regression tests in `tests/unit/entryStorage.test.ts`.
+- **Encrypted at rest is true since 3A.2.** Entries live only in the
+  encrypted IndexedDB store; the old plaintext `localStorage` copy is
+  migrated once and removed. Only a browser with no IndexedDB falls back to
+  plaintext, and Profile → Your data says so.
+- **Persistence (3A.1):** the first save asks `navigator.storage.persist()`
+  once per device; Profile → Your data reports the answer and usage, and
+  offers Install when the browser fires `beforeinstallprompt`. The manifest
+  used to name icon files that did not exist, so the app was never
+  installable; `tests/unit/pwa.test.ts` guards it now.
 - **Bug B1 fixed (1B):** a returning user lands on the dashboard; Skip
   never overwrites a name. `tests/e2e/first-run.spec.ts` guards it.
-- `navigator.storage.persist()` is never called — entries are evictable.
 - `src/packs/` is a compile-time feature-flag system. The `professional`
   pack is gone; the other four and the trial mechanism are untouched.
 - Roughly a third of the source files are unreachable from `main.tsx`

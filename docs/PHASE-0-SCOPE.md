@@ -128,6 +128,8 @@ Today every entry is stored twice: encrypted in IndexedDB, plaintext in `localSt
 
 My view: A, in phase 3's persistent-storage work, alongside `navigator.storage.persist()`. Phase 0 pins today's behaviour with an `it.fails` test so the decision can't be forgotten.
 
+**Decided: A, done in phase 3A.2 (22 Sep 2026).** The plaintext copy is read once by the migration and removed; a copy left by an already-migrated build is removed on the next launch; only a browser with no IndexedDB at all uses plaintext `localStorage`, and Profile says so. The `it.fails` test is now a passing assertion that nothing in `localStorage` contains the entry text.
+
 ---
 
 ## 5. What already exists (uncommitted, in the clone)
