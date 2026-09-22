@@ -4,6 +4,8 @@ import { defineConfig } from 'vitest/config';
 // from fake-indexeddb, WebCrypto from Node itself, localStorage from a small
 // shim in tests/unit/setup.ts. No app module is mocked.
 export default defineConfig({
+  // vite.config.ts injects this at build time; constants.ts reads it at import.
+  define: { __BUILD_DATE__: JSON.stringify('test') },
   test: {
     environment: 'node',
     include: ['tests/unit/**/*.test.ts'],
