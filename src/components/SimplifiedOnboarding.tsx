@@ -120,7 +120,7 @@ export default function SimplifiedOnboarding({ onComplete }: SimplifiedOnboardin
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Your name"
-                className="w-full px-3 py-2.5 bg-white/10 border border-white/20 rounded-xl text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
+                className="w-full px-3 py-2.5 bg-white/10 border border-white/20 rounded-xl text-sm text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
               />
             </div>
           </div>
@@ -149,7 +149,7 @@ export default function SimplifiedOnboarding({ onComplete }: SimplifiedOnboardin
 
       {/* Footer Notice */}
       {step === 3 && (
-        <p className="text-center text-white/40 text-[10px] mt-2 leading-tight px-4">
+        <p className="text-center text-white/60 text-xs mt-2 leading-tight px-4">
           Reflexia is a space to think. It is not a substitute for advice from
           someone qualified to give it.
         </p>

@@ -362,12 +362,12 @@ export default function ReflectionFlow({ onComplete, onCancel, initialFramework 
                   <div className="text-base font-extrabold text-white group-hover:text-indigo-400 transition">
                     {f.name}
                   </div>
-                  <div className="text-[10px] font-bold text-white/60 bg-white/10 px-2 py-1 rounded-full whitespace-nowrap">
+                  <div className="text-xs font-bold text-white/60 bg-white/10 px-2 py-1 rounded-full whitespace-nowrap">
                     {f.stages.length} {f.stages.length === 1 ? "step" : "steps"}
                   </div>
                 </div>
                 <div className="text-sm text-white/70 leading-snug">{f.tagline}</div>
-                {f.origin && <div className="mt-2 text-[11px] text-white/40">{f.origin}</div>}
+                {f.origin && <div className="mt-2 text-xs text-white/60">{f.origin}</div>}
                 <div className="mt-3 flex items-center gap-2 text-sm font-bold text-indigo-400 group-hover:translate-x-1 transition">
                   Start <ArrowRight size={16} />
                 </div>
@@ -454,7 +454,7 @@ export default function ReflectionFlow({ onComplete, onCancel, initialFramework 
                     }`}
                   >
                     <div className="text-2xl mb-1">{m.emoji}</div>
-                    <div className="text-[10px] font-bold text-white/90">{m.label}</div>
+                    <div className="text-xs font-bold text-white/90">{m.label}</div>
                   </button>
                 ))}
               </div>

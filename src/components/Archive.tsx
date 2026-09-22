@@ -356,7 +356,7 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
               setCurrentPage(1);
             }}
             placeholder="Search entries..."
-            className="w-full pl-10 pr-10 py-3 rounded-2xl border border-white/10 bg-white/5 text-white placeholder:text-white/40 focus:outline-none focus:border-cyan-500/50 focus:bg-white/10 transition-all"
+            className="w-full pl-10 pr-10 py-3 rounded-2xl border border-white/10 bg-white/5 text-white placeholder:text-white/50 focus:outline-none focus:border-cyan-500/50 focus:bg-white/10 transition-all"
           />
           {searchQuery && (
             <button
@@ -385,7 +385,7 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
             <SlidersHorizontal size={16} />
             <span className="text-xs font-semibold">Filters</span>
             {activeFilterCount > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full bg-cyan-500 text-white text-[10px] font-bold">
+              <span className="px-1.5 py-0.5 rounded-full bg-cyan-500 text-white text-xs font-bold">
                 {activeFilterCount}
               </span>
             )}
@@ -531,7 +531,7 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
       {/* Entry List */}
       <div className="flex-1 overflow-y-auto px-6 py-4 pb-20 custom-scrollbar relative z-10" tabIndex={0} aria-label="Entries">
         {searchResult.entries.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-white/40">
+          <div className="flex flex-col items-center justify-center py-16 text-white/60">
             <FileText size={48} className="mb-3 opacity-50" />
             <p className="text-sm font-semibold">No entries found</p>
             <p className="text-xs mt-1">Try adjusting your search or filters</p>
@@ -577,7 +577,7 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
                         return (
                           <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-500/20 border border-purple-500/30 text-purple-300">
                             <Camera size={12} />
-                            <span className="text-[10px] font-bold">{entry.attachments.length}</span>
+                            <span className="text-xs font-bold">{entry.attachments.length}</span>
                           </div>
                         );
                       }
@@ -587,14 +587,14 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
                           <div className="flex items-center gap-1">
                             {hasVideo && (
                               <div className="px-2 py-1 rounded-lg bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 flex items-center gap-1">
-                                <span className="text-[10px]">🎥</span>
-                                <span className="text-[10px] font-bold">{media.filter((m: any) => m.type === 'VIDEO').length}</span>
+                                <span className="text-xs">🎥</span>
+                                <span className="text-xs font-bold">{media.filter((m: any) => m.type === 'VIDEO').length}</span>
                               </div>
                             )}
                             {hasPhoto && (
                               <div className="px-2 py-1 rounded-lg bg-purple-500/20 border border-purple-500/30 text-purple-300 flex items-center gap-1">
                                 <Camera size={10} />
-                                <span className="text-[10px] font-bold">{media.filter((m: any) => m.type === 'PHOTO').length}</span>
+                                <span className="text-xs font-bold">{media.filter((m: any) => m.type === 'PHOTO').length}</span>
                               </div>
                             )}
                             {hasAudio && (
@@ -642,7 +642,7 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
                                               background: `linear-gradient(to right, rgb(52 211 153) 0%, rgb(52 211 153) ${(audioProgress / audioDuration) * 100}%, rgb(52 211 153 / 0.3) ${(audioProgress / audioDuration) * 100}%, rgb(52 211 153 / 0.3) 100%)`
                                             }}
                                           />
-                                          <span className="text-[9px] font-mono">
+                                          <span className="text-xs font-mono">
                                             {Math.floor(audioProgress)}s / {Math.floor(audioDuration)}s
                                           </span>
                                         </div>
@@ -652,7 +652,7 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
                                       {!isPlaying && (
                                         <div className="flex items-center gap-1">
                                           <Volume2 size={10} />
-                                          <span className="text-[10px]">Audio</span>
+                                          <span className="text-xs">Audio</span>
                                         </div>
                                       )}
 
@@ -697,13 +697,13 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
                     {entry.keywords && entry.keywords.slice(0, 3).map((tag) => (
                       <span
                         key={tag}
-                        className={`px-2 py-0.5 rounded-full bg-white/10 text-white/80 text-[10px] font-semibold ${blurEnabled ? 'blur-sm' : ''}`}
+                        className={`px-2 py-0.5 rounded-full bg-white/10 text-white/80 text-xs font-semibold ${blurEnabled ? 'blur-sm' : ''}`}
                       >
                         {tag}
                       </span>
                     ))}
                     {entry.keywords && entry.keywords.length > 3 && (
-                      <span className="text-[10px] text-white/40 font-semibold">
+                      <span className="text-xs text-white/60 font-semibold">
                         +{entry.keywords.length - 3} more
                       </span>
                     )}

@@ -227,8 +227,8 @@ export default function BioRhythm({ onClose }: BioRhythmProps) {
       <div className="absolute bottom-0 w-full p-6 bg-slate-950/80 backdrop-blur border-t border-white/10 z-30 flex flex-col gap-4">
         <div>
           <div className="flex justify-between items-end mb-2">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Session length</p>
-            <p className="text-[10px] text-cyan-400 font-mono">{sessionMinutes} min</p>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Session length</p>
+            <p className="text-xs text-cyan-400 font-mono">{sessionMinutes} min</p>
           </div>
 
           <div className="grid grid-cols-3 gap-2">
@@ -251,8 +251,8 @@ export default function BioRhythm({ onClose }: BioRhythmProps) {
 
         <div>
           <div className="flex justify-between items-end mb-2">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Exercise</p>
-            <p className="text-[10px] text-cyan-400 font-mono">
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Exercise</p>
+            <p className="text-xs text-cyan-400 font-mono">
               {pattern.inhale}-{pattern.hold1}-{pattern.exhale}-{pattern.hold2}
             </p>
           </div>
@@ -272,7 +272,7 @@ export default function BioRhythm({ onClose }: BioRhythmProps) {
                 }`}
               >
                 <div className="text-sm font-bold">{p.name}</div>
-                <div className="text-[10px] text-slate-300/80">{p.desc}</div>
+                <div className="text-xs text-slate-300/80">{p.desc}</div>
               </button>
             ))}
           </div>

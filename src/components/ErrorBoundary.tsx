@@ -76,7 +76,7 @@ export default class ErrorBoundary extends Component<Props, State> {
                   {this.state.errorInfo && (
                     <details className="text-xs font-mono text-white/60">
                       <summary className="cursor-pointer hover:text-white/80">Stack trace</summary>
-                      <pre className="mt-2 overflow-auto max-h-32 text-[10px]">
+                      <pre className="mt-2 overflow-auto max-h-32 text-xs">
                         {this.state.errorInfo.componentStack}
                       </pre>
                     </details>

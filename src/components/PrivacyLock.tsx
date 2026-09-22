@@ -275,7 +275,7 @@ export default function PrivacyLock({ onUnlock }: PrivacyLockProps) {
                     value={removePin}
                     onChange={(e) => setRemovePin(e.target.value)}
                     placeholder="Enter PIN"
-                    className="flex-1 px-3 py-2 rounded-xl border border-white/15 bg-white/5 text-white placeholder:text-white/40 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="flex-1 px-3 py-2 rounded-xl border border-white/15 bg-white/5 text-white placeholder:text-white/50 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                   <button
                     onClick={handleRemovePIN}
@@ -299,7 +299,7 @@ export default function PrivacyLock({ onUnlock }: PrivacyLockProps) {
         )}
 
         {/* Info */}
-        <div className="text-center text-xs text-white/40">
+        <div className="text-center text-xs text-white/60">
           All privacy features work completely offline. Your PIN never leaves your device.
         </div>
       </div>

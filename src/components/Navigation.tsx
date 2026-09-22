@@ -33,7 +33,7 @@ export default function Navigation({ current, onChange }: NavigationProps) {
             aria-current={current === "ARCHIVE" ? "page" : undefined}
           >
             <ArchiveIcon size={18} className="landscape:w-5 landscape:h-5" />
-            <span className="text-[10px] landscape:text-[7px] font-bold landscape:hidden">Archive</span>
+            <span className="text-xs landscape:text-xs font-bold landscape:hidden">Archive</span>
           </button>
 
           <button
@@ -55,7 +55,7 @@ export default function Navigation({ current, onChange }: NavigationProps) {
             aria-current={current === "NEURAL_LINK" ? "page" : undefined}
           >
             <User size={18} className="landscape:w-5 landscape:h-5" />
-            <span className="text-[10px] landscape:text-[7px] font-bold landscape:hidden">Profile</span>
+            <span className="text-xs landscape:text-xs font-bold landscape:hidden">Profile</span>
           </button>
         </div>
       </div>

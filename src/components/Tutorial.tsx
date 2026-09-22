@@ -171,7 +171,7 @@ export default function Tutorial({ onClose, onNavigate, onAwardXP }: TutorialPro
               <div className="flex items-center gap-2">
                 <div className="text-3xl">{currentStep.icon}</div>
                 <div>
-                  <div className="text-[10px] text-cyan-400 font-semibold">
+                  <div className="text-xs text-cyan-400 font-semibold">
                     Step {progress.completedSteps.length + 1} of 19
                   </div>
                   <h2 className="text-lg font-bold text-white">{currentStep.title}</h2>
@@ -228,7 +228,7 @@ export default function Tutorial({ onClose, onNavigate, onAwardXP }: TutorialPro
                 {currentStep.instructions.map((instruction, index) => (
                   <li key={index} className="flex items-start gap-2">
                     <div className="w-5 h-5 rounded-full bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-[10px] text-cyan-400 font-bold">{index + 1}</span>
+                      <span className="text-xs text-cyan-400 font-bold">{index + 1}</span>
                     </div>
                     <span className="text-white/80 text-xs leading-relaxed">{instruction}</span>
                   </li>
@@ -312,7 +312,7 @@ export default function Tutorial({ onClose, onNavigate, onAwardXP }: TutorialPro
               {!isCompleted && (
                 <button
                   onClick={handleSkip}
-                  className="w-full py-2 text-white/40 hover:text-white/60 text-xs transition"
+                  className="w-full py-2 text-white/60 hover:text-white text-xs transition"
                 >
                   Skip Tutorial
                 </button>

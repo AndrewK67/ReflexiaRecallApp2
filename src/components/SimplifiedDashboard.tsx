@@ -66,7 +66,7 @@ export default function SimplifiedDashboard({
         <div className="flex items-center justify-center gap-4 mb-4 relative z-10">
           <div className="text-center px-3 py-1.5 bg-white/5 rounded-lg border border-white/10">
             <div className="text-sm font-bold text-white">{totalEntries}</div>
-            <div className="text-[9px] text-white/50 uppercase tracking-wider">Reflections</div>
+            <div className="text-xs text-white/50 uppercase tracking-wider">Reflections</div>
           </div>
         </div>
       )}
@@ -102,7 +102,7 @@ export default function SimplifiedDashboard({
         {/* Optional: Quick access to enabled pack features */}
         {hasAnyPacks && (
           <div className="bg-white/5 backdrop-blur-xl rounded-xl border border-white/10 p-2.5 mt-3">
-            <div className="text-[10px] font-bold text-white/60 mb-1.5">ENABLED PACKS</div>
+            <div className="text-xs font-bold text-white/60 mb-1.5">ENABLED PACKS</div>
             <div className="grid grid-cols-3 gap-1.5">
               {/* Wellbeing */}
               {hasWellbeing && (
@@ -112,14 +112,14 @@ export default function SimplifiedDashboard({
                     className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg p-1.5 transition flex flex-col items-center gap-0.5"
                   >
                     <span className="text-base">🫁</span>
-                    <span className="text-[8px] font-semibold text-white/80">BioRhythm</span>
+                    <span className="text-xs font-semibold text-white/80">BioRhythm</span>
                   </button>
                   <button
                     onClick={() => onNavigate("GROUNDING")}
                     className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg p-1.5 transition flex flex-col items-center gap-0.5"
                   >
                     <span className="text-base">🌊</span>
-                    <span className="text-[8px] font-semibold text-white/80">Grounding</span>
+                    <span className="text-xs font-semibold text-white/80">Grounding</span>
                   </button>
                 </>
               )}
@@ -131,7 +131,7 @@ export default function SimplifiedDashboard({
                   className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg p-1.5 transition flex flex-col items-center gap-0.5"
                 >
                   <span className="text-base">💬</span>
-                  <span className="text-[8px] font-semibold text-white/80">Oracle</span>
+                  <span className="text-xs font-semibold text-white/80">Oracle</span>
                 </button>
               )}
 
@@ -142,7 +142,7 @@ export default function SimplifiedDashboard({
                   className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg p-1.5 transition flex flex-col items-center gap-0.5"
                 >
                   <span className="text-base">🎭</span>
-                  <span className="text-[8px] font-semibold text-white/80">Holodeck</span>
+                  <span className="text-xs font-semibold text-white/80">Holodeck</span>
                 </button>
               )}
 
@@ -153,7 +153,7 @@ export default function SimplifiedDashboard({
                   className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg p-1.5 transition flex flex-col items-center gap-0.5"
                 >
                   <span className="text-base">📊</span>
-                  <span className="text-[8px] font-semibold text-white/80">Reports</span>
+                  <span className="text-xs font-semibold text-white/80">Reports</span>
                 </button>
               )}
 
@@ -164,14 +164,14 @@ export default function SimplifiedDashboard({
         {/* Explore More Packs */}
         <button
           onClick={() => onShowPackSettings?.()}
-          className="w-full mt-3 text-white/60 hover:text-white/90 text-[11px] font-medium py-1.5 transition"
+          className="w-full mt-3 text-white/60 hover:text-white/90 text-xs font-medium py-1.5 transition"
         >
           ✨ Explore Optional Packs
         </button>
       </div>
 
       {/* Data Notice */}
-      <div className="mt-4 max-w-xs text-center text-white/40 text-[10px] relative z-10 leading-tight">
+      <div className="mt-4 max-w-xs text-center text-white/60 text-xs relative z-10 leading-tight">
         <p>All data stored securely on this device</p>
         <p className="mt-0.5">Export regularly to back up</p>
       </div>

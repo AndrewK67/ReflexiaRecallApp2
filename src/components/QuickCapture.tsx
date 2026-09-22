@@ -330,7 +330,7 @@ export default function QuickCapture({ onComplete, onCancel }: QuickCaptureProps
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Describe what happened. No filter. No judgement."
-                  className="w-full min-h-[300px] landscape:min-h-[200px] p-4 rounded-xl border border-white/10 bg-white/5 text-white placeholder:text-white/40 resize-none focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  className="w-full min-h-[300px] landscape:min-h-[200px] p-4 rounded-xl border border-white/10 bg-white/5 text-white placeholder:text-white/50 resize-none focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 />
 
                 {hasMedia && (
@@ -380,7 +380,7 @@ export default function QuickCapture({ onComplete, onCancel }: QuickCaptureProps
                             >
                               Save to device
                             </button>
-                            <p className="text-[10px] text-white/50 text-center">Photo</p>
+                            <p className="text-xs text-white/50 text-center">Photo</p>
                           </div>
                         </div>
                       )}
@@ -402,7 +402,7 @@ export default function QuickCapture({ onComplete, onCancel }: QuickCaptureProps
                             >
                               Save to device
                             </button>
-                            <p className="text-[10px] text-white/50 text-center">Audio</p>
+                            <p className="text-xs text-white/50 text-center">Audio</p>
                           </div>
                         </div>
                       )}

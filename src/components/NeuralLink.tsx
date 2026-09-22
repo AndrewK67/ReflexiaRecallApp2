@@ -291,7 +291,7 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
                         title={achievement.description}
                       >
                         <div className="text-2xl mb-1">{achievement.icon || achievement.iconName || '🏆'}</div>
-                        <div className="text-[10px] text-white/70 truncate">{achievement.title}</div>
+                        <div className="text-xs text-white/70 truncate">{achievement.title}</div>
                       </div>
                     ))}
                   </div>
@@ -444,9 +444,9 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
 
         {/* App Version Info */}
         <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-4 text-center">
-          <div className="text-white/40 text-xs mb-1">Reflexia Version</div>
+          <div className="text-white/60 text-xs mb-1">Reflexia Version</div>
           <div className="font-mono text-white/70 text-sm font-bold">{APP_VERSION}</div>
-          <div className="text-white/30 text-[10px] mt-1">Built: {APP_BUILD_DATE}</div>
+          <div className="text-white/30 text-xs mt-1">Built: {APP_BUILD_DATE}</div>
         </div>
       </div>
     </div>

@@ -342,7 +342,7 @@ export default function AudioCapture({ onCapture, onCancel, maxDuration = 300 }:
         </button>
 
         <div className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-slate-800/60 backdrop-blur-sm border border-white/10">
-          <span className="text-white/70 text-[10px] sm:text-xs">Max: {formatTime(maxDuration)}</span>
+          <span className="text-white/70 text-xs sm:text-xs">Max: {formatTime(maxDuration)}</span>
         </div>
       </div>
 
@@ -374,9 +374,9 @@ export default function AudioCapture({ onCapture, onCancel, maxDuration = 300 }:
 
         {/* Status text */}
         {isRecording ? (
-          <p className="text-white/70 text-[10px]">Recording in progress...</p>
+          <p className="text-white/70 text-xs">Recording in progress...</p>
         ) : (
-          <p className="text-white/50 text-[10px]">Ready to record</p>
+          <p className="text-white/50 text-xs">Ready to record</p>
         )}
 
         {/* Audio level bars */}
@@ -423,7 +423,7 @@ export default function AudioCapture({ onCapture, onCancel, maxDuration = 300 }:
           )}
         </div>
 
-        <p className="text-center text-white/50 text-[10px] mt-1">
+        <p className="text-center text-white/50 text-xs mt-1">
           {isRecording ? 'Tap to stop recording' : 'Tap to start recording'}
         </p>
       </div>

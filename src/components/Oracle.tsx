@@ -108,7 +108,7 @@ const Oracle: React.FC<OracleProps> = ({ entries, onClose }) => {
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
           placeholder='Try: "What have I been writing about lately?"'
-          className="w-full h-24 resize-none rounded-2xl p-4 bg-white/5 border border-white/10 focus:outline-none focus:border-purple-500/50 focus:bg-white/10 text-white placeholder:text-white/40 transition-all"
+          className="w-full h-24 resize-none rounded-2xl p-4 bg-white/5 border border-white/10 focus:outline-none focus:border-purple-500/50 focus:bg-white/10 text-white placeholder:text-white/50 transition-all"
         />
 
         <button
@@ -141,7 +141,7 @@ const Oracle: React.FC<OracleProps> = ({ entries, onClose }) => {
 
         {answer && (
           <div className="p-5 rounded-2xl bg-white/5 border border-white/10">
-            <div className="text-[10px] font-bold uppercase tracking-widest text-purple-400 mb-3">
+            <div className="text-xs font-bold uppercase tracking-widest text-purple-400 mb-3">
               Oracle Response
             </div>
             <div className="text-white/90 text-sm leading-relaxed whitespace-pre-line">

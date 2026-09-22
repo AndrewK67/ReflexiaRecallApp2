@@ -243,7 +243,7 @@ export default function PINPad({ mode, onSuccess, onCancel, onVerify, onSetup, o
 
         {/* Footer Hint */}
         <div className="px-6 pb-6">
-          <p className="text-center text-xs text-white/40">
+          <p className="text-center text-xs text-white/60">
             {mode === 'verify' && 'Your entries are protected'}
             {mode === 'setup' && 'Use a PIN you can remember but others cannot guess'}
             {mode === 'change' && 'Choose a secure PIN'}

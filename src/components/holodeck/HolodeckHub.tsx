@@ -76,7 +76,7 @@ export default function HolodeckHub({ onSelectSpace, onClose }: HolodeckHubProps
                   {space.isSafetyCritical && (
                     <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30">
                       <div className="w-1 h-1 rounded-full bg-amber-400" />
-                      <span className="text-[10px] text-amber-300 font-bold">Gentle</span>
+                      <span className="text-xs text-amber-300 font-bold">Gentle</span>
                     </div>
                   )}
                 </div>
@@ -88,7 +88,7 @@ export default function HolodeckHub({ onSelectSpace, onClose }: HolodeckHubProps
 
       {/* Footer info */}
       <div className="flex-shrink-0 p-6 border-t border-white/10 bg-slate-950/80 backdrop-blur">
-        <p className="text-xs text-white/40 text-center">
+        <p className="text-xs text-white/60 text-center">
           All spaces work offline • Exit anytime • No judgment
         </p>
       </div>

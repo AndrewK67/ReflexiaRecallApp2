@@ -241,7 +241,7 @@ export default function CalendarView({ entries, onOpenEntry }: CalendarViewProps
                       <span className="text-xs font-bold text-white">{c.day}</span>
                       {info && <span className={`w-2 h-2 rounded-full ${levelClass(level)}`} />}
                     </div>
-                    <div className="text-[10px] text-white/60 font-semibold">{info ? `${info.count}` : ""}</div>
+                    <div className="text-xs text-white/60 font-semibold">{info ? `${info.count}` : ""}</div>
                   </button>
                 );
               })}
@@ -266,7 +266,7 @@ export default function CalendarView({ entries, onOpenEntry }: CalendarViewProps
                         setCursorMonth(monthIdx);
                         setViewMode("MONTH");
                       }}
-                      className="text-[10px] font-bold text-cyan-400 hover:text-cyan-300 hover:underline transition"
+                      className="text-xs font-bold text-cyan-400 hover:text-cyan-300 hover:underline transition"
                       title="Open month"
                     >
                       Open
@@ -275,7 +275,7 @@ export default function CalendarView({ entries, onOpenEntry }: CalendarViewProps
 
                   <div className="grid grid-cols-7 gap-1 mb-2">
                     {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-                      <div key={i} className="text-[9px] font-bold text-white/60 text-center">
+                      <div key={i} className="text-xs font-bold text-white/60 text-center">
                         {d}
                       </div>
                     ))}
@@ -339,14 +339,14 @@ export default function CalendarView({ entries, onOpenEntry }: CalendarViewProps
                           <span className={`text-xs font-bold text-white ${blurEnabled ? 'blur-sm' : ''}`}>
                             {isCapture(e) ? "Capture" : frameworkName((e as ReflectionEntry).model)}
                           </span>
-                          <span className="text-[10px] text-white/60 font-semibold">
+                          <span className="text-xs text-white/60 font-semibold">
                             {new Date(e.date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                           </span>
                         </div>
 
                         <div className="mt-2 flex items-center gap-2">
                           <span className={`w-2 h-2 rounded-full ${levelClass(daySummary.get(selectedDay)?.level ?? 0)}`} />
-                          <span className="text-[11px] text-white/60 font-semibold">Tap to open</span>
+                          <span className="text-xs text-white/60 font-semibold">Tap to open</span>
                         </div>
                       </button>
                     ))}

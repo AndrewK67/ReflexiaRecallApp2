@@ -149,7 +149,7 @@ export default function PackBrowser({ onClose, onPacksChanged }: PackBrowserProp
                   <div className="w-full border-t border-white/10"></div>
                 </div>
                 <div className="relative flex justify-center">
-                  <span className="px-3 text-xs text-white/40 bg-slate-900">or unlock permanently</span>
+                  <span className="px-3 text-xs text-white/60 bg-slate-900">or unlock permanently</span>
                 </div>
               </div>
 
