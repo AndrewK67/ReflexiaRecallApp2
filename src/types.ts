@@ -145,22 +145,6 @@ export interface GuardianBadge {
   suggestedActions: string[];
 }
 
-export interface LearningResource {
-  id: string;
-  title: string;
-  description?: string;
-  url?: string;
-  tags?: string[];
-}
-
-export interface CPDLog {
-  // Some components expect timeSpentMinutes; others might track minutes differently.
-  timeSpentMinutes?: number;
-  minutes?: number;
-  type?: "INDIVIDUAL" | "GROUP" | "FORMAL" | "INFORMAL" | string;
-  standardsMatched?: string[];
-}
-
 export interface BaseEntry {
   id: string;
 
@@ -198,9 +182,6 @@ export interface ReflectionEntry extends BaseEntry {
 
   answers?: Record<string, string>;
 
-  // Used by Library.tsx
-  learningPath?: LearningResource[];
-
   // Used by ReflectionFlow
   summary?: string;
   insights?: string[];
@@ -209,9 +190,16 @@ export interface ReflectionEntry extends BaseEntry {
   // Optional quick rating captured alongside a reflection.
   mood?: number; // 1-5
   actionSteps?: string[];
-  cpd?: CPDLog;
 
-  // NMC Code themes linked to this reflection (for revalidation export)
+  // ---- Owned by the professional module (src/modules/professional/) ----
+  // Kept here because entries already saved on users' devices carry these
+  // fields. The core does not read them. Remove only with a data migration.
+  cpd?: {
+    timeSpentMinutes?: number;
+    minutes?: number;
+    type?: string;
+    standardsMatched?: string[];
+  };
   nmcCodeThemes?: string[];
 }
 
@@ -260,31 +248,6 @@ export interface ProfessionConfig {
 
 export type ProfessionType = string;
 
-export type CrisisCategory =
-  | "Immediate Safety"
-  | "Mental Health"
-  | "Clinical"
-  | "Security"
-  | "Fire / HazMat"
-  | "Cyber / Data"
-  | "Operational"
-  | "Communication"
-  | "Other";
-
-export interface CrisisProtocol {
-  id: string;
-  title: string;
-  category?: CrisisCategory;
-  summary?: string;
-  whenToUse?: string;
-  notes?: string | string[];
-  steps: string[];
-  tags?: string[];
-}
-
-// Some components use an older name.
-export type IncidentProtocol = CrisisProtocol;
-
 export type ViewState =
   | "ONBOARDING"
   | "DASHBOARD"
@@ -300,22 +263,15 @@ export type ViewState =
   | "DRIVE_MODE"
   | "GROUNDING"
   | "PROFILE"
-  | "LIBRARY"
-  | "CPD"
   | "GAMIFICATION"
-  | "REWARDS"
   | "MENTAL_ATLAS"
   | "CALENDAR"
   | "NEURAL_LINK"
-  | "CRISIS_PROTOCOLS"
-  | "CRISIS_CHECKLIST"
-  | "COMPETENCY_MATRIX"
   | "BIO_RHYTHM"
   | "CANVAS_BOARD"
   | "CANVAS"
   | "REPORTS"
   | "PRIVACY_LOCK"
-  | "PROFESSIONAL_DOC"
   | "PACK_BROWSER"
   | "PERMISSIONS_HELP";
 
@@ -365,7 +321,7 @@ export interface Achievement {
 export interface UserStats {
   totalEntries?: number;
   reflectionStreak?: number;
-  cpdMinutesTotal?: number;
+  cpdMinutesTotal?: number; // professional module; kept for stored stats
   unlockedAchievements?: Achievement[];
   lastActiveDate?: string;
 

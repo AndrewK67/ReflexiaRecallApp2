@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import type { CrisisProtocol, CrisisCategory } from "../../../types";
+import type { CrisisProtocol, CrisisCategory } from "../types";
 
 const PROTOCOLS: CrisisProtocol[] = [
   // Immediate Safety
