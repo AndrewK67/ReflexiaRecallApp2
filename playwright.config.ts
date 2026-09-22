@@ -10,7 +10,7 @@ const PORT = 5173;
 const BASE_URL = `https://127.0.0.1:${PORT}`;
 
 export default defineConfig({
-  testDir: 'tests/e2e',
+  testDir: 'tests/e2e', // tests/audit/ is reached via playwright.audit.config.ts
   timeout: 60_000,
   expect: { timeout: 10_000 },
   fullyParallel: false,

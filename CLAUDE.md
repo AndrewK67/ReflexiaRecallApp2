@@ -105,7 +105,7 @@ survives only as the stored field name.
 | 1A | Move the professional layer to `src/modules/professional/` | 8–11h | **Done** |
 | 1B | De-profession the live core (`PROFESSION_CONFIG`, onboarding, NMC block, AI prefixes, bug B1) | 10–13h | **Done** |
 | 2 | Demote Gibbs, framework interface, Open Entry + Three-Part | 15–20h (`docs/PHASE-2-SCOPE.md`) | **Done** |
-| 3 | Make the core good for anyone — first-run experience, persistent storage, accessibility, XP rework to learning tracks, Quick Capture data model | to be scoped | |
+| 3 | Make the core good for anyone — first-run experience, persistent storage, accessibility, XP rework to learning tracks, Quick Capture data model, the AI gate | 46–63h (`docs/PHASE-3-SCOPE.md`), in five parts: 3E AI boundary 5–7h, 3A data 11–15h, 3C accessibility 8–11h, 3B front door 12–16h, 3D learning tracks 10–14h | Scoped 22 Sep 2026. Not started; §4 of the scope has eight decisions, the first of which (what the differentiator is) shapes 3B |
 
 Deferred indefinitely: module runtime, manifests, entitlement, specialities.
 
@@ -120,7 +120,9 @@ Deferred indefinitely: module runtime, manifests, entitlement, specialities.
   empty-text CSV export (twice) and the plaintext dual-write decision
   (`docs/PHASE-0-SCOPE.md` §4.2). `.github/workflows/test.yml` runs build,
   unit and e2e on every push and PR; it has not run yet because nothing has
-  been pushed since it was added.
+  been pushed since it was added. `npm run audit:a11y` is an axe scan of
+  fifteen screens (a scoping probe, not in CI yet); `node
+  tests/audit/reachability.mjs` lists the files unreachable from `main.tsx`.
 - **Two data-loss bugs fixed 22 Sep 2026**: backup restore emptied the store
   and the localStorage→IndexedDB migration failed on every launch, both from
   awaiting `crypto.subtle.encrypt()` inside an open IndexedDB transaction.
@@ -161,7 +163,16 @@ Deferred indefinitely: module runtime, manifests, entitlement, specialities.
    90 seconds? Observed: three slides, a name field, then a dashboard with
    Capture / Reflect / Archive and the differentiator (Holodeck) hidden
    behind a pack toggle. The profession question is gone (1B); phase 3 owns
-   the rest. Still the most important question in the project.
+   the rest. Still the most important question in the project. Traced
+   second by second in `docs/PHASE-3-SCOPE.md` §1.1.
+4. **Decision 3 names a file that does not exist.** `Interior3D.tsx` is not
+   in the repository or in any commit in its history. The "spatial layer" as
+   built is `holodeck/` (twenty guided question sets, saved to plaintext
+   `localStorage` outside the entry store and never read back) and
+   `CanvasBoard.tsx` (a sketch pad). Whether the 3D "place you go" is the
+   destination or the wording is the thing to change is decision 1 of
+   `docs/PHASE-3-SCOPE.md` §4. Until it is made, decision 3 should be read
+   as an intention.
 
 ## Working preferences
 
