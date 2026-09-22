@@ -27,9 +27,8 @@ test.describe('backup and restore', () => {
     await fs.writeFile(file, backupText);
     await page.getByRole('button', { name: 'View profile and settings' }).click();
     await page.locator('input[type=file]').setInputFiles(file);
-    // importBackup() then window.location.reload(); B1 puts us back on onboarding
-    await expect(page.getByRole('heading', { name: 'Capture Anything' })).toBeVisible();
-    await skipOnboarding(page);
+    // importBackup() then window.location.reload(); the restored profile is onboarded, so we land on the dashboard
+    await expect(page.getByRole('button', { name: /Capture$/ })).toBeVisible();
 
     expect(await dashboardCount(page)).toBe(2);
     expect(await rawEntryRecords(page)).toHaveLength(2);

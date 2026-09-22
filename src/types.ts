@@ -236,18 +236,6 @@ export type Entry = ReflectionEntry | IncidentEntry;
 
 // ---------- Profile / settings ----------
 
-export interface ProfessionConfig {
-  label: string;
-  description?: string;
-  reflectionPromptPrefix: string;
-  // Used by competency/gamification features (optional so older configs still work)
-  badgeColor?: string;
-  modelsAllowed?: ReflectionModelId[];
-  standards?: Array<{ id: string; label: string; category?: string }>;
-}
-
-export type ProfessionType = string;
-
 export type ViewState =
   | "ONBOARDING"
   | "DASHBOARD"
@@ -277,7 +265,11 @@ export type ViewState =
 
 export interface UserProfile {
   name: string;
-  profession: keyof Record<string, ProfessionConfig> | string;
+  // Stored on users' devices from before phase 1B (values like 'NURSING',
+  // 'ENGINEERING', 'NONE'). The core no longer asks for it or reads it;
+  // ProfessionConfig lives in src/modules/professional/. Kept so saved
+  // profiles keep type-checking.
+  profession: string;
 
   // toggles used in NeuralLink / storageService
   aiEnabled?: boolean;

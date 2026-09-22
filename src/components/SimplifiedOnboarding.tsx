@@ -6,18 +6,6 @@
 import { useState } from 'react';
 import { ChevronRight, X } from 'lucide-react';
 import type { UserProfile } from '../types';
-import { PROFESSION_CONFIG } from '../constants';
-
-const HEALTHCARE_PROFESSIONS = [
-  'NURSING', 'MEDICAL', 'PARAMEDIC', 'MENTAL_HEALTH', 'SOCIAL_WORK',
-  'PHARMACY', 'DENTISTRY', 'ALLIED_HEALTH', 'EMERGENCY_SERVICES',
-] as const;
-
-const OTHER_PROFESSIONS = [
-  'EDUCATION', 'TEACHING_PRIMARY', 'TEACHING_SECONDARY', 'TEACHING_HIGHER',
-  'SOCIAL_CARE', 'YOUTH_WORK', 'LEGAL', 'BUSINESS', 'FINANCE',
-  'ENGINEERING', 'TECHNOLOGY', 'LEADERSHIP', 'OTHER',
-] as const;
 
 interface SimplifiedOnboardingProps {
   onComplete: (profile: Partial<UserProfile>) => void;
@@ -26,17 +14,22 @@ interface SimplifiedOnboardingProps {
 export default function SimplifiedOnboarding({ onComplete }: SimplifiedOnboardingProps) {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [name, setName] = useState('');
-  const [profession, setProfession] = useState('NURSING');
 
-  const handleSkip = () => {
-    onComplete({ name: name || 'User', profession, isOnboarded: true });
+  // Only send what the user actually typed. completeOnboarding() merges this
+  // over the stored profile, so a returning user who skips keeps their name
+  // instead of having it overwritten (bug B1, docs/PHASE-1-SCOPE.md §1.2).
+  const finish = () => {
+    const trimmed = name.trim();
+    onComplete(trimmed ? { name: trimmed, isOnboarded: true } : { isOnboarded: true });
   };
+
+  const handleSkip = finish;
 
   const handleNext = () => {
     if (step < 3) {
       setStep((step + 1) as 1 | 2 | 3);
     } else {
-      onComplete({ name: name || 'User', profession, isOnboarded: true });
+      finish();
     }
   };
 
@@ -130,33 +123,6 @@ export default function SimplifiedOnboarding({ onComplete }: SimplifiedOnboardin
                 className="w-full px-3 py-2.5 bg-white/10 border border-white/20 rounded-xl text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
               />
             </div>
-
-            {/* Profession Selector */}
-            <div className="mt-3">
-              <label className="block text-xs font-medium text-white/80 mb-1.5 text-left">
-                What's your profession?
-              </label>
-              <select
-                value={profession}
-                onChange={(e) => setProfession(e.target.value)}
-                className="w-full px-3 py-2.5 bg-white/10 border border-white/20 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent appearance-none"
-              >
-                <optgroup label="Healthcare">
-                  {HEALTHCARE_PROFESSIONS.map((key) => (
-                    <option key={key} value={key} className="bg-slate-800">
-                      {PROFESSION_CONFIG[key]?.label || key}
-                    </option>
-                  ))}
-                </optgroup>
-                <optgroup label="Other Professions">
-                  {OTHER_PROFESSIONS.map((key) => (
-                    <option key={key} value={key} className="bg-slate-800">
-                      {PROFESSION_CONFIG[key]?.label || key}
-                    </option>
-                  ))}
-                </optgroup>
-              </select>
-            </div>
           </div>
         )}
       </div>
@@ -184,8 +150,8 @@ export default function SimplifiedOnboarding({ onComplete }: SimplifiedOnboardin
       {/* Footer Notice */}
       {step === 3 && (
         <p className="text-center text-white/40 text-[10px] mt-2 leading-tight px-4">
-          By continuing, you acknowledge that this app assists your reflection process
-          but does not replace professional judgment or advice.
+          Reflexia is a space to think. It is not a substitute for advice from
+          someone qualified to give it.
         </p>
       )}
     </div>

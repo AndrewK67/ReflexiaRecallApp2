@@ -79,7 +79,7 @@ export async function analyzeReflection(
   const maybe3 = (arg3 ?? "").toUpperCase();
 
   const looksLikeModel = (v: string) =>
-    ["GIBBS", "SBAR", "ERA", "ROLFE", "STAR", "SOAP", "MORNING", "EVENING", "FREE", "CUSTOM_1", "CUSTOM_2", "CUSTOM_3"].includes(v);
+    ["SIMPLE", "GIBBS", "SBAR", "ERA", "ROLFE", "STAR", "SOAP", "MORNING", "EVENING", "FREE", "CUSTOM_1", "CUSTOM_2", "CUSTOM_3"].includes(v);
 
   const modelId = looksLikeModel(maybe2) ? maybe2 : looksLikeModel(maybe3) ? maybe3 : undefined;
   const profession = looksLikeModel(maybe2) ? arg3 : arg2;

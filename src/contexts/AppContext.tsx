@@ -48,11 +48,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const isLoaded = isProfileLoaded && isEntriesLoaded && isInitDone;
 
-  // Init: cleanup trials, check privacy lock, generate daily prompt
+  // Init: cleanup trials, choose the first screen, check privacy lock, generate daily prompt
   useEffect(() => {
     if (!isProfileLoaded || !isEntriesLoaded) return;
 
     cleanupExpiredTrials();
+
+    // A returning user goes straight to the dashboard. Only a first-time user
+    // (or one who chose "Return to onboarding" on the profile screen) sees
+    // the intro. Before this, every launch replayed onboarding (bug B1).
+    setCurrentView(profile.isOnboarded ? 'DASHBOARD' : 'ONBOARDING');
 
     if (profile.privacyLockEnabled) {
       setIsLocked(true);

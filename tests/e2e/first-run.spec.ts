@@ -19,22 +19,36 @@ test.describe('first run', () => {
     }
   });
 
-  // Bug B1 (docs/PHASE-1-SCOPE.md §1.2). Fixed in phase 1B.2; these two flip when it lands.
+  // Regression for bug B1 (docs/PHASE-1-SCOPE.md §1.2), fixed in phase 1B.2.
   test('a returning user lands on the dashboard, not onboarding', async ({ page }) => {
-    test.fail(true, 'B1: AppContext starts on ONBOARDING for everyone');
     await openFresh(page);
     await completeOnboarding(page, 'Smoke');
     await page.reload();
     await expect(page.getByRole('button', { name: /Capture$/ })).toBeVisible({ timeout: 5_000 });
   });
 
-  test('Skip never overwrites an existing name', async ({ page }) => {
-    test.fail(true, 'B1: handleSkip writes name || "User"');
+  test('Skip never overwrites an existing name (return to onboarding from Profile, then skip)', async ({ page }) => {
     await openFresh(page);
     await completeOnboarding(page, 'Smoke');
-    await page.reload();
-    const skip = page.getByRole('button', { name: /Skip/ });
-    if (await skip.count()) await skip.click();
+    // The only way back into onboarding now is the profile screen's button.
+    page.once('dialog', (d) => d.accept());
+    await page.getByRole('button', { name: 'View profile and settings' }).click();
+    await page.getByRole('button', { name: /Return to Onboarding/ }).click();
+    await expect(page.getByRole('heading', { name: 'Capture Anything' })).toBeVisible();
+    await page.getByRole('button', { name: /Skip/ }).click();
+    await expect(page.getByRole('button', { name: /Capture$/ })).toBeVisible();
     expect((await profile(page)).name).toBe('Smoke');
+    await expect(page.getByRole('heading', { name: /Smoke/ })).toBeVisible();
+  });
+
+  test('a first-time user who skips is not given a profession or a placeholder name', async ({ page }) => {
+    await openFresh(page);
+    await page.getByRole('button', { name: /Skip/ }).click();
+    await expect(page.getByRole('button', { name: /Capture$/ })).toBeVisible();
+    const p = await profile(page);
+    expect(p.isOnboarded).toBe(true);
+    expect(p.name).toBe('');
+    expect(p.profession).toBe('NONE');
+    await expect(page.getByRole('heading', { name: /friend/ })).toBeVisible();
   });
 });

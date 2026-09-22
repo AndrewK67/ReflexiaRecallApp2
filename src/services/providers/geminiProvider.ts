@@ -3,7 +3,7 @@
 
 import type { AIProvider } from "../aiProvider";
 import { OfflineProvider } from "./offlineProvider";
-import { MODEL_CONFIG, PROFESSION_CONFIG } from "../../constants";
+import { MODEL_CONFIG, DEFAULT_COACH_PREFIX } from "../../constants";
 import type { ReflectionModelId } from "../../types";
 
 export class GeminiProvider implements AIProvider {
@@ -54,8 +54,10 @@ export class GeminiProvider implements AIProvider {
     }
   }
 
-  private safeProfessionPrefix(profession: string = "NONE"): string {
-    return PROFESSION_CONFIG[profession]?.reflectionPromptPrefix ?? PROFESSION_CONFIG.NONE.reflectionPromptPrefix;
+  // The profession argument is accepted for interface compatibility and
+  // ignored: the core has one coaching voice for everyone (phase 1B).
+  private safeProfessionPrefix(_profession?: string): string {
+    return DEFAULT_COACH_PREFIX;
   }
 
   private normalizeModelId(modelId?: string): ReflectionModelId {

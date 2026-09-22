@@ -1,4 +1,4 @@
-import type { ReflectionModel, ProfessionType } from "../types";
+import type { ReflectionModel } from "../types";
 
 export type OfflinePrompt = {
   title: string;
@@ -7,11 +7,6 @@ export type OfflinePrompt = {
 };
 
 type ModelStagePrompts = Record<string, OfflinePrompt>;
-
-const baseProfessionalNote = (profession: ProfessionType) =>
-  profession && profession !== "NONE"
-    ? `Context: You are reflecting as a ${profession.split("_").join(" ")}.`
-    : `Context: Professional reflection.`;
 
 // Keys here are stage identifiers used by your UI.
 // We deliberately keep this as a *partial* map so that adding new model ids (e.g. CUSTOM_1..3)
@@ -116,7 +111,6 @@ export const OFFLINE_PROMPTS: Partial<Record<ReflectionModel, ModelStagePrompts>
 export function getOfflineStagePrompt(
   model: ReflectionModel,
   stageKey: string,
-  profession: ProfessionType
 ): OfflinePrompt {
   const freePrompts = OFFLINE_PROMPTS.FREE || OFFLINE_PROMPTS["FREE"];
   const modelPrompts = OFFLINE_PROMPTS[model] || freePrompts || {
@@ -124,8 +118,5 @@ export function getOfflineStagePrompt(
   };
   const found = modelPrompts[stageKey] || modelPrompts.FREE_Writing || { title: "Prompt", prompt: "Write your thoughts." };
 
-  return {
-    ...found,
-    prompt: `${baseProfessionalNote(profession)}\n\n${found.prompt}`,
-  };
+  return found;
 }

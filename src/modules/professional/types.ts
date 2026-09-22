@@ -8,9 +8,20 @@
  * from that declaration rather than duplicated.
  */
 
-import type { ReflectionEntry } from '../../types';
+import type { ReflectionEntry, ReflectionModelId } from '../../types';
 
 export type CPDLog = NonNullable<ReflectionEntry['cpd']>;
+
+export interface ProfessionConfig {
+  label: string;
+  description?: string;
+  reflectionPromptPrefix: string;
+  badgeColor?: string;
+  modelsAllowed?: ReflectionModelId[];
+  standards?: Array<{ id: string; label: string; category?: string }>;
+}
+
+export type ProfessionType = string;
 
 export type CrisisCategory =
   | "Immediate Safety"

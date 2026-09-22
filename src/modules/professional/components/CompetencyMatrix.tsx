@@ -1,7 +1,8 @@
 
 import React, { useMemo } from 'react';
-import type { Entry, ProfessionType, ReflectionEntry } from '../../../types';
-import { PROFESSION_CONFIG } from '../../../constants';
+import type { Entry, ReflectionEntry } from '../../../types';
+import type { ProfessionType } from '../types';
+import { PROFESSION_CONFIG } from '../data/professionConfig';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Tooltip } from 'recharts';
 import { Award } from 'lucide-react';
 

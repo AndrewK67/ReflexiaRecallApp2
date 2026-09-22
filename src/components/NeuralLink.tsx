@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import type { UserProfile, Entry, UserStats } from '../types';
-import { PROFESSION_CONFIG, APP_VERSION, APP_BUILD_DATE } from '../constants';
+import { APP_VERSION, APP_BUILD_DATE } from '../constants';
 import { storageService } from '../services/storageService';
 import { resetTutorial } from '../services/tutorialService';
 import { downloadTerms, downloadPrivacy, downloadDisclaimer } from '../utils/legalDownloads';
@@ -170,13 +170,6 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
               />
             ) : (
               <p className="text-xl font-extrabold">{profile.name || '—'}</p>
-            )}
-
-            <p className="text-sm text-white/70">
-              {PROFESSION_CONFIG[profile.profession]?.label || '—'}
-            </p>
-            {PROFESSION_CONFIG[profile.profession]?.description && (
-              <p className="text-xs text-white/50">{PROFESSION_CONFIG[profile.profession].description}</p>
             )}
           </div>
         </div>

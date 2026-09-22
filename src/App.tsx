@@ -255,7 +255,6 @@ function AppContent() {
         return (
           <Suspense fallback={<ComponentLoader />}>
             <ReflectionFlow
-              profession={profile.profession}
               aiEnabled={profile.aiEnabled === true}
               onComplete={handleEntryComplete}
               onCancel={() => navigate("DASHBOARD")}

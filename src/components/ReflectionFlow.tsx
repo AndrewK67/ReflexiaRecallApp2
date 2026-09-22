@@ -16,9 +16,9 @@ import {
   Info,
 } from "lucide-react";
 
-import { MODEL_CONFIG, PROFESSION_CONFIG } from "../constants";
+import { MODEL_CONFIG } from "../constants";
 import { StageId } from "../types";
-import type { MediaItem, ProfessionType, ReflectionEntry, ReflectionModel } from "../types";
+import type { MediaItem, ReflectionEntry, ReflectionModel } from "../types";
 
 // Guide character removed for cleaner UX
 import CanvasBoard from "./CanvasBoard";
@@ -32,7 +32,6 @@ import { getOfflineStagePrompt } from "../data/offlinePrompts";
 interface ReflectionFlowProps {
   onComplete: (entry: ReflectionEntry) => void;
   onCancel: () => void;
-  profession: ProfessionType;
   aiEnabled?: boolean;
 }
 
@@ -124,17 +123,7 @@ const SIMPLE_MODE_STAGES = [
   },
 ];
 
-const NMC_CODE_THEMES = [
-  { id: 'prioritise-people', label: 'Prioritise people' },
-  { id: 'practise-effectively', label: 'Practise effectively' },
-  { id: 'preserve-safety', label: 'Preserve safety' },
-  { id: 'promote-professionalism', label: 'Promote professionalism and trust' },
-] as const;
-
-// Professions regulated by the NMC (Nursing and Midwifery Council)
-const NMC_PROFESSIONS = new Set(['NURSING', 'MENTAL_HEALTH']);
-
-export default function ReflectionFlow({ onComplete, onCancel, profession, aiEnabled }: ReflectionFlowProps) {
+export default function ReflectionFlow({ onComplete, onCancel, aiEnabled }: ReflectionFlowProps) {
   const [useSimpleMode, setUseSimpleMode] = useState(true);
   const [selectedModel, setSelectedModel] = useState<ReflectionModel | null>(null);
   const [currentStageIndex, setCurrentStageIndex] = useState(0);
@@ -151,7 +140,6 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
   const [showInsight, setShowInsight] = useState(false);
 
   const [showCanvas, setShowCanvas] = useState(false);
-  const [nmcCodeThemes, setNmcCodeThemes] = useState<string[]>([]);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -167,7 +155,9 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
     return (MODEL_CONFIG as any)?.[model]?.stages ?? [];
   }
 
-  const allModels: ReflectionModel[] = [
+  // Every framework is available to everyone. Which ones belong in the core
+  // at all is phase 2 (Gibbs, SBAR and SOAP are professional frameworks).
+  const models: ReflectionModel[] = [
     "GIBBS",
     "SBAR",
     "ERA",
@@ -179,9 +169,6 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
     "FREE",
   ];
 
-  const profModels = PROFESSION_CONFIG?.[profession]?.modelsAllowed;
-  const models = profModels && profModels.length > 0 ? profModels : allModels;
-
   // Use simple mode stages or model stages
   const stages = useSimpleMode
     ? SIMPLE_MODE_STAGES
@@ -192,8 +179,6 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
   const isReflecting = useSimpleMode || selectedModel !== null;
 
   const currentAnswer = stageData?.id ? answers[stageData.id] ?? "" : "";
-
-  const profPromptPrefix = PROFESSION_CONFIG?.[profession]?.reflectionPromptPrefix ?? "";
 
   const handleTextChange = (val: string) => {
     if (!stageData?.id) return;
@@ -275,8 +260,8 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
     
 
     const prompt = AI_ON
-      ? await getStageCoaching(stageData.id, currentAnswer, profession)
-      : getOfflineStagePrompt(selectedModel!, stageData.id, profession).prompt;
+      ? await getStageCoaching(stageData.id, currentAnswer)
+      : getOfflineStagePrompt(selectedModel!, stageData.id).prompt;
 
     setCoachTip(prompt);
     
@@ -313,7 +298,7 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
     setShowInsight(true);
 
     try {
-      const result = await analyzeReflection(answers, profession, selectedModel);
+      const result = await analyzeReflection(answers, selectedModel);
       setAnalysisResult(result);
     } catch {
       setAnalysisResult("Reflection saved. Insights can appear here when AI is enabled.");
@@ -339,7 +324,6 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
       mood,
       attachments,
       aiInsight: analysisResult ?? undefined,
-      nmcCodeThemes: nmcCodeThemes.length > 0 ? nmcCodeThemes : undefined,
       createdAt: Date.now(),
     };
 
@@ -388,8 +372,6 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
           </div>
 
           <div className="mt-4 text-xs text-white/60">
-            Profession: <span className="font-bold text-white/90">{PROFESSION_CONFIG?.[profession]?.label ?? "Unknown"}</span>
-            <span className="mx-2">•</span>
             AI: <span className={`font-bold ${AI_ON ? "text-emerald-400" : "text-white/60"}`}>{AI_ON ? "ON" : "OFF"}</span>
           </div>
         </div>
@@ -526,39 +508,6 @@ export default function ReflectionFlow({ onComplete, onCancel, profession, aiEna
               </div>
             </div>
 
-            {/* NMC Code Themes - only for NMC-regulated professions */}
-            {NMC_PROFESSIONS.has(profession) && (
-              <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-5 border border-white/10">
-                <div className="text-xs font-bold text-white mb-1">NMC Code Themes</div>
-                <p className="text-[10px] text-white/50 mb-3">Which themes does this reflection relate to? (Optional)</p>
-                <div className="space-y-2">
-                  {NMC_CODE_THEMES.map((theme) => (
-                    <label
-                      key={theme.id}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border cursor-pointer transition ${
-                        nmcCodeThemes.includes(theme.id)
-                          ? "border-indigo-500/50 bg-indigo-500/10"
-                          : "border-white/10 bg-white/5 hover:border-white/20"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={nmcCodeThemes.includes(theme.id)}
-                        onChange={() =>
-                          setNmcCodeThemes((prev) =>
-                            prev.includes(theme.id)
-                              ? prev.filter((t) => t !== theme.id)
-                              : [...prev, theme.id]
-                          )
-                        }
-                        className="w-4 h-4 rounded border-white/20 bg-white/10 text-indigo-500 focus:ring-2 focus:ring-indigo-500"
-                      />
-                      <span className="text-sm text-white/90">{theme.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
 
             <button
               onClick={handleSave}

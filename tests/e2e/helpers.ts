@@ -6,9 +6,10 @@ export async function openFresh(page: Page) {
   await expect(page.getByRole('heading', { name: 'Capture Anything' })).toBeVisible();
 }
 
-/** Skip through onboarding to the dashboard. */
+/** Skip through onboarding to the dashboard (no-op if already on the dashboard). */
 export async function skipOnboarding(page: Page) {
-  await page.getByRole('button', { name: /Skip/ }).click();
+  const skip = page.getByRole('button', { name: /Skip/ });
+  if (await skip.count()) await skip.click();
   await expect(page.getByRole('button', { name: /Capture$/ })).toBeVisible();
 }
 
@@ -17,8 +18,7 @@ export async function completeOnboarding(page: Page, name: string) {
   await page.getByRole('button', { name: /^Next/ }).click();
   await page.getByRole('button', { name: /^Next/ }).click();
   await page.getByPlaceholder('Your name').fill(name);
-  const select = page.locator('select');
-  if (await select.count()) await select.selectOption('OTHER'); // gone after phase 1B
+  await expect(page.locator('select')).toHaveCount(0); // the profession picker left in phase 1B
   await page.getByRole('button', { name: /Start Capturing/ }).click();
   await expect(page.getByRole('button', { name: /Capture$/ })).toBeVisible();
 }
