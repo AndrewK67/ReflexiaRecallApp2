@@ -15,12 +15,14 @@
 import { openDB, type IDBPDatabase } from 'idb';
 import type { Entry } from '../types';
 import { isCryptoAvailable, getOrCreateKey, encrypt, decrypt } from './cryptoService';
+import { spaceFrameworkId } from '../frameworks/spaces';
 
 const DB_NAME = 'reflexia-entries';
 const DB_VERSION = 1;
 const STORE_NAME = 'entries';
 const MIGRATION_KEY = 'reflexia.entries.idb_migrated';
 const LS_ENTRIES_KEY = 'reflexia.entries.v1';
+const HOLODECK_KEY = 'holodeckEntries';
 
 // Encrypted record shape: { id: string, _encrypted: string }
 // Unencrypted legacy: { id: string, type: string, date: string, ... }
@@ -156,6 +158,77 @@ async function migrateFromLocalStorage(): Promise<void> {
 }
 
 /**
+ * Before phase 3A.4, a finished space (Holodeck) was written to plaintext
+ * localStorage['holodeckEntries'] and never read back. Each one becomes an
+ * ordinary reflection entry with the space's framework id, keyed answers,
+ * and its original id and date; the key is then removed.
+ */
+interface StoredHolodeckEntry {
+  id?: string;
+  spaceId?: string;
+  spaceName?: string;
+  date?: string;
+  answers?: unknown;
+  completed?: boolean;
+  createdAt?: number;
+}
+
+export function holodeckEntryToReflection(h: StoredHolodeckEntry): Entry | null {
+  if (!h || typeof h.spaceId !== 'string' || !Array.isArray(h.answers)) return null;
+  const model = spaceFrameworkId(h.spaceId);
+  const answers: Record<string, string> = {};
+  h.answers.forEach((a, i) => {
+    if (typeof a === 'string' && a.trim()) answers[`${model}_${i + 1}`] = a;
+  });
+  if (Object.keys(answers).length === 0) return null; // nothing was written
+  const createdAt = typeof h.createdAt === 'number' ? h.createdAt : Date.now();
+  const date = typeof h.date === 'string' && !Number.isNaN(Date.parse(h.date)) ? h.date : new Date(createdAt).toISOString();
+  return {
+    id: typeof h.id === 'string' && h.id ? h.id : `holodeck_${createdAt}`,
+    type: 'REFLECTION',
+    date,
+    modelId: model,
+    model,
+    answers,
+    createdAt,
+  } as Entry;
+}
+
+async function migrateHolodeckEntries(): Promise<void> {
+  let raw: string | null = null;
+  try {
+    raw = localStorage.getItem(HOLODECK_KEY);
+  } catch {
+    return;
+  }
+  if (raw === null) return;
+
+  let parsed: unknown = [];
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    parsed = [];
+  }
+  const entries = (Array.isArray(parsed) ? parsed : [])
+    .map((h) => holodeckEntryToReflection(h as StoredHolodeckEntry))
+    .filter((e): e is Entry => e !== null);
+
+  try {
+    if (entries.length > 0) {
+      const records = await Promise.all(entries.map(encryptEntry));
+      const db = await getDB();
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      for (const record of records) store.put(record);
+      await tx.done;
+    }
+    localStorage.removeItem(HOLODECK_KEY);
+  } catch (e) {
+    console.error('[entryStorageService] Migration of Holodeck entries failed:', e);
+  }
+}
+
+/**
  * Builds before 3A.2 kept writing the plaintext copy after migrating. On a
  * device that already migrated, drop that copy on the next launch.
  */
@@ -173,6 +246,7 @@ export async function initEntryStorage(): Promise<void> {
   await getCryptoKey();
   await migrateFromLocalStorage();
   dropStalePlaintextCopy();
+  await migrateHolodeckEntries();
 }
 
 /** True when entries can only be kept as plaintext in localStorage (no IndexedDB). */

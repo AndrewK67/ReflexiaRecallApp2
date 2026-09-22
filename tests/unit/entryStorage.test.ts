@@ -171,6 +171,65 @@ describe('entryStorageService', () => {
     });
   });
 
+  describe('migration of finished spaces (Holodeck) into the entry store', () => {
+    // Before 3A.4 a finished space went to plaintext localStorage['holodeckEntries']
+    // and nothing read it back. On launch each one becomes a reflection entry
+    // with the space's framework id and keyed answers; the key is removed.
+    const holodeck = (over: Record<string, unknown> = {}) => ({
+      id: 'holodeck_1700000000000',
+      spaceId: 'difficult-conversation',
+      spaceName: 'Difficult Conversation',
+      date: '2025-11-20T18:00:00.000Z',
+      answers: ['My manager', 'That I need clearer priorities', '', 'A calmer week', ''],
+      prompts: ['Who?', 'What?', 'Tone?', 'Outcome?', 'Feeling?'],
+      completed: true,
+      createdAt: 1700000000000,
+      ...over,
+    });
+
+    it('turns each saved space into an encrypted entry and removes the plaintext key', async () => {
+      resetBrowserStorage();
+      localStorage.setItem('holodeckEntries', JSON.stringify([holodeck(), holodeck({ id: 'holodeck_2', spaceId: 'gratitude-space', answers: ['Coffee'], completed: false })]));
+      const m = await loadEntryStorage();
+      await m.initEntryStorage();
+      expect(localStorage.getItem('holodeckEntries')).toBeNull();
+      const entries = await m.loadEntries();
+      expect(entries.map((e) => e.id).sort()).toEqual(['holodeck_1700000000000', 'holodeck_2']);
+      const dc = entries.find((e) => e.id === 'holodeck_1700000000000') as Record<string, unknown>;
+      expect(dc.type).toBe('REFLECTION');
+      expect(dc.model).toBe('SPACE_DIFFICULT_CONVERSATION');
+      expect(dc.date).toBe('2025-11-20T18:00:00.000Z');
+      expect(dc.answers).toEqual({
+        SPACE_DIFFICULT_CONVERSATION_1: 'My manager',
+        SPACE_DIFFICULT_CONVERSATION_2: 'That I need clearer priorities',
+        SPACE_DIFFICULT_CONVERSATION_4: 'A calmer week',
+      });
+      expect((await rawEntryRecords()).every((r) => Object.keys(r).sort().join() === '_encrypted,id')).toBe(true);
+      expect(JSON.stringify(await rawEntryRecords())).not.toContain('My manager');
+    });
+
+    it('skips spaces with nothing written and survives garbage', async () => {
+      resetBrowserStorage();
+      localStorage.setItem('holodeckEntries', JSON.stringify([holodeck({ answers: ['', '  ', ''] }), { nonsense: true }, 'x']));
+      const m = await loadEntryStorage();
+      await m.initEntryStorage();
+      expect(await m.loadEntries()).toEqual([]);
+      expect(localStorage.getItem('holodeckEntries')).toBeNull();
+
+      resetBrowserStorage();
+      localStorage.setItem('holodeckEntries', '{not json');
+      const m2 = await loadEntryStorage();
+      await m2.initEntryStorage();
+      expect(localStorage.getItem('holodeckEntries')).toBeNull();
+    });
+
+    it('does nothing when the key is absent', async () => {
+      const before = await rawEntryRecords();
+      await s.initEntryStorage();
+      expect(await rawEntryRecords()).toEqual(before);
+    });
+  });
+
   describe('key initialisation', () => {
     // Regression: getCryptoKey() memoised the resolved key, not the promise,
     // so two concurrent first calls each generated a key; whichever lost the

@@ -1,46 +1,34 @@
 import React, { useState } from 'react';
 import HolodeckHub from './holodeck/HolodeckHub';
-import UniversalSpace from './holodeck/UniversalSpace';
-import type { SpaceId, HolodeckEntry } from './holodeck/types';
+import ReflectionFlow from './ReflectionFlow';
+import { spaceFramework, type ReflectionFramework } from '../frameworks';
+import type { ReflectionEntry } from '../types';
+import type { SpaceId } from './holodeck/types';
 
 interface HolodeckProps {
   onClose: () => void;
+  /** A finished space is an ordinary entry (phase 3A.4): encrypted, in Archive, in the backup. */
+  onComplete: (entry: ReflectionEntry) => void;
 }
 
-export default function Holodeck({ onClose }: HolodeckProps) {
-  const [activeSpace, setActiveSpace] = useState<SpaceId | null>(null);
+export default function Holodeck({ onClose, onComplete }: HolodeckProps) {
+  const [active, setActive] = useState<ReflectionFramework | null>(null);
 
   const handleSelectSpace = (spaceId: SpaceId) => {
-    setActiveSpace(spaceId);
+    const framework = spaceFramework(spaceId);
+    if (framework) setActive(framework);
   };
 
-  const handleExitSpace = () => {
-    setActiveSpace(null);
-  };
-
-  const handleSaveEntry = (entry: HolodeckEntry) => {
-    // Save to local storage
-    const existingEntries = JSON.parse(localStorage.getItem('holodeckEntries') || '[]');
-    const updatedEntries = [entry, ...existingEntries];
-    localStorage.setItem('holodeckEntries', JSON.stringify(updatedEntries));
-  };
-
-  // Show specific space if one is active
-  if (activeSpace) {
+  if (active) {
     return (
-      <UniversalSpace
-        spaceId={activeSpace}
-        onExit={handleExitSpace}
-        onSave={handleSaveEntry}
+      <ReflectionFlow
+        key={active.id}
+        initialFramework={active}
+        onComplete={onComplete}
+        onCancel={() => setActive(null)}
       />
     );
   }
 
-  // Show hub selector
-  return (
-    <HolodeckHub
-      onSelectSpace={handleSelectSpace}
-      onClose={onClose}
-    />
-  );
+  return <HolodeckHub onSelectSpace={handleSelectSpace} onClose={onClose} />;
 }

@@ -15,6 +15,7 @@ import {
   stageCoaching,
 } from '../../src/frameworks';
 import { PROFESSIONAL_FRAMEWORKS } from '../../src/modules/professional/data/frameworks';
+import { SPACES, spaceFrameworkId, isSpaceFrameworkId, spaceFramework } from '../../src/frameworks/spaces';
 
 /**
  * Ids are stored data. `entry.model` on users' devices is one of these
@@ -23,6 +24,29 @@ import { PROFESSIONAL_FRAMEWORKS } from '../../src/modules/professional/data/fra
  * migration, not a test edit.
  */
 const STORED_FRAMEWORK_IDS = ['SIMPLE', 'FREE', 'GIBBS', 'ROLFE', 'ERA', 'STAR', 'MORNING', 'EVENING'];
+/** The twenty spaces (phase 3A.4), in hub order. Stage ids are <id>_1 … <id>_n. */
+const STORED_SPACE_IDS: Record<string, number> = {
+  SPACE_DIFFICULT_CONVERSATION: 5,
+  SPACE_DECISION_SPACE: 5,
+  SPACE_EMOTIONAL_PROCESSING: 5,
+  SPACE_ROLE_REVERSAL: 5,
+  SPACE_PERFORMANCE_REHEARSAL: 5,
+  SPACE_CRISIS_REWIND: 5,
+  SPACE_VALUES_CLARIFICATION: 5,
+  SPACE_IDENTITY_SPACE: 5,
+  SPACE_COMPASSION_SPACE: 5,
+  SPACE_CREATIVE_IDEATION: 5,
+  SPACE_GUIDED_STILLNESS: 4, // its fifth prompt was an empty string; dropped before any entry was saved
+  SPACE_GRATITUDE_SPACE: 5,
+  SPACE_LOSS_LETTING_GO: 5,
+  SPACE_FEAR_EXPLORATION: 5,
+  SPACE_CONFLICT_DEESCALATION: 5,
+  SPACE_FORGIVENESS_SPACE: 5,
+  SPACE_PURPOSE_DIRECTION: 5,
+  SPACE_BOUNDARY_SETTING: 5,
+  SPACE_INNER_DIALOGUE: 5,
+  SPACE_RE_ANCHORING: 5,
+};
 const STORED_STAGE_IDS: Record<string, string[]> = {
   SIMPLE: ['what_happened', 'what_mattered', 'what_forward'],
   FREE: ['FREE_Writing'],
@@ -35,18 +59,43 @@ const STORED_STAGE_IDS: Record<string, string[]> = {
 };
 
 describe('framework registry', () => {
-  it('ships exactly the stored framework ids, built-ins first', () => {
-    expect(ALL.map((f) => f.id)).toEqual(STORED_FRAMEWORK_IDS);
+  it('ships exactly the stored framework ids: built-ins, catalogue, then the twenty spaces', () => {
+    expect(ALL.map((f) => f.id)).toEqual([...STORED_FRAMEWORK_IDS, ...Object.keys(STORED_SPACE_IDS)]);
     expect(ALL[0]).toBe(THREE_PART);
     expect(ALL[1]).toBe(OPEN_ENTRY);
     expect(CATALOGUE).not.toContain(THREE_PART);
     expect(CATALOGUE).not.toContain(OPEN_ENTRY);
+    expect(CATALOGUE.some((f) => f.kind === 'space')).toBe(false);
+    expect(SPACES).toHaveLength(20);
   });
 
   it('keeps every stored stage id, in order', () => {
     for (const f of ALL) {
-      expect(f.stages.map((s) => s.id), f.id).toEqual(STORED_STAGE_IDS[f.id]);
+      if (f.kind === 'space') {
+        const n = STORED_SPACE_IDS[f.id];
+        expect(f.stages.map((s) => s.id), f.id).toEqual(Array.from({ length: n }, (_, i) => `${f.id}_${i + 1}`));
+      } else {
+        expect(f.stages.map((s) => s.id), f.id).toEqual(STORED_STAGE_IDS[f.id]);
+      }
     }
+  });
+
+  it('a space carries its colour, guide line and gentleness, and resolves from its hub id', () => {
+    const dc = spaceFramework('difficult-conversation')!;
+    expect(dc.id).toBe('SPACE_DIFFICULT_CONVERSATION');
+    expect(spaceFrameworkId('difficult-conversation')).toBe(dc.id);
+    expect(isSpaceFrameworkId(dc.id)).toBe(true);
+    expect(isSpaceFrameworkId('GIBBS')).toBe(false);
+    expect(dc.kind).toBe('space');
+    expect(dc.space).toMatchObject({ spaceId: 'difficult-conversation', color: '#22d3ee', gentle: false });
+    expect(dc.space!.guideRole.length).toBeGreaterThan(10);
+    expect(dc.stages[0].label).toBe(dc.stages[0].question);
+    expect(dc.stages[0].coaching).toMatch(/^Your guide here /);
+    expect(dc.stages[0].coaching).toContain('No pretending to "win".');
+    expect(spaceFramework('crisis-rewind')!.space!.gentle).toBe(true);
+    expect(spaceFramework('not-a-space')).toBeUndefined();
+    for (const f of SPACES) expect(f.space, f.id).toBeDefined();
+    for (const f of [...CATALOGUE, THREE_PART, OPEN_ENTRY]) expect(f.space, f.id).toBeUndefined();
   });
 
   it('Three-Part is the default and Gibbs is one catalogue entry among several', () => {

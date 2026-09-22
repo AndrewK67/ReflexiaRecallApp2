@@ -1,8 +1,7 @@
-import { createContext, useContext, useState, useEffect, useMemo, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { Entry } from '../types';
 import * as entryStorage from '../services/entryStorageService';
-import { buildGamificationData, getGamificationStats, getHolodeckSessionCount, awardBonusXP } from '../services/gamificationService';
-import { getGroundingSessions } from '../services/groundingService';
+import { awardBonusXP } from '../services/gamificationService';
 import { requestPersistenceOnce } from '../services/durabilityService';
 
 interface EntriesContextType {
@@ -10,9 +9,7 @@ interface EntriesContextType {
   addEntry: (entry: Entry) => void;
   deleteEntry: (id: string) => void;
   persistEntries: (entries: Entry[]) => void;
-  stats: ReturnType<typeof getGamificationStats>;
-  currentXP: number;
-  setCurrentXP: React.Dispatch<React.SetStateAction<number>>;
+  /** Tutorial XP only; nothing displays it. Goes with the tutorial in phase 3D. */
   awardXP: (amount: number) => void;
   isEntriesLoaded: boolean;
 }
@@ -21,7 +18,6 @@ const EntriesContext = createContext<EntriesContextType | null>(null);
 
 export function EntriesProvider({ children }: { children: ReactNode }) {
   const [entries, setEntries] = useState<Entry[]>([]);
-  const [currentXP, setCurrentXP] = useState(0);
   const [isEntriesLoaded, setIsEntriesLoaded] = useState(false);
 
   useEffect(() => {
@@ -34,17 +30,9 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
     init();
   }, []);
 
-  const gamificationData = useMemo(() => {
-    const groundingSessions = getGroundingSessions().filter((s) => s.completed).length;
-    const holodeckSessions = getHolodeckSessionCount();
-    return buildGamificationData(entries, groundingSessions, holodeckSessions);
-  }, [entries]);
-
-  const stats = useMemo(() => getGamificationStats(gamificationData), [gamificationData]);
-
-  useEffect(() => {
-    setCurrentXP(stats.totalPoints);
-  }, [stats.totalPoints]);
+  // The achievements/levels/streak computation that used to run here on
+  // every change fed nothing on screen (docs/PHASE-3-SCOPE.md §1.3); phase 3D
+  // replaces that service with learning tracks.
 
   // A failed write is logged, not swallowed: the service throws and there is
   // no plaintext copy to fall back on any more (3A.2). Surfacing it to the
@@ -73,7 +61,6 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
 
   const awardXP = (amount: number) => {
     awardBonusXP(amount);
-    setCurrentXP((prev) => prev + amount);
   };
 
   return (
@@ -83,9 +70,6 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
         addEntry,
         deleteEntry,
         persistEntries: persistEntriesFn,
-        stats,
-        currentXP,
-        setCurrentXP,
         awardXP,
         isEntriesLoaded,
       }}

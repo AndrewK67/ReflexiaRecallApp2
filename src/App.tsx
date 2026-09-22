@@ -216,7 +216,7 @@ function AppContent() {
     refreshPackState, showPackGate, setShowPackGate,
   } = useApp();
   const { profile, updateProfile, completeOnboarding } = useUser();
-  const { entries, addEntry, stats, awardXP } = useEntries();
+  const { entries, addEntry, awardXP } = useEntries();
 
   const handleEntryComplete = (entry: Entry) => {
     addEntry(entry);
@@ -297,7 +297,7 @@ function AppContent() {
       case "HOLODECK":
         return (
           <Suspense fallback={<ComponentLoader />}>
-            <Holodeck onClose={() => navigate("DASHBOARD")} />
+            <Holodeck onClose={() => navigate("DASHBOARD")} onComplete={handleEntryComplete} />
           </Suspense>
         );
 

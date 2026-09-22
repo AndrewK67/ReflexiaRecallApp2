@@ -1,13 +1,15 @@
 import type { ReflectionFramework, FrameworkStage } from './types';
 import { THREE_PART, OPEN_ENTRY, BUILT_IN } from './builtIn';
 import { CATALOGUE } from './catalogue';
+import { SPACES } from './spaces';
 
-export type { ReflectionFramework, FrameworkStage, FrameworkKind } from './types';
+export type { ReflectionFramework, FrameworkStage, FrameworkKind, SpaceMeta } from './types';
 export { THREE_PART, OPEN_ENTRY, BUILT_IN } from './builtIn';
 export { CATALOGUE, GIBBS, ROLFE, ERA, STAR, MORNING, EVENING } from './catalogue';
+export { SPACES, spaceFramework, spaceFrameworkId, isSpaceFrameworkId } from './spaces';
 
-/** Every framework the core knows, built-ins first. */
-export const ALL: ReflectionFramework[] = [THREE_PART, OPEN_ENTRY, ...CATALOGUE];
+/** Every framework the core knows: built-ins, then the catalogue, then the twenty spaces. */
+export const ALL: ReflectionFramework[] = [THREE_PART, OPEN_ENTRY, ...CATALOGUE, ...SPACES];
 
 const BY_ID: Record<string, ReflectionFramework> = Object.fromEntries(ALL.map((f) => [f.id, f]));
 

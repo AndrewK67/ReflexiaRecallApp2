@@ -30,6 +30,8 @@ import { startAudioRecording, stopAudioRecording, saveAudioToFile } from "../ser
 interface ReflectionFlowProps {
   onComplete: (entry: ReflectionEntry) => void;
   onCancel: () => void;
+  /** Open straight into this framework — a space from the hub, for instance. */
+  initialFramework?: ReflectionFramework;
 }
 
 const MOODS = [
@@ -101,10 +103,13 @@ class AudioEngine {
 
 const audioEngine = new AudioEngine();
 
-export default function ReflectionFlow({ onComplete, onCancel }: ReflectionFlowProps) {
+export default function ReflectionFlow({ onComplete, onCancel, initialFramework }: ReflectionFlowProps) {
   // One framework, never null. Three-Part is the default (CLAUDE.md, decision 5);
-  // the catalogue picker and "Just write" swap it.
-  const [framework, setFramework] = useState<ReflectionFramework>(THREE_PART);
+  // the catalogue picker and "Just write" swap it. A space (phase 3A.4) arrives
+  // as initialFramework and is not swapped: you leave it, you don't switch it.
+  const [framework, setFramework] = useState<ReflectionFramework>(initialFramework ?? THREE_PART);
+  const inSpace = framework.kind === "space";
+  const accent = framework.space?.color;
   const [showPicker, setShowPicker] = useState(false);
   const [currentStageIndex, setCurrentStageIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -508,11 +513,15 @@ export default function ReflectionFlow({ onComplete, onCancel }: ReflectionFlowP
           </button>
 
           <div className="flex-1 text-center">
-            <div className="text-xs text-white/60 font-bold uppercase tracking-wide mb-1">
+            <div className="text-xs text-white/60 font-bold uppercase tracking-wide mb-1" style={accent ? { color: accent } : undefined}>
               {framework.name}
               {stages.length > 1 && <> • Step {currentStageIndex + 1} of {stages.length}</>}
             </div>
-            <div className="text-sm font-bold text-white">{stageData?.label}</div>
+            {/* A space's label is its question, shown once, in the prompt box below */}
+            {stageData && stageData.label !== stageData.question && (
+              <div className="text-sm font-bold text-white">{stageData.label}</div>
+            )}
+            {inSpace && <div className="text-xs text-white/60">{framework.tagline}</div>}
           </div>
 
           <button
@@ -524,8 +533,15 @@ export default function ReflectionFlow({ onComplete, onCancel }: ReflectionFlowP
           </button>
         </div>
 
+        {/* In a gentle space, say plainly that leaving is always allowed */}
+        {inSpace && framework.space?.gentle && (
+          <p className="mt-3 text-center text-xs text-amber-200/90">
+            Gentle space — go at your own pace, and leave whenever you need to.
+          </p>
+        )}
+
         {/* Other ways in — only on the first step, so nothing typed further along is lost */}
-        {currentStageIndex === 0 && (
+        {!inSpace && currentStageIndex === 0 && (
           <div className="mt-3 flex items-center justify-center gap-4 text-xs font-semibold">
             {framework.id !== THREE_PART.id && (
               <button onClick={() => startFramework(THREE_PART)} className="text-cyan-300 hover:text-cyan-200 underline-offset-4 hover:underline">
@@ -549,9 +565,14 @@ export default function ReflectionFlow({ onComplete, onCancel }: ReflectionFlowP
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 pb-40 custom-scrollbar relative z-10">
-        <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-4 mb-3">
-          <div className="text-xs font-bold text-indigo-400 mb-2">Reflection Prompt</div>
-          <div className="text-sm text-white/90 leading-relaxed">
+        <div
+          className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-4 mb-3"
+          style={accent ? { borderColor: `${accent}55` } : undefined}
+        >
+          <div className="text-xs font-bold text-indigo-400 mb-2" style={accent ? { color: accent } : undefined}>
+            {inSpace ? "Question" : "Reflection Prompt"}
+          </div>
+          <div className={`${inSpace ? "text-base" : "text-sm"} text-white/90 leading-relaxed`}>
             {stageData?.question}
           </div>
         </div>

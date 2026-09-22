@@ -19,7 +19,7 @@ test.describe('the AI boundary', () => {
     const toggle = page.getByRole('button', { name: /AI features/ });
     await expect(toggle).toContainText('OFF');
     await toggle.click();
-    await expect(page.getByRole('status')).toContainText('Add your key first');
+    await expect(page.getByRole('region', { name: 'AI' }).getByRole('status')).toContainText('Add your key first');
     await expect(toggle).toContainText('OFF');
     expect((await profile(page)).aiEnabled).not.toBe(true);
   });
@@ -32,7 +32,7 @@ test.describe('the AI boundary', () => {
     await page.getByLabel('Gemini API key').fill(FAKE_KEY);
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(page.getByText(/ending …0000/)).toBeVisible();
-    await expect(page.getByRole('status')).toContainText('Key saved on this device');
+    await expect(page.getByRole('region', { name: 'AI' }).getByRole('status')).toContainText('Key saved on this device');
 
     const toggle = page.getByRole('button', { name: /AI features/ });
     await toggle.click();

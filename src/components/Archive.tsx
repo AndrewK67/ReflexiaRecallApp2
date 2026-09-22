@@ -424,12 +424,26 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
                   }
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 >
-                  <option value="all">All Models</option>
-                  {FRAMEWORKS.map((f) => (
+                  <option value="all">All frameworks</option>
+                  {FRAMEWORKS.filter((f) => f.kind === 'built-in').map((f) => (
                     <option key={f.id} value={f.id}>
                       {f.name}
                     </option>
                   ))}
+                  <optgroup label="Frameworks">
+                    {FRAMEWORKS.filter((f) => f.kind === 'framework').map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Spaces">
+                    {FRAMEWORKS.filter((f) => f.kind === 'space').map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.name}
+                      </option>
+                    ))}
+                  </optgroup>
                 </select>
               </div>
             )}

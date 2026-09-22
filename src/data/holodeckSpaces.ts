@@ -247,7 +247,6 @@ export const HOLODECK_SPACES: Record<string, HolodeckSpaceDefinition> = {
       'What sounds can you hear?',
       'What is one thing you can see?',
       'Can you rest here for a moment?',
-      '',
     ],
     exitAllowed: true,
     canSave: true,
