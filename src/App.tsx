@@ -24,7 +24,6 @@ const Grounding = lazy(() => import("./components/Grounding"));
 const CalendarView = lazy(() => import("./components/CalendarView"));
 const Archive = lazy(() => import("./components/Archive"));
 const Reports = lazy(() => import("./components/Reports"));
-const Tutorial = lazy(() => import("./components/Tutorial"));
 const PackBrowser = lazy(() => import("./components/PackBrowser"));
 const PermissionsHelp = lazy(() => import("./components/PermissionsHelp"));
 
@@ -35,12 +34,12 @@ function AppContent() {
   const {
     currentView, navigate, navigateWithGating,
     isLoaded, isLocked, setIsLocked,
-    dailyPrompt, showTutorial, setShowTutorial,
+    dailyPrompt,
     openEntry, setOpenEntry,
     refreshPackState, showPackGate, setShowPackGate,
   } = useApp();
   const { profile, updateProfile, completeOnboarding } = useUser();
-  const { entries, addEntry, deleteEntry, awardXP } = useEntries();
+  const { entries, addEntry, deleteEntry } = useEntries();
 
   // Keyboard: when the screen changes, start the tab order at the top of the
   // new screen. Without this, focus stays wherever the removed button was and
@@ -125,7 +124,6 @@ function AppContent() {
               profile={profile}
               onUpdateProfile={updateProfile}
               onNavigateToWelcome={() => navigate("ONBOARDING")}
-              onStartTutorial={() => setShowTutorial(true)}
               onShowPermissionsHelp={() => navigate("PERMISSIONS_HELP")}
             />
           </Suspense>
@@ -241,18 +239,6 @@ function AppContent() {
           )}
         </div>
       </div>
-
-      {showTutorial && isLoaded && !isLocked && (
-        <Suspense fallback={null}>
-          <Tutorial
-            onClose={() => setShowTutorial(false)}
-            onNavigate={(targetView) => navigate(targetView)}
-            onAwardXP={(amount, _reason) => {
-              awardXP(amount);
-            }}
-          />
-        </Suspense>
-      )}
     </>
   );
 }

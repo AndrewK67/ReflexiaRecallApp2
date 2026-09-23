@@ -33,11 +33,18 @@ describe('storageService', () => {
       expect(s.loadProfile()).toMatchObject({ name: 'Andrew', aiEnabled: true, isOnboarded: true, blurHistory: true });
     });
 
-    it('resetToggles turns the four toggles off and nothing else', async () => {
+    it('resetToggles turns the three switches Profile shows off and nothing else', async () => {
       const s = await loadStorage();
-      s.saveProfile({ name: 'Andrew', aiEnabled: true, gamificationEnabled: true, privacyLockEnabled: true, blurHistory: true, themeMode: 'LIGHT' });
+      s.saveProfile({ name: 'Andrew', aiEnabled: true, privacyLockEnabled: true, blurHistory: true, themeMode: 'LIGHT' });
       const p = s.resetToggles();
-      expect(p).toMatchObject({ name: 'Andrew', themeMode: 'LIGHT', aiEnabled: false, gamificationEnabled: false, privacyLockEnabled: false, blurHistory: false });
+      expect(p).toMatchObject({ name: 'Andrew', themeMode: 'LIGHT', aiEnabled: false, privacyLockEnabled: false, blurHistory: false });
+    });
+
+    it('a stored profile from before 3D keeps its old levels/XP switch; nothing new writes one', async () => {
+      const s = await loadStorage();
+      expect(s.saveProfile({ name: 'New' })).not.toHaveProperty('gamificationEnabled');
+      localStorage.setItem('reflexia.profile.v1', JSON.stringify({ name: 'Old', gamificationEnabled: true }));
+      expect(s.saveProfile({ blurHistory: true })).toMatchObject({ name: 'Old', gamificationEnabled: true, blurHistory: true });
     });
 
     it('survives corrupt JSON in localStorage', async () => {
@@ -47,18 +54,32 @@ describe('storageService', () => {
     });
   });
 
-  describe('stats', () => {
-    it('fills missing fields from defaults when older data is stored', async () => {
-      const s = await loadStorage();
-      localStorage.setItem('reflexia.stats.v1', JSON.stringify({ totalEntries: 7 }));
-      const stats = await s.loadStats();
-      expect(stats).toMatchObject({ totalEntries: 7, level: 1, currentXP: 0, achievements: [] });
+  describe('stats from before 3D', () => {
+    // Levels, XP, streaks and CPD minutes were kept in reflexia.stats.v1.
+    // Nothing reads them since phase 3D; nothing may lose them either.
+    const OLD_STATS = { level: 4, currentXP: 612, streak: 9, cpdMinutesTotal: 180, achievements: [{ id: 'FIRST_ENTRY' }] };
+
+    it('the service no longer offers a stats API', async () => {
+      const s = (await loadStorage()) as unknown as Record<string, unknown>;
+      for (const gone of ['loadStats', 'saveStats', 'resetStats', 'patchStats']) expect(s[gone]).toBeUndefined();
     });
 
-    it('patchStats merges and persists', async () => {
+    it('stored stats ride through a backup and a restore untouched', async () => {
       const s = await loadStorage();
-      s.patchStats({ currentXP: 250 });
-      expect((await s.loadStats()).currentXP).toBe(250);
+      localStorage.setItem('reflexia.stats.v1', JSON.stringify(OLD_STATS));
+      const backup = await s.buildBackup();
+      expect(backup.stats).toEqual(OLD_STATS);
+
+      resetBrowserStorage();
+      const s2 = await loadStorage();
+      const file = new File([JSON.stringify(backup)], 'b.json', { type: 'application/json' });
+      expect(await s2.importBackup(file)).toBe(true);
+      expect(JSON.parse(localStorage.getItem('reflexia.stats.v1')!)).toEqual(OLD_STATS);
+    });
+
+    it('a backup made with no stats says so', async () => {
+      const s = await loadStorage();
+      expect((await s.buildBackup()).stats).toBeNull();
     });
   });
 
@@ -66,7 +87,7 @@ describe('storageService', () => {
     it('buildBackup carries profile, entries and stats with version 1', async () => {
       const s = await loadStorage();
       s.saveProfile({ name: 'Andrew' });
-      s.patchStats({ currentXP: 10 });
+      localStorage.setItem('reflexia.stats.v1', JSON.stringify({ currentXP: 10 }));
       const entryStorage = await import('../../src/services/entryStorageService');
       await entryStorage.initEntryStorage();
       await entryStorage.saveEntry(quickCapture('e1', 'in the backup'));
@@ -90,7 +111,7 @@ describe('storageService', () => {
 
       expect(await s.importBackup(file)).toBe(true);
       expect(s.loadProfile().name).toBe('Restored');
-      expect((await s.loadStats()).currentXP).toBe(99);
+      expect(JSON.parse(localStorage.getItem('reflexia.stats.v1')!)).toEqual({ currentXP: 99 });
       const entryStorage = await import('../../src/services/entryStorageService');
       await entryStorage.initEntryStorage();
       expect((await entryStorage.loadEntries()).map((e) => e.id).sort()).toEqual(['b1', 'b2']);

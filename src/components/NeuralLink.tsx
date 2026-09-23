@@ -1,8 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
-import type { UserProfile, Entry, UserStats } from '../types';
+import type { UserProfile, Entry } from '../types';
 import { APP_VERSION, APP_BUILD_DATE } from '../constants';
 import { storageService } from '../services/storageService';
-import { resetTutorial } from '../services/tutorialService';
 import { downloadTerms, downloadPrivacy, downloadDisclaimer } from '../utils/legalDownloads';
 import AISettings from './AISettings';
 import StorageStatus from './StorageStatus';
@@ -17,12 +16,8 @@ import {
   Shield,
   EyeOff,
   Lock,
-  Flame,
-  LogOut,
   RotateCcw,
-  Trophy,
   Home,
-  Rocket,
   Camera,
   HelpCircle,
 } from 'lucide-react';
@@ -32,31 +27,13 @@ interface NeuralLinkProps {
   profile: UserProfile;
   onUpdateProfile: (p: UserProfile) => void;
   onNavigateToWelcome: () => void;
-  onStartTutorial?: () => void;
   onShowPermissionsHelp?: () => void;
 }
 
-const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfile, onNavigateToWelcome, onStartTutorial, onShowPermissionsHelp }) => {
+const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfile, onNavigateToWelcome, onShowPermissionsHelp }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [newName, setNewName] = useState(profile.name);
-  const [stats, setStats] = useState<UserStats | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const load = async () => {
-      const s = await storageService.loadStats({
-        level: 1,
-        currentXP: 0,
-        nextLevelXP: 100,
-        streak: 0,
-        totalReflections: 0,
-        cpdMinutesTotal: 0,
-        achievements: [],
-      });
-      setStats(s);
-    };
-    load();
-  }, []);
 
   useEffect(() => {
     setNewName(profile.name);
@@ -70,7 +47,6 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
   const togglePrivacyLock = () => patchProfile({ privacyLockEnabled: !profile.privacyLockEnabled });
   const toggleBlurHistory = () => patchProfile({ blurHistory: !profile.blurHistory });
   const setAIEnabled = (enabled: boolean) => patchProfile({ aiEnabled: enabled });
-  const toggleGamification = () => patchProfile({ gamificationEnabled: !profile.gamificationEnabled });
 
   const handleSave = () => {
     patchProfile({ name: newName });
@@ -91,9 +67,9 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
 
   const handleReturnToOnboarding = async () => {
     const ok = await confirmAction({
-      title: 'See the welcome screens again?',
+      title: 'See the welcome screen again?',
       body: 'Your entries and settings stay exactly as they are.',
-      confirmLabel: 'Show them',
+      confirmLabel: 'Show it',
     });
     if (ok) {
       storageService.setOnboarded(false);
@@ -101,24 +77,10 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
     }
   };
 
-  const handleResetStats = async () => {
-    const ok = await confirmAction({
-      title: 'Reset stats?',
-      body: 'XP, level, streak and achievements go back to zero. This cannot be undone.',
-      confirmLabel: 'Reset',
-      destructive: true,
-    });
-    if (ok) {
-      const reset = storageService.resetStats();
-      setStats(reset);
-      notify('Stats reset.', 'success');
-    }
-  };
-
   const handleResetToggles = async () => {
     const ok = await confirmAction({
       title: 'Turn every switch off?',
-      body: 'AI, Gamification, Privacy Lock and Blur History all go to OFF.',
+      body: 'AI, Privacy Lock and Blur History all go to OFF.',
       confirmLabel: 'Turn them off',
     });
     if (ok) {
@@ -135,18 +97,6 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
       notify('AI is off. Everything runs on this device.', 'success');
     }
   };
-
-  const handleStartTutorial = () => {
-    resetTutorial();
-    if (onStartTutorial) {
-      onStartTutorial();
-    }
-  };
-
-  // Calculate XP progress percentage
-  const xpProgress = stats
-    ? Math.min(100, ((stats.currentXP || 0) / (stats.nextLevelXP || 100)) * 100)
-    : 0;
 
   return (
     <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col overflow-y-auto custom-scrollbar nav-safe relative">
@@ -204,20 +154,6 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
 
           <div className="space-y-3">
             <button
-              onClick={toggleGamification}
-              className="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10"
-            >
-              <span className="font-bold">Gamification</span>
-              <span
-                className={`text-xs font-mono px-2 py-1 rounded ${
-                  profile.gamificationEnabled ? 'bg-emerald-500/20 text-emerald-300' : 'bg-white/10 text-white/60'
-                }`}
-              >
-                {profile.gamificationEnabled ? 'ON' : 'OFF'}
-              </span>
-            </button>
-
-            <button
               onClick={togglePrivacyLock}
               className="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10"
             >
@@ -254,76 +190,6 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
         {/* AI: the key, the toggle and what is sent (phase 3E) */}
         <AISettings aiEnabled={profile.aiEnabled === true} onSetEnabled={setAIEnabled} />
 
-        {/* Progress Hub (visible only if gamification enabled) */}
-        <div className="bg-white/10 backdrop-blur-xl p-6 rounded-2xl border border-white/15">
-          <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
-            <Flame size={18} className="text-orange-300" /> Progress & Growth
-          </h2>
-
-          {!profile.gamificationEnabled && (
-            <p className="text-white/60 text-sm">
-              Gamification is OFF (default). Turn it ON above to track XP, levels, streaks and achievements.
-            </p>
-          )}
-
-          {profile.gamificationEnabled && (
-            <div className="space-y-4">
-              {/* XP Progress Bar */}
-              <div>
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-white/70">Level {stats?.level ?? 1}</span>
-                  <span className="font-mono text-white/90">
-                    {stats?.currentXP ?? 0} / {stats?.nextLevelXP ?? 100} XP
-                  </span>
-                </div>
-                <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden">
-                  <div
-                    className="bg-gradient-to-r from-cyan-400 to-indigo-500 h-full transition-all duration-500"
-                    style={{ width: `${xpProgress}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Stats Grid */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white/5 p-3 rounded-xl">
-                  <div className="text-2xl font-bold">{stats?.streak ?? 0}</div>
-                  <div className="text-xs text-white/60">Day Streak</div>
-                </div>
-                <div className="bg-white/5 p-3 rounded-xl">
-                  <div className="text-2xl font-bold">{entries.length}</div>
-                  <div className="text-xs text-white/60">Total Entries</div>
-                </div>
-              </div>
-
-              {/* Achievements */}
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Trophy size={16} className="text-yellow-400" />
-                  <span className="text-sm font-bold">Achievements</span>
-                  <span className="text-xs text-white/60">({stats?.achievements?.length ?? 0})</span>
-                </div>
-                {stats?.achievements && stats.achievements.length > 0 ? (
-                  <div className="grid grid-cols-3 gap-2">
-                    {stats.achievements.slice(0, 6).map((achievement) => (
-                      <div
-                        key={achievement.id}
-                        className="bg-white/5 p-2 rounded-lg text-center"
-                        title={achievement.description}
-                      >
-                        <div className="text-2xl mb-1">{achievement.icon || achievement.iconName || '🏆'}</div>
-                        <div className="text-xs text-white/70 truncate">{achievement.title}</div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-white/50">No achievements unlocked yet. Keep reflecting!</p>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
         {/* Where the data lives and whether the browser will keep it (phase 3A.1) */}
         <StorageStatus entryCount={entries.length} />
 
@@ -358,13 +224,6 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
 
           <div className="space-y-3">
             <button
-              onClick={handleStartTutorial}
-              className="w-full px-4 py-3 rounded-2xl bg-gradient-to-r from-cyan-500/20 to-purple-500/20 hover:from-cyan-500/30 hover:to-purple-500/30 border border-cyan-500/30 flex items-center justify-center gap-2 transition"
-            >
-              <Rocket size={16} /> Start Gamified Tutorial
-            </button>
-
-            <button
               onClick={onShowPermissionsHelp}
               className="w-full px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 flex items-center justify-center gap-2 transition"
             >
@@ -388,14 +247,7 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
               onClick={handleReturnToOnboarding}
               className="w-full px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 flex items-center justify-center gap-2 transition"
             >
-              <Home size={16} /> Return to Onboarding
-            </button>
-
-            <button
-              onClick={handleResetStats}
-              className="w-full px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 flex items-center justify-center gap-2 transition"
-            >
-              <RotateCcw size={16} /> Reset Stats Only
+              <Home size={16} /> Show the welcome screen again
             </button>
 
             <button
@@ -447,19 +299,6 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
 
           <p className="mt-3 text-xs text-white/50 text-center">
             Legal documents will download when clicked
-          </p>
-        </div>
-
-        {/* Account Actions */}
-        <div className="bg-white/10 backdrop-blur-xl p-6 rounded-2xl border border-white/15">
-          <button
-            onClick={onNavigateToWelcome}
-            className="w-full px-4 py-3 rounded-2xl bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 flex items-center justify-center gap-2 text-red-300 hover:text-red-200 transition"
-          >
-            <LogOut size={16} /> Switch User / Logout
-          </button>
-          <p className="mt-3 text-xs text-white/50 text-center">
-            Return to the login screen to switch accounts or start fresh
           </p>
         </div>
 

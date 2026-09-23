@@ -3,7 +3,6 @@ import type { Entry, ViewState } from '../types';
 import type { PackId } from '../packs/packTypes';
 import { loadPackState, isPackEnabled, getRequiredPack } from '../packs';
 import { generateDailyPrompt, initAI } from '../services/aiService';
-import { completeStep, type TutorialStep } from '../services/tutorialService';
 import { useUser } from './UserContext';
 import { useEntries } from './EntriesContext';
 
@@ -20,8 +19,6 @@ interface AppContextType {
   isLocked: boolean;
   setIsLocked: (v: boolean) => void;
   dailyPrompt: string;
-  showTutorial: boolean;
-  setShowTutorial: (v: boolean) => void;
   openEntry: Entry | null;
   setOpenEntry: (e: Entry | null) => void;
   packState: ReturnType<typeof loadPackState>;
@@ -39,7 +36,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [currentView, setCurrentView] = useState<ViewState>('ONBOARDING');
   const [isLocked, setIsLocked] = useState(false);
   const [dailyPrompt, setDailyPrompt] = useState('Space for your thoughts.');
-  const [showTutorial, setShowTutorial] = useState(false);
   const [openEntry, setOpenEntry] = useState<Entry | null>(null);
   const [packState, setPackState] = useState(loadPackState());
   const [showPackGate, setShowPackGate] = useState<PackGateInfo | null>(null);
@@ -81,32 +77,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     generateDailyPrompt().then(setDailyPrompt);
   }, [profile.aiEnabled]);
 
-  // Auto-detect tutorial step completions
-  useEffect(() => {
-    if (!showTutorial) return;
-
-    const viewToStepMap: Record<string, TutorialStep> = {
-      'REFLECTION': 'FIRST_REFLECTION',
-      'QUICK_CAPTURE': 'QUICK_CAPTURE',
-      'ORACLE': 'ORACLE_CHAT',
-      'HOLODECK': 'HOLODECK',
-      'BIO_RHYTHM': 'BIO_RHYTHM',
-      'GROUNDING': 'GROUNDING',
-      'CALENDAR': 'CALENDAR_VIEW',
-      'REPORTS': 'REPORTS',
-      'ARCHIVE': 'ARCHIVE',
-      'NEURAL_LINK': 'NEURAL_LINK',
-    };
-
-    const tutorialStep = viewToStepMap[currentView];
-    if (tutorialStep) {
-      const timer = setTimeout(() => {
-        completeStep(tutorialStep);
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [currentView, showTutorial]);
-
   // Escape on the entry modal is handled by EntryModal itself (phase 3B.4),
   // so it can leave Escape to a confirmation dialog open on top of it.
 
@@ -137,8 +107,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         isLocked,
         setIsLocked,
         dailyPrompt,
-        showTutorial,
-        setShowTutorial,
         openEntry,
         setOpenEntry,
         packState,

@@ -4,6 +4,8 @@ import type { Entry, UserProfile, UserStats } from '../types';
 const KEYS = {
   profile: 'reflexia.profile.v1',
   entries: 'reflexia.entries.v1',
+  // Levels/XP/streaks from builds before phase 3D. Nothing reads it; backups
+  // carry it through untouched (see UserStats in types.ts).
   stats: 'reflexia.stats.v1',
   recentNames: 'reflexia.recentNames.v1',
 };
@@ -13,7 +15,6 @@ const DEFAULT_PROFILE: UserProfile = {
   profession: 'NONE',
   guidePersonality: 'ZEN',
   aiEnabled: false,
-  gamificationEnabled: false,
   themeMode: 'DARK',
   isOnboarded: false,
   privacyLockEnabled: false,
@@ -22,20 +23,6 @@ const DEFAULT_PROFILE: UserProfile = {
   showDisclaimers: true,
   // Whether the text input should auto-focus (and trigger keyboard) when opening reflection flows
   autoOpenKeyboard: false,
-};
-
-const DEFAULT_STATS: UserStats = {
-  totalEntries: 0,
-  reflectionStreak: 0,
-  cpdMinutesTotal: 0,
-  unlockedAchievements: [],
-  lastActiveDate: '',
-  level: 1,
-  currentXP: 0,
-  nextLevelXP: 100,
-  streak: 0,
-  totalReflections: 0,
-  achievements: [],
 };
 
 export interface BackupFile {
@@ -95,7 +82,6 @@ export const storageService = {
 
     // Ensure defaults always exist (prevents "toggle missing" bugs)
     if (merged.aiEnabled === undefined) merged.aiEnabled = false;
-    if (merged.gamificationEnabled === undefined) merged.gamificationEnabled = false;
     if (!merged.themeMode) merged.themeMode = 'DARK';
     if (merged.isOnboarded === undefined) merged.isOnboarded = false;
     if (merged.privacyLockEnabled === undefined) merged.privacyLockEnabled = false;
@@ -124,12 +110,12 @@ export const storageService = {
   },
 
   /**
-   * Reset all toggles to default (off)
+   * Turn the three switches Profile shows (AI, Privacy Lock, Blur History)
+   * off. The levels/XP switch went in phase 3D.
    */
   resetToggles(): UserProfile {
     return storageService.patchProfile({
       aiEnabled: false,
-      gamificationEnabled: false,
       privacyLockEnabled: false,
       blurHistory: false,
     });
@@ -137,49 +123,6 @@ export const storageService = {
 
   resetProfile() {
     localStorage.removeItem(KEYS.profile);
-  },
-
-  // ---- Stats (Gamification) ----
-  async loadStats(defaultStats?: UserStats): Promise<UserStats> {
-    const fallback = defaultStats ?? DEFAULT_STATS;
-    const s = safeJsonParse<UserStats>(localStorage.getItem(KEYS.stats), fallback);
-    // Hardening: fill required fields if older data exists
-    return {
-      totalEntries: s.totalEntries ?? fallback.totalEntries,
-      reflectionStreak: s.reflectionStreak ?? fallback.reflectionStreak,
-      cpdMinutesTotal: s.cpdMinutesTotal ?? fallback.cpdMinutesTotal,
-      unlockedAchievements: s.unlockedAchievements ?? fallback.unlockedAchievements,
-      lastActiveDate: s.lastActiveDate ?? fallback.lastActiveDate,
-      level: s.level ?? fallback.level,
-      currentXP: s.currentXP ?? fallback.currentXP,
-      nextLevelXP: s.nextLevelXP ?? fallback.nextLevelXP,
-      streak: s.streak ?? fallback.streak,
-      totalReflections: s.totalReflections ?? fallback.totalReflections,
-      achievements: Array.isArray(s.achievements) ? s.achievements : [],
-    };
-  },
-
-  saveStats(stats: UserStats) {
-    safeSetItem(KEYS.stats, JSON.stringify(stats));
-  },
-
-  /**
-   * Reset stats to default values
-   */
-  resetStats(): UserStats {
-    const reset = { ...DEFAULT_STATS };
-    storageService.saveStats(reset);
-    return reset;
-  },
-
-  /**
-   * Patch stats with partial updates
-   */
-  patchStats(partial: Partial<UserStats>): UserStats {
-    const current = safeJsonParse<UserStats>(localStorage.getItem(KEYS.stats), DEFAULT_STATS);
-    const updated = { ...current, ...partial };
-    storageService.saveStats(updated);
-    return updated;
   },
 
   // ---- Backup / Restore ----

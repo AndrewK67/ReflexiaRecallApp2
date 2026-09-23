@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { Entry } from '../types';
 import * as entryStorage from '../services/entryStorageService';
-import { awardBonusXP } from '../services/gamificationService';
 import { requestPersistenceOnce } from '../services/durabilityService';
 import { notify } from '../services/noticeService';
 
@@ -10,8 +9,6 @@ interface EntriesContextType {
   addEntry: (entry: Entry) => void;
   deleteEntry: (id: string) => void;
   persistEntries: (entries: Entry[]) => void;
-  /** Tutorial XP only; nothing displays it. Goes with the tutorial in phase 3D. */
-  awardXP: (amount: number) => void;
   isEntriesLoaded: boolean;
 }
 
@@ -32,8 +29,9 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // The achievements/levels/streak computation that used to run here on
-  // every change fed nothing on screen (docs/PHASE-3-SCOPE.md §1.3); phase 3D
-  // replaces that service with learning tracks.
+  // every change fed nothing on screen (docs/PHASE-3-SCOPE.md §1.3). Since
+  // phase 3D, what someone has tried is worked out from these entries when a
+  // screen asks (services/learningService.ts), not on every change.
 
   // A failed write is shown, not swallowed: the service throws (there is no
   // plaintext copy to fall back on since 3A.2) and the person sees a notice
@@ -68,10 +66,6 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
     entryStorage.deleteEntry(id).catch(writeFailed('delete that entry'));
   };
 
-  const awardXP = (amount: number) => {
-    awardBonusXP(amount);
-  };
-
   return (
     <EntriesContext.Provider
       value={{
@@ -79,7 +73,6 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
         addEntry,
         deleteEntry,
         persistEntries: persistEntriesFn,
-        awardXP,
         isEntriesLoaded,
       }}
     >

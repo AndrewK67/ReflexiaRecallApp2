@@ -148,7 +148,6 @@ export type ViewState =
   | "DRIVE_MODE"
   | "GROUNDING"
   | "PROFILE"
-  | "GAMIFICATION"
   | "MENTAL_ATLAS"
   | "CALENDAR"
   | "NEURAL_LINK"
@@ -170,6 +169,7 @@ export interface UserProfile {
 
   // toggles used in NeuralLink / storageService
   aiEnabled?: boolean;
+  /** Stored by builds before phase 3D (the levels/XP switch). Nothing reads it. */
   gamificationEnabled?: boolean;
 
   privacyLockEnabled?: boolean;
@@ -188,37 +188,13 @@ export interface UserProfile {
   autoOpenKeyboard?: boolean;
 }
 
-// ---------- Gamification ----------
+// ---------- Stored stats (read by nothing) ----------
 
-export interface Achievement {
-  id: string;
-  title: string;
-  description: string;
-  // UI icon mapping
-  icon?: string;
-  iconName?: string;
-
-  // Gamification conditions (loose so we can evolve without breaking builds)
-  conditionType?: "STREAK" | "MODEL" | "TOTAL" | string;
-  threshold?: number;
-  meta?: string;
-
-  // When earned
-  unlockedAt?: string;
-}
-
-export interface UserStats {
-  totalEntries?: number;
-  reflectionStreak?: number;
-  cpdMinutesTotal?: number; // professional module; kept for stored stats
-  unlockedAchievements?: Achievement[];
-  lastActiveDate?: string;
-
-  // Newer gamification fields used by several components
-  level?: number;
-  currentXP?: number;
-  nextLevelXP?: number;
-  streak?: number;
-  totalReflections?: number;
-  achievements?: Achievement[];
-}
+/**
+ * What builds before phase 3D kept in localStorage 'reflexia.stats.v1':
+ * levels, XP, streaks, achievements, and the professional module's CPD
+ * minutes. Nothing in the core reads or writes it any more (decision 4;
+ * learning is services/learningService.ts). A backup still carries whatever
+ * is stored, untouched, so a restore loses nothing a later module might want.
+ */
+export type UserStats = Record<string, unknown>;

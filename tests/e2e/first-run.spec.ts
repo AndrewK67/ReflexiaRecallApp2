@@ -40,8 +40,8 @@ test.describe('first run', () => {
     await openFresh(page);
     await completeOnboarding(page, 'Smoke');
     await page.getByRole('button', { name: 'View profile and settings' }).click();
-    await page.getByRole('button', { name: /Return to Onboarding/ }).click();
-    await page.getByRole('dialog').getByRole('button', { name: 'Show them' }).click();
+    await page.getByRole('button', { name: 'Show the welcome screen again' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Show it' }).click();
     await expect(page.getByRole('heading', { name: 'Welcome to Reflexia' })).toBeVisible();
     const field = page.getByLabel(/What should we call you/);
     await expect(field).toHaveValue('Smoke');

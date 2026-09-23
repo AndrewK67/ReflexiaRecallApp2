@@ -14,7 +14,6 @@ const DEFAULT_PROFILE: UserProfile = {
   profession: 'NONE',
   guidePersonality: 'ZEN',
   aiEnabled: false,
-  gamificationEnabled: false,
   themeMode: 'DARK',
   isOnboarded: false,
   privacyLockEnabled: false,
@@ -37,7 +36,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
       privacyLockEnabled: (loaded as any)?.privacyLockEnabled ?? false,
       blurHistory: (loaded as any)?.blurHistory ?? false,
       aiEnabled: (loaded as any)?.aiEnabled ?? false,
-      gamificationEnabled: (loaded as any)?.gamificationEnabled ?? false,
       themeMode: (loaded as any)?.themeMode ?? 'DARK',
     };
     setProfile(merged);
