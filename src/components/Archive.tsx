@@ -26,6 +26,7 @@ import {
   type SearchFilters,
   type SearchResult,
 } from '../services/searchService';
+import { markFound } from '../services/learningService';
 import { isEntryLocked } from '../services/privacyService';
 import { storageService } from '../services/storageService';
 import { ALL as FRAMEWORKS, frameworkName } from '../frameworks';
@@ -131,6 +132,12 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
     };
     return searchEntries(entries, activeFilters, { page: currentPage, pageSize });
   }, [entries, filters, searchQuery, currentPage]);
+
+  // "Found an entry again" in Profile → What you've tried (phase 3D): a
+  // search of two or more characters that returned something.
+  useEffect(() => {
+    if (searchQuery.trim().length >= 2 && searchResult.filteredCount > 0) markFound();
+  }, [searchQuery, searchResult.filteredCount]);
 
   const handleFilterChange = (key: keyof SearchFilters, value: any) => {
     setFilters((prev) => ({ ...prev, [key]: value }));

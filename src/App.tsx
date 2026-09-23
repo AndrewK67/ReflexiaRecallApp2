@@ -1,6 +1,7 @@
-import { lazy, Suspense, useEffect, useRef } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import type { Entry } from "./types";
 import { newestDate } from "./utils/lastWritten";
+import { triedTracks, pickNudge, dismissNudge, loadFlags } from "./services/learningService";
 import { UserProvider, EntriesProvider, AppProvider, useApp, useUser, useEntries } from "./contexts";
 import Notices from './components/Notices';
 import EntryModal from './components/EntryModal';
@@ -40,6 +41,16 @@ function AppContent() {
   } = useApp();
   const { profile, updateProfile, completeOnboarding } = useUser();
   const { entries, addEntry, deleteEntry } = useEntries();
+
+  // The dashboard's one suggestion (phase 3D.3). Worked out again whenever the
+  // screen changes, so a search in Archive or a backup in Profile counts by
+  // the time the dashboard is back.
+  const [nudgeTick, setNudgeTick] = useState(0);
+  const nudge = useMemo(() => {
+    const flags = loadFlags();
+    return pickNudge(triedTracks(entries, profile, flags), entries.length, flags);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entries, profile.privacyLockEnabled, currentView, nudgeTick]);
 
   // Keyboard: when the screen changes, start the tab order at the top of the
   // new screen. Without this, focus stays wherever the removed button was and
@@ -197,6 +208,11 @@ function AppContent() {
             onNavigate={(viewName) => navigateWithGating(viewName)}
             onShowPackSettings={() => navigate("PACK_BROWSER")}
             lastEntryDate={newestDate(entries)}
+            nudge={nudge}
+            onDismissNudge={() => {
+              if (nudge) dismissNudge(nudge.id, entries.length);
+              setNudgeTick((n) => n + 1);
+            }}
           />
         );
     }

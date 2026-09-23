@@ -51,6 +51,9 @@ test('axe audit of the live screens', async ({ page }) => {
   for (let i = 0; i < 6; i++) await page.getByRole('button', { name: /Next Stage|^Complete/ }).click();
   await scan('composer-complete');
   await page.getByRole('button', { name: /Save Reflection/ }).click();
+  // three entries, no space yet: the dashboard shows its one suggestion (3D.3)
+  await expect(page.getByRole('note', { name: 'Suggestion' })).toBeVisible();
+  await scan('dashboard-suggestion');
 
   await page.getByRole('button', { name: 'View archive of past reflections' }).click();
   await scan('archive');

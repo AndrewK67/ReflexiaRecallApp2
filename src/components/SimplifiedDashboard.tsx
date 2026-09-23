@@ -6,11 +6,16 @@
  * an optional pack called "Scenario Practice"; they are the differentiator
  * (CLAUDE.md, decision 3) and live here now. Instead of an entry count the
  * dashboard says when you last wrote (decision 4: nothing rewards volume).
+ *
+ * Phase 3D adds at most one quiet suggestion under the doors, for something
+ * obvious not yet tried (services/learningService.ts pickNudge: none before
+ * three entries, one at a time, put away with ×).
  */
 
-import { PenLine, Compass, Archive as ArchiveIcon, ChevronRight } from 'lucide-react';
+import { PenLine, Compass, Archive as ArchiveIcon, ChevronRight, X } from 'lucide-react';
 import { isPackEnabled } from '../packs';
 import { lastWrittenLabel } from '../utils/lastWritten';
+import type { Nudge } from '../services/learningService';
 
 interface SimplifiedDashboardProps {
   userName: string;
@@ -19,6 +24,9 @@ interface SimplifiedDashboardProps {
   onShowPackSettings?: () => void;
   /** ISO date of the newest entry; undefined before the first one. */
   lastEntryDate?: string;
+  /** The one suggestion, if any (learningService.pickNudge). */
+  nudge?: Nudge | null;
+  onDismissNudge?: () => void;
 }
 
 function greeting(now = new Date()): string {
@@ -58,6 +66,8 @@ export default function SimplifiedDashboard({
   onNavigate,
   onShowPackSettings,
   lastEntryDate,
+  nudge,
+  onDismissNudge,
 }: SimplifiedDashboardProps) {
   const firstName = userName.trim().split(' ')[0];
   const lastWritten = lastWrittenLabel(lastEntryDate);
@@ -124,6 +134,33 @@ export default function SimplifiedDashboard({
             );
           })}
         </ul>
+
+        {/* At most one suggestion (phase 3D.3) */}
+        {nudge && (
+          <div
+            role="note"
+            aria-label="Suggestion"
+            data-nudge={nudge.id}
+            className="flex items-start gap-2 bg-white/5 border border-white/10 rounded-xl p-3 mt-3"
+          >
+            <p className="flex-1 text-xs text-white/80 leading-snug">
+              {nudge.text}{' '}
+              <button
+                onClick={() => onNavigate(nudge.action.view)}
+                className="font-semibold text-cyan-200 underline underline-offset-2 hover:text-white"
+              >
+                {nudge.action.label}
+              </button>
+            </p>
+            <button
+              onClick={() => onDismissNudge?.()}
+              aria-label="Hide this suggestion"
+              className="p-1 -m-1 rounded-lg text-white/60 hover:text-white hover:bg-white/10 flex-shrink-0"
+            >
+              <X size={16} aria-hidden="true" />
+            </button>
+          </div>
+        )}
 
         {/* Optional packs the person switched on */}
         {hasAnyPacks && (

@@ -1,5 +1,6 @@
 // src/services/storageService.ts
 import type { Entry, UserProfile, UserStats } from '../types';
+import { markBackedUp } from './learningService';
 
 const KEYS = {
   profile: 'reflexia.profile.v1',
@@ -153,6 +154,7 @@ export const storageService = {
   async exportBackup() {
     const backup = await storageService.buildBackup();
     downloadTextFile(`reflexia-backup-${Date.now()}.json`, JSON.stringify(backup, null, 2));
+    markBackedUp(); // Profile → "What you've tried" (phase 3D)
   },
 
   /**

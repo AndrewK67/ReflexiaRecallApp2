@@ -5,6 +5,7 @@ import { storageService } from '../services/storageService';
 import { downloadTerms, downloadPrivacy, downloadDisclaimer } from '../utils/legalDownloads';
 import AISettings from './AISettings';
 import StorageStatus from './StorageStatus';
+import WhatYouveTried, { TRIED_HEADING_ID } from './WhatYouveTried';
 import { notify, confirmAction } from '../services/noticeService';
 import {
   Network,
@@ -19,6 +20,7 @@ import {
   RotateCcw,
   Home,
   Camera,
+  Compass,
   HelpCircle,
 } from 'lucide-react';
 
@@ -90,6 +92,14 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
     }
   };
 
+  // "Show me around": the checklist is the tour - each untried thing says
+  // where to find it (phase 3D.4, replacing the old click-through tutorial).
+  const handleShowMeAround = () => {
+    const heading = document.getElementById(TRIED_HEADING_ID);
+    heading?.scrollIntoView({ block: 'start' });
+    heading?.focus({ preventScroll: true });
+  };
+
   const handleResetAI = async () => {
     const ok = await confirmAction({ title: 'Turn AI off?', confirmLabel: 'Turn off' });
     if (ok) {
@@ -147,6 +157,9 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
             )}
           </div>
         </div>
+
+        {/* What you've tried (phase 3D.3) */}
+        <WhatYouveTried entries={entries} privacyLockEnabled={profile.privacyLockEnabled === true} />
 
         {/* Feature Switches */}
         <div className="bg-white/10 backdrop-blur-xl p-6 rounded-2xl border border-white/15">
@@ -223,6 +236,13 @@ const NeuralLink: React.FC<NeuralLinkProps> = ({ entries, profile, onUpdateProfi
           </h2>
 
           <div className="space-y-3">
+            <button
+              onClick={handleShowMeAround}
+              className="w-full px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 flex items-center justify-center gap-2 transition"
+            >
+              <Compass size={16} /> Show me around
+            </button>
+
             <button
               onClick={onShowPermissionsHelp}
               className="w-full px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 flex items-center justify-center gap-2 transition"
