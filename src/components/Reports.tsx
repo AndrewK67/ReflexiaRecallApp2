@@ -11,6 +11,8 @@ import {
 import type { Entry, ReflectionEntry } from '../types';
 import { frameworkName } from '../frameworks';
 import { isCapture, isReflection } from '../utils/entryKind';
+import { entryText, entryTitle } from '../utils/entryText';
+import { entriesToCsv, downloadCsv } from '../utils/csv';
 
 interface ReportsProps {
   entries: Entry[];
@@ -73,37 +75,10 @@ export default function Reports({ entries, onClose }: ReportsProps) {
     };
   }, [filteredEntries]);
 
+  // The same columns as Archive's export, with what was written (phase 3D.6;
+  // this used to carry a capture's note and nothing of a reflection's).
   const handleExportCSV = () => {
-    const csvRows = [
-      ['Date', 'Time', 'Type', 'Framework', 'Mood', 'Notes'],
-      ...filteredEntries.map((entry) => {
-        const date = new Date(entry.date);
-        const type = isReflection(entry) ? 'Reflection' : 'Capture';
-        const model = isReflection(entry) ? frameworkName(entry.model) : 'N/A';
-        const mood = isReflection(entry) ? entry.mood || 'N/A' : 'N/A';
-        const notes = isCapture(entry) ? entry.notes || '' : '';
-
-        return [
-          date.toLocaleDateString(),
-          date.toLocaleTimeString(),
-          type,
-          model,
-          mood,
-          notes.replace(/"/g, '""'),
-        ].map(v => `"${v}"`).join(',');
-      }),
-    ];
-
-    const csv = csvRows.join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `reflexia-report-${dateFrom}-to-${dateTo}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadCsv(`reflexia-report-${dateFrom}-to-${dateTo}.csv`, entriesToCsv(filteredEntries));
   };
 
   const handleExportText = () => {
@@ -130,10 +105,9 @@ export default function Reports({ entries, onClose }: ReportsProps) {
       '-'.repeat(50),
       ...filteredEntries.map((entry) => {
         const date = new Date(entry.date);
-        const model = isReflection(entry) ? frameworkName(entry.model) : 'Capture';
-        const mood = isReflection(entry) ? entry.mood : 'N/A';
-
-        return `\n[${date.toLocaleString()}] ${model} - Mood: ${mood}`;
+        const mood = isReflection(entry) && typeof entry.mood === 'number' ? ` - Mood: ${entry.mood}/5` : '';
+        const text = entryText(entry);
+        return `\n[${date.toLocaleString('en-GB')}] ${entryTitle(entry)}${mood}${text ? `\n${text}` : ''}`;
       }),
     ];
 

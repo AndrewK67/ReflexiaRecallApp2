@@ -20,12 +20,14 @@ import {
 import type { Entry } from '../types';
 import {
   searchEntries,
-  highlightSearchTerms,
+  filterEntries,
+  highlightParts,
   extractUniqueTags,
-  exportSearchResultsToCSV,
   type SearchFilters,
   type SearchResult,
 } from '../services/searchService';
+import { entryPreview } from '../utils/entryText';
+import { entriesToCsv, downloadCsv, localDateStamp } from '../utils/csv';
 import { markFound } from '../services/learningService';
 import { isEntryLocked } from '../services/privacyService';
 import { storageService } from '../services/storageService';
@@ -150,17 +152,11 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
     setCurrentPage(1);
   };
 
+  // Every entry the search and filters match, not just the page on screen,
+  // with what was written in it (phase 3D.6; utils/csv.ts).
   const handleExport = () => {
-    const csv = exportSearchResultsToCSV(searchResult, { ...filters, query: searchQuery });
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `reflexia-archive-${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const matching = filterEntries(entries, { ...filters, query: searchQuery.trim() || undefined });
+    downloadCsv(`reflexia-archive-${localDateStamp()}.csv`, entriesToCsv(matching));
   };
 
   const activeFilterCount = useMemo(() => {
@@ -541,17 +537,25 @@ export default function Archive({ entries, onOpenEntry }: ArchiveProps) {
                     })()}
                   </div>
 
-                  {/* Content Preview */}
-                  {entry.content && (
-                    <p
-                      className={`text-xs text-white/70 line-clamp-2 mb-2 ${blurEnabled ? 'blur-sm' : ''}`}
-                      dangerouslySetInnerHTML={{
-                        __html: searchQuery
-                          ? highlightSearchTerms(entry.content.substring(0, 200), searchQuery)
-                          : entry.content.substring(0, 200),
-                      }}
-                    />
-                  )}
+                  {/* What was written, as text. Never as HTML: an entry can come
+                      from an imported backup file (phase 3D.6). */}
+                  {(() => {
+                    const preview = entryPreview(entry, 200);
+                    if (!preview) return null;
+                    return (
+                      <p className={`text-xs text-white/70 line-clamp-2 mb-2 ${blurEnabled ? 'blur-sm' : ''}`}>
+                        {highlightParts(preview, searchQuery.trim()).map((part, i) =>
+                          part.match ? (
+                            <mark key={i} className="bg-cyan-400/30 text-white rounded-sm px-0.5">
+                              {part.text}
+                            </mark>
+                          ) : (
+                            <span key={i}>{part.text}</span>
+                          ),
+                        )}
+                      </p>
+                    );
+                  })()}
 
                   {/* Footer */}
                   <div className="flex items-center gap-2 flex-wrap">

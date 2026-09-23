@@ -159,12 +159,9 @@ function calculateRelevance(entry: Entry, query: string): number {
   let score = 0;
 
   terms.forEach((term) => {
-    // Count occurrences of each term
-    const regex = new RegExp(term, 'gi');
-    const matches = searchableText.match(regex);
-    if (matches) {
-      score += matches.length;
-    }
+    // Count occurrences of each term. Plain text, not a RegExp: a term like
+    // "(again" used to throw and take the whole app down (phase 3D.6).
+    score += countOccurrences(searchableText, term);
 
     // Boost score if term appears in title
     if (entry.title?.toLowerCase().includes(term)) {
@@ -178,6 +175,13 @@ function calculateRelevance(entry: Entry, query: string): number {
   });
 
   return score;
+}
+
+function countOccurrences(haystack: string, needle: string): number {
+  if (!needle) return 0;
+  let count = 0;
+  for (let i = haystack.indexOf(needle); i !== -1; i = haystack.indexOf(needle, i + needle.length)) count++;
+  return count;
 }
 
 /**
@@ -213,6 +217,20 @@ function sortEntries(entries: Entry[], sortBy: string, query?: string): Entry[] 
 }
 
 /**
+ * Every entry the query and filters match, sorted — all of them, not a page.
+ * Export uses this (phase 3D.6: the CSV used to hold only the page on
+ * screen, the first twenty).
+ */
+export function filterEntries(entries: Entry[], filters: SearchFilters = {}): Entry[] {
+  let filtered = entries;
+  if (filters.query) {
+    filtered = filtered.filter((entry) => matchesQuery(entry, filters.query!));
+  }
+  filtered = filtered.filter((entry) => matchesFilters(entry, filters));
+  return sortEntries(filtered, filters.sortBy || 'date-desc', filters.query);
+}
+
+/**
  * Search and filter entries with pagination
  */
 export function searchEntries(
@@ -220,18 +238,7 @@ export function searchEntries(
   filters: SearchFilters = {},
   pagination: PaginationOptions = { page: 1, pageSize: 20 }
 ): SearchResult {
-  // Filter by query
-  let filtered = entries;
-  if (filters.query) {
-    filtered = filtered.filter((entry) => matchesQuery(entry, filters.query!));
-  }
-
-  // Apply additional filters
-  filtered = filtered.filter((entry) => matchesFilters(entry, filters));
-
-  // Sort
-  const sortBy = filters.sortBy || 'date-desc';
-  filtered = sortEntries(filtered, sortBy, filters.query);
+  const filtered = filterEntries(entries, filters);
 
   // Pagination
   const totalFiltered = filtered.length;
@@ -279,20 +286,33 @@ export function getDateRange(entries: Entry[]): { earliest: string; latest: stri
 }
 
 /**
- * Highlight search terms in text
+ * Split text into plain and matching parts, for the caller to render as
+ * text with <mark> around the matches. It returns data, not HTML: the old
+ * highlightSearchTerms() returned an HTML string that Archive injected with
+ * dangerouslySetInnerHTML, so an entry from an imported backup file could
+ * run code in the app (phase 3D.6). Matching is case-insensitive and
+ * literal - no RegExp is built from what someone typed.
  */
-export function highlightSearchTerms(text: string, query: string): string {
-  if (!query || query.trim() === '') return text;
-
-  const terms = query.split(/\s+/);
-  let highlighted = text;
-
-  terms.forEach((term) => {
-    const regex = new RegExp(`(${term})`, 'gi');
-    highlighted = highlighted.replace(regex, '<mark>$1</mark>');
-  });
-
-  return highlighted;
+export function highlightParts(text: string, query: string): Array<{ text: string; match: boolean }> {
+  const terms = [...new Set(query.toLowerCase().split(/\s+/).filter(Boolean))].sort((a, b) => b.length - a.length);
+  if (!text || terms.length === 0) return text ? [{ text, match: false }] : [];
+  const lower = text.toLowerCase();
+  const parts: Array<{ text: string; match: boolean }> = [];
+  let plainFrom = 0;
+  let i = 0;
+  while (i < text.length) {
+    const term = terms.find((t) => lower.startsWith(t, i));
+    if (term) {
+      if (i > plainFrom) parts.push({ text: text.slice(plainFrom, i), match: false });
+      parts.push({ text: text.slice(i, i + term.length), match: true });
+      i += term.length;
+      plainFrom = i;
+    } else {
+      i++;
+    }
+  }
+  if (plainFrom < text.length) parts.push({ text: text.slice(plainFrom), match: false });
+  return parts;
 }
 
 /**
@@ -328,35 +348,5 @@ export function getSearchSuggestions(entries: Entry[], partialQuery: string): st
   return Array.from(suggestions).slice(0, 5); // Top 5 suggestions
 }
 
-/**
- * Export filtered entries to CSV
- */
-export function exportSearchResultsToCSV(result: SearchResult, filters: SearchFilters): string {
-  const lines: string[] = [];
-
-  // Header
-  lines.push('"Search Results Export"');
-  lines.push(`"Generated: ${new Date().toISOString()}"`);
-  lines.push('""');
-  if (filters.query) {
-    lines.push(`"Search Query: ${filters.query}"`);
-  }
-  lines.push(`"Total Results: ${result.filteredCount}"`);
-  lines.push(`"Showing: ${result.entries.length} entries"`);
-  lines.push('""');
-
-  // Column headers
-  lines.push('"Date","Type","Title","Content Preview"');
-
-  // Rows
-  result.entries.forEach((entry) => {
-    const date = new Date(entry.date).toLocaleDateString();
-    const type = entry.type;
-    const title = (entry.title || '').replace(/"/g, '""');
-    const preview = (entry.content || '').substring(0, 100).replace(/"/g, '""');
-
-    lines.push(`"${date}","${type}","${title}","${preview}"`);
-  });
-
-  return lines.join('\n');
-}
+// CSV export lives in utils/csv.ts (entriesToCsv) since phase 3D.6; the one
+// that was here wrote title and content, which nothing fills in.

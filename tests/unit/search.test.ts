@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { searchEntries, exportSearchResultsToCSV, getSearchSuggestions, extractUniqueTags } from '../../src/services/searchService';
+import fs from 'node:fs';
+import path from 'node:path';
+import { searchEntries, filterEntries, highlightParts, getSearchSuggestions, extractUniqueTags } from '../../src/services/searchService';
+import { entriesToCsv, csvCell, BOM } from '../../src/utils/csv';
 import type { Entry } from '../../src/types';
 
 const capture = (id: string, notes: string, extra: Partial<Entry> = {}): Entry =>
@@ -47,23 +50,121 @@ describe('searchEntries', () => {
   });
 });
 
-describe('exportSearchResultsToCSV', () => {
-  const result = searchEntries(fixture, { query: 'budget' });
+describe('search is literal text (phase 3D.6)', () => {
+  const odd = [capture('p1', 'Tea (again) with Sam [kitchen] *later*'), capture('p2', 'More tea (again) \\ and cake + $5')];
 
-  it('has a header row and one row per entry', () => {
-    const csv = exportSearchResultsToCSV(result, { query: 'budget' });
-    const rows = csv.split('\n');
-    expect(rows).toContain('"Date","Type","Title","Content Preview"');
-    expect(rows.filter((r) => /^"\d/.test(r))).toHaveLength(2);
+  it('regular-expression characters are just characters, in every sort', () => {
+    for (const sortBy of ['date-desc', 'date-asc', 'relevance'] as const) {
+      for (const [query, ids] of [['(again', ['p1', 'p2']], ['(again)', ['p1', 'p2']], ['[kitchen', ['p1']], ['*later*', ['p1']], ['\\', ['p2']], ['+ $5', ['p2']], ['.*', []]] as const) {
+        expect(() => searchEntries(odd, { query, sortBy })).not.toThrow();
+        expect(searchEntries(odd, { query, sortBy }).entries.map((e) => e.id).sort(), `${query} / ${sortBy}`).toEqual([...ids].sort());
+      }
+    }
   });
 
-  // KNOWN BUG (docs/PHASE-0-SCOPE.md §0.3): the exporter reads entry.title and
-  // entry.content, which nothing in the app writes. Every row's text is empty.
-  it.fails('includes the entry text in each data row', () => {
-    const csv = exportSearchResultsToCSV(result, { query: 'budget' });
-    const dataRows = csv.split('\n').filter((r) => /^"\d/.test(r));
+  it('relevance ranks by how often the words appear', () => {
+    const e = [capture('once', 'budget'), capture('thrice', 'budget budget, and the budget again')];
+    expect(searchEntries(e, { query: 'budget', sortBy: 'relevance' }).entries.map((x) => x.id)).toEqual(['thrice', 'once']);
+  });
+
+  it('filterEntries returns every match, not a page', () => {
+    const many = Array.from({ length: 45 }, (_, i) => capture(`m${i}`, `note ${i} canal`));
+    expect(searchEntries(many, { query: 'canal' }).entries).toHaveLength(20);
+    expect(filterEntries(many, { query: 'canal' })).toHaveLength(45);
+  });
+});
+
+describe('highlightParts', () => {
+  it('splits text into plain and matching parts, case-insensitively, keeping the original case', () => {
+    expect(highlightParts('The Canal, the canal', 'canal')).toEqual([
+      { text: 'The ', match: false },
+      { text: 'Canal', match: true },
+      { text: ', the ', match: false },
+      { text: 'canal', match: true },
+    ]);
+  });
+
+  it('handles several words, overlapping words, and characters a RegExp would choke on', () => {
+    expect(highlightParts('tea (again)', '(again tea')).toEqual([
+      { text: 'tea', match: true },
+      { text: ' ', match: false },
+      { text: '(again', match: true },
+      { text: ')', match: false },
+    ]);
+    expect(highlightParts('banana', 'an ana').map((p) => p.text).join('')).toBe('banana');
+  });
+
+  it('returns markup as text, never as HTML', () => {
+    const parts = highlightParts('<img src=x onerror=alert(1)> hello', 'hello');
+    expect(parts[0]).toEqual({ text: '<img src=x onerror=alert(1)> ', match: false });
+  });
+
+  it('no query, no highlight; no text, no parts', () => {
+    expect(highlightParts('abc', '  ')).toEqual([{ text: 'abc', match: false }]);
+    expect(highlightParts('', 'abc')).toEqual([]);
+  });
+});
+
+describe('no entry text becomes HTML anywhere in the live app', () => {
+  it('src/ outside the parked module has no raw-HTML sink', () => {
+    const hits: string[] = [];
+    (function walk(dir: string) {
+      for (const f of fs.readdirSync(dir)) {
+        const p = path.join(dir, f);
+        if (fs.statSync(p).isDirectory()) {
+          if (p.split(path.sep).join('/') !== 'src/modules') walk(p);
+        } else if (/\.(tsx?|jsx?)$/.test(f)) {
+          const code = fs.readFileSync(p, 'utf8').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+          if (/dangerouslySetInnerHTML|\.innerHTML\s*=|outerHTML\s*=|insertAdjacentHTML|document\.write\(/.test(code)) hits.push(p);
+        }
+      }
+    })('src');
+    expect(hits).toEqual([]);
+  });
+});
+
+describe('CSV export (utils/csv.ts)', () => {
+  const result = filterEntries(fixture, { query: 'budget' });
+
+  it('has a BOM, a header row and one row per entry, CRLF between rows', () => {
+    const csv = entriesToCsv(result);
+    expect(csv.startsWith(BOM)).toBe(true);
+    const rows = csv.slice(1).split('\r\n').filter(Boolean);
+    expect(rows[0]).toBe('"Date","Time","Kind","Framework or space","Mood (1-5)","What you wrote","Insight","Attachments"');
+    expect(rows.filter((r) => /^"\d{4}-\d{2}-\d{2}"/.test(r))).toHaveLength(2);
+  });
+
+  // Was it.fails since phase 0 (docs/PHASE-0-SCOPE.md §0.3): the old
+  // exporter read entry.title and entry.content, which nothing writes.
+  it('includes the entry text in each data row', () => {
+    const csv = entriesToCsv(result);
     // 'Argued' and 'Presented' are in the matched entries' answers but not in the query,
     // so they can only appear if the rows carry the entry text.
-    expect(dataRows.join('\n')).toMatch(/Argued|Presented/);
+    expect(csv).toMatch(/Argued/);
+    expect(csv).toMatch(/Presented/);
+  });
+
+  it('a reflection is its answers under their questions, in the framework\'s order; a capture is its note', () => {
+    const csv = entriesToCsv([
+      reflection('r', { what_forward: 'Ask first.', what_happened: 'A tense meeting.' }, { mood: 4 } as Partial<Entry>),
+      capture('c', 'Just the note', { media: [{ id: 'm', type: 'PHOTO', url: 'data:x', createdAt: 1 }] } as Partial<Entry>),
+    ]);
+    expect(csv).toContain('"Reflection","Three-Part","4","What happened?: A tense meeting.\n\nWhat will you carry forward?: Ask first.","",""');
+    expect(csv).toContain('"Capture","","","Just the note","","1"');
+    expect(csv).not.toMatch(/INCIDENT/);
+  });
+
+  it('quotes are doubled and line breaks stay inside their cell', () => {
+    expect(csvCell('She said "no".\nThen left.')).toBe('"She said ""no"".\nThen left."');
+  });
+
+  it('a cell that a spreadsheet would run as a formula is shown as text; plain numbers are left alone', () => {
+    expect(csvCell('=HYPERLINK("http://x","click")')).toBe('"\'=HYPERLINK(""http://x"",""click"")"');
+    expect(csvCell("+cmd|' /C calc'!A0")).toBe('"\'+cmd|\' /C calc\'!A0"');
+    expect(csvCell('-2+3+cmd')).toBe('"\'-2+3+cmd"');
+    expect(csvCell('@SUM(A1)')).toBe('"\'@SUM(A1)"');
+    expect(csvCell('-5')).toBe('"-5"');
+    expect(csvCell(4)).toBe('"4"');
+    expect(csvCell('A normal note')).toBe('"A normal note"');
   });
 });

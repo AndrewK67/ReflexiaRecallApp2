@@ -20,6 +20,7 @@ import { Trash2, X, Download } from 'lucide-react';
 import type { Entry, MediaItem } from '../types';
 import { isCapture } from '../utils/entryKind';
 import { getFramework } from '../frameworks';
+import { entrySections } from '../utils/entryText';
 import { readMediaFile, deleteMediaFile } from '../services/fileStorageService';
 import { saveAudioToDownloads } from '../services/audioExport';
 import { confirmAction, notify } from '../services/noticeService';
@@ -108,12 +109,9 @@ export default function EntryModal({ entry, onClose, onDelete }: EntryModalProps
     ? ''
     : date.toLocaleString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-  // Answers in the framework's own order, then any keys it does not know.
-  const order = framework ? framework.stages.map((s) => s.id) : [];
-  const keys = [...order.filter((k) => k in answers), ...Object.keys(answers).filter((k) => !order.includes(k))].filter(
-    (k) => (answers[k] ?? '').trim(),
-  );
-  const labelFor = (k: string) => framework?.stages.find((s) => s.id === k)?.label ?? k;
+  // Answers in the framework's own order under their questions, then any
+  // keys it does not know (utils/entryText.ts, shared with Archive and CSV).
+  const sections = !capture ? entrySections(entry) : [];
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -191,12 +189,12 @@ export default function EntryModal({ entry, onClose, onDelete }: EntryModalProps
             <p className="whitespace-pre-line text-base leading-relaxed text-white/90">{entry.notes?.trim() || '(No notes)'}</p>
           )}
 
-          {!capture && keys.length === 0 && <p className="text-sm text-white/70">(Nothing written)</p>}
+          {!capture && sections.length === 0 && <p className="text-sm text-white/70">(Nothing written)</p>}
           {!capture &&
-            keys.map((k) => (
-              <section key={k}>
-                <h3 className="text-sm font-bold text-white/80 mb-1">{labelFor(k)}</h3>
-                <p className="whitespace-pre-line text-base leading-relaxed text-white/90">{answers[k]}</p>
+            sections.map((s, i) => (
+              <section key={`${i}-${s.label}`}>
+                <h3 className="text-sm font-bold text-white/80 mb-1">{s.label}</h3>
+                <p className="whitespace-pre-line text-base leading-relaxed text-white/90">{s.text}</p>
               </section>
             ))}
 
