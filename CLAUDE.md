@@ -121,7 +121,7 @@ survives only as the stored field name.
 | 1A | Move the professional layer to `src/modules/professional/` | 8–11h | **Done** |
 | 1B | De-profession the live core (`PROFESSION_CONFIG`, onboarding, NMC block, AI prefixes, bug B1) | 10–13h | **Done** |
 | 2 | Demote Gibbs, framework interface, Open Entry + Three-Part | 15–20h (`docs/PHASE-2-SCOPE.md`) | **Done** |
-| 3 | Make the core good for anyone — first-run experience, persistent storage, accessibility, XP rework to learning tracks, Quick Capture data model, the AI gate | 46–63h (`docs/PHASE-3-SCOPE.md`), in five parts: 3E AI boundary 5–7h, 3A data 11–15h, 3C accessibility 8–11h, 3B front door 12–16h, 3D learning tracks 10–14h | **3E, 3A and 3C done** (22 Sep 2026). All eight §4 decisions made the same day. 3B and 3D not started |
+| 3 | Make the core good for anyone — first-run experience, persistent storage, accessibility, XP rework to learning tracks, Quick Capture data model, the AI gate | 46–63h (`docs/PHASE-3-SCOPE.md`), in five parts: 3E AI boundary 5–7h, 3A data 11–15h, 3C accessibility 8–11h, 3B front door 12–16h, 3D learning tracks 10–14h | **3E, 3A, 3C and 3B done** (22 Sep 2026). All eight §4 decisions made the same day. 3D (learning tracks, dead-code clean-up) not started |
 
 Deferred indefinitely: module runtime, manifests, entitlement, specialities.
 
@@ -129,9 +129,11 @@ Deferred indefinitely: module runtime, manifests, entitlement, specialities.
 
 - Branch `phase-1a/professional-module`, on top of `refactor/context-layer`.
   Both need pushing.
-- **Tests.** `npm test` — 14 vitest suites, 115 tests, ~3 s, in Node against
+- **Tests.** `npm test` — 15 vitest suites, 121 tests, ~3 s, in Node against
   the real services (fake-indexeddb, Node WebCrypto). `npm run test:e2e` —
-  38 Playwright specs in Chromium, ~90 s, starts the dev server itself.
+  44 Playwright specs in Chromium, ~100 s, starts the dev server itself.
+  `ai.spec.ts` "removing the key…" timed out once and was not reproduced in
+  seven more runs; if CI shows it again, treat it as a real race.
   One e2e spec and one unit test are declared expected failures: the
   empty-text CSV export (`docs/PHASE-0-SCOPE.md` §0.3). `npm run audit:a11y`
   runs axe on seventeen screens and **fails on any critical or serious
@@ -162,8 +164,19 @@ Deferred indefinitely: module runtime, manifests, entitlement, specialities.
   `alert()`/`confirm()`/`prompt()` calls — `services/noticeService.ts` +
   `components/Notices.tsx` are the in-app notice and confirm dialog, and
   `tests/unit/notices.test.ts` fails if a native dialog comes back.
-- `src/packs/` is a compile-time feature-flag system. The `professional`
-  pack is gone; the other four and the trial mechanism are untouched.
+- **Packs (3B.3):** three optional packs — Wellbeing, AI Reflection Coach,
+  Reports — each a plain on/off switch in the pack browser. The
+  `professional` pack went in 1A, the `scenario` pack (which hid the spaces)
+  and the 7-day trial machinery in 3B.3, along with a "Try or Subscribe"
+  sheet that offered Pro, Lifetime and Enterprise prices for things that
+  never existed. Stored `reflexia.packs.v2` from older builds still loads.
+- **The front door (3B):** one welcome screen of three true sentences and
+  an optional name; a dashboard with four doors (Capture, Reflect, Spaces,
+  Archive), each saying what it is for, and "Last written …" instead of an
+  entry count; `components/EntryModal.tsx` shows an entry's media (resolved
+  from `idb://`, which it never was before), answers in order, and Delete.
+  `tests/e2e/first-ninety-seconds.spec.ts` walks a new person through all of
+  it and fails on professional, clinical, commercial or false-promise words.
 - Roughly a third of the source files are unreachable from `main.tsx`
   (inventory in `docs/PHASE-1-SCOPE.md` §4; four of them were deleted in
   phase 2). `services/subscriptionService.ts` still advertises "All
@@ -194,11 +207,13 @@ Deferred indefinitely: module runtime, manifests, entitlement, specialities.
    rework. If the core ever wants a library it gets general content, not a
    scrubbed nursing list.
 3. What does a first-time user with no background actually do in their first
-   90 seconds? Observed: three slides, a name field, then a dashboard with
-   Capture / Reflect / Archive and the differentiator (Holodeck) hidden
-   behind a pack toggle. The profession question is gone (1B); phase 3 owns
-   the rest. Still the most important question in the project. Traced
-   second by second in `docs/PHASE-3-SCOPE.md` §1.1.
+   90 seconds? **Designed for in 3B (22 Sep 2026):** one welcome screen,
+   Start, then four doors that each say what they are for; three taps from
+   launch to a saved capture; spaces one tap away. The automated walk is
+   `tests/e2e/first-ninety-seconds.spec.ts`. **Not yet answered by
+   watching a real person** — that is the next thing to do, and it is still
+   the most important question in the project. Before 3B, traced second by
+   second in `docs/PHASE-3-SCOPE.md` §1.1.
 4. ~~Decision 3 names a file that does not exist.~~ **Closed 22 Sep 2026:**
    decision 3 reworded to what exists (the spaces); a 3D room is a question
    for after phase 3.

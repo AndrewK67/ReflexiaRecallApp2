@@ -1,6 +1,6 @@
 # Phase 3 scope — make the core good for anyone
 
-**Branch:** `phase-1a/professional-module` at `c8bd10a` · **Written:** 22 September 2026 · **Status:** scoped; **3E, 3A and 3C done** the same day (§3), 3B and 3D not started.
+**Branch:** `phase-1a/professional-module` at `c8bd10a` · **Written:** 22 September 2026 · **Status:** scoped; **3E, 3A, 3C and 3B done** the same day (§3), all eight §4 decisions made; 3D not started.
 
 `CLAUDE.md` lists phase 3 as *first-run experience, persistent storage, accessibility, XP rework to learning tracks, Quick Capture data model — to be scoped*. It also carries open question 1 (the AI gate) and open question 3 (*what does a first-time user with no background actually do in their first 90 seconds?* — "still the most important question in the project"). This document traces all of it against the code as it stands after phase 2, says what each piece costs, and splits the phase into five parts that can land one at a time.
 
@@ -270,6 +270,14 @@ Numbers: 115 unit (was 111), 38 e2e (was 33). Not done, deliberately: the module
 | 3B.6 | First-90-seconds e2e: launch → capture → reflect → space → archive, asserting copy, taps and that every screen has a way back | 1.0 | — |
 | | **Sum** | **12.0** → **12–16 h** | |
 
+**3B landed (22 Sep 2026), three commits, after the §4 decisions were made the same evening.**
+
+- **3B.1–3B.3, 3B.5** `04e3ecb` (one commit, because each depends on the others: the new welcome copy mentions spaces, and removing the `scenario` pack takes away the only route into them until the dashboard has a Spaces door). One welcome screen with three true sentences, an optional name (prefilled for someone who comes back via Profile; clearing it never erases a saved name), one Start. The dashboard has four doors, each with a line saying what it is for, "Last written today / yesterday / on Tuesday" instead of an entry count, and "Try capturing one thing. It can be a sentence." before the first entry; no "friend" in the greeting. Three optional packs remain as plain switches; the `scenario` pack and all trial code are gone. *Found on the way:* turning on any pack opened a "Try or Subscribe" sheet offering Pro at £9.99 a month, Lifetime at £99 and Enterprise, none of which existed (decision 6); gone with the trials. Older stored pack state still loads (an ended trial is off, anything else on stays on). The hub is called Spaces and scrolls as one page. It used to scroll inside its own box under a fixed footer, so a phone showed one and a half rows of the twenty spaces, with each description cut off.
+- **3B.4** `284a12a` — `components/EntryModal.tsx`. *Found on the way:* a reflection's own attachments (the composer's sketches and voice notes) were never shown anywhere after saving, and every `idb://` media reference (all audio, all composer sketches) went straight into `src` unresolved; sketches are type `SKETCH`, which the old modal did not recognise. Now media is resolved and shown, audio plays in place, answers appear in the framework's order under their questions, a space wears its colour, and Delete (confirmed, Cancel focused first) removes the entry and its stored media. `EntryDetailModal.tsx` deleted.
+- **3B.6** — `tests/e2e/first-ninety-seconds.spec.ts`: a new person on a 375 px screen captures (three taps from launch), reflects, finishes a space and finds all three in Archive, with no professional, clinical, commercial or false-promise wording on any screen along the way; every door on the dashboard has a way back.
+
+Numbers: 121 unit (was 115), 44 e2e (was 38). Main chunk 318.3 KB. One intermittent e2e timeout seen once and not reproduced in seven further runs (`ai.spec.ts`, "removing the key…"); if CI shows it, it is a real race and needs looking at, not a retry.
+
 ### 3D — Learning, not scoring · 10–14 h
 
 | Step | Work | Hours | Done when |
@@ -333,8 +341,8 @@ The `CLAUDE.md` row said "to be scoped". This is two and a half to three times p
 
 ## 6. Success criteria
 
-- [ ] Every sentence on the first screen and the dashboard is true of the build (e2e asserts the specific words that were false)
-- [ ] Capture, Reflect, Spaces and Archive are each one tap from the dashboard on a fresh profile
+- [x] Every sentence on the first screen and the dashboard is true of the build (e2e asserts the specific words that were false) (3B.1, 3B.2)
+- [x] Capture, Reflect, Spaces and Archive are each one tap from the dashboard on a fresh profile (3B.2)
 - [x] A finished space is an encrypted entry: in Archive, searchable, in the backup, opening with readable labels (3A.4)
 - [x] No "incident" wording on any screen; a capture never colours a calendar day as critical; stored `type` unchanged (3A.3)
 - [x] After the first save, persistence has been requested and Profile says whether it was granted; no plaintext entry copy exists in `localStorage` (3A.1, 3A.2)
