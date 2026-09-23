@@ -43,6 +43,14 @@ not belong in the core — however much work is already in it.
    thing once, not by clicking through a tour. Progression is invisible while
    someone is writing. This replaces the `ACHIEVEMENTS` catalogue in
    `services/gamificationService.ts`; the points engine itself stays.
+   **Done (phase 3D, 23 Sep 2026):** the catalogue, levels, streaks, the
+   Profile XP card and the click-through tutorial are gone.
+   `services/learningService.ts` ticks eleven things the app can do the
+   first time each is really done (from entries, the profile, and two flags
+   for a search that found something and a backup saved); Profile shows them
+   as "What you've tried", a checklist with no numbers, and the dashboard
+   shows at most one quiet suggestion after three entries. The points engine
+   stays, dormant, in `services/pointsEngine.ts` — nothing calls it.
 5. **Gibbs is not the core.** The six-stage cycle (Description, Feelings,
    Evaluation, Analysis, Conclusion, Action Plan) is a nursing and teacher-
    training framework. **Done (phase 2, 22 Sep 2026):** the composer opens
@@ -51,7 +59,9 @@ not belong in the core — however much work is already in it.
    catalogue behind "Use a framework". See "Frameworks" below.
 6. **Nothing commercial yet.** No entitlement, no paid tiers, no key pools, no
    storefront. `setUserTier()` is a localStorage bypass and stays broken for
-   now — just do not build on it.
+   now — just do not build on it. *Since phase 3D.5 (23 Sep 2026) that code
+   — `setUserTier()`, the paywall, checkout, Stripe and both Stripe
+   packages — is deleted; it is in git history.*
 
 ## The professional layer
 
@@ -67,8 +77,10 @@ What the core keeps, and why:
 
 - `UserProfile.profession` (`types.ts`) — saved profiles carry values like
   `'NURSING'`; the core never reads it. New users get `'NONE'`.
-- `ReflectionEntry.cpd` and `.nmcCodeThemes`, `UserStats.cpdMinutesTotal` —
-  saved entries carry them; nothing in the core writes or reads them.
+- `ReflectionEntry.cpd` and `.nmcCodeThemes` — saved entries carry them;
+  `cpdMinutesTotal` sits in stored stats (`reflexia.stats.v1`, now an opaque
+  `UserStats`), which a backup carries through untouched. Nothing in the
+  core writes or reads any of them.
 - The `profession?` parameter on the `AIProvider` interface — accepted and
   ignored; a later module can pass it.
 - `DEFAULT_COACH_PREFIX` in `constants.ts` — the one coaching voice.
@@ -121,7 +133,7 @@ survives only as the stored field name.
 | 1A | Move the professional layer to `src/modules/professional/` | 8–11h | **Done** |
 | 1B | De-profession the live core (`PROFESSION_CONFIG`, onboarding, NMC block, AI prefixes, bug B1) | 10–13h | **Done** |
 | 2 | Demote Gibbs, framework interface, Open Entry + Three-Part | 15–20h (`docs/PHASE-2-SCOPE.md`) | **Done** |
-| 3 | Make the core good for anyone — first-run experience, persistent storage, accessibility, XP rework to learning tracks, Quick Capture data model, the AI gate | 46–63h (`docs/PHASE-3-SCOPE.md`), in five parts: 3E AI boundary 5–7h, 3A data 11–15h, 3C accessibility 8–11h, 3B front door 12–16h, 3D learning tracks 10–14h | **3E, 3A, 3C and 3B done** (22 Sep 2026). All eight §4 decisions made the same day. 3D (learning tracks, dead-code clean-up) not started |
+| 3 | Make the core good for anyone — first-run experience, persistent storage, accessibility, XP rework to learning tracks, Quick Capture data model, the AI gate | 46–63h (`docs/PHASE-3-SCOPE.md`), in five parts: 3E AI boundary 5–7h, 3A data 11–15h, 3C accessibility 8–11h, 3B front door 12–16h, 3D learning tracks 10–14h (+1–1.5h for the CSV fix, 3D.6) | **All five parts done** — 3E, 3A, 3C, 3B on 22 Sep 2026, 3D on 23 Sep. One success criterion stays open because code cannot close it: open question 3 needs a real first-time user watched |
 
 Deferred indefinitely: module runtime, manifests, entitlement, specialities.
 
@@ -129,18 +141,21 @@ Deferred indefinitely: module runtime, manifests, entitlement, specialities.
 
 - Branch `phase-1a/professional-module`, on top of `refactor/context-layer`.
   Both need pushing.
-- **Tests.** `npm test` — 15 vitest suites, 121 tests, ~3 s, in Node against
+- **Tests.** `npm test` — 16 vitest suites, 148 tests, ~6 s, in Node against
   the real services (fake-indexeddb, Node WebCrypto). `npm run test:e2e` —
-  44 Playwright specs in Chromium, ~100 s, starts the dev server itself.
-  `ai.spec.ts` "removing the key…" timed out once and was not reproduced in
-  seven more runs; if CI shows it again, treat it as a real race.
-  One e2e spec and one unit test are declared expected failures: the
-  empty-text CSV export (`docs/PHASE-0-SCOPE.md` §0.3). `npm run audit:a11y`
-  runs axe on seventeen screens and **fails on any critical or serious
-  violation** (3C.5); today it finds none. `.github/workflows/test.yml` runs
-  build, unit, e2e and the audit on every push and PR; it has not run yet
-  because nothing has been pushed since it was added. `node
-  tests/audit/reachability.mjs` lists the files unreachable from `main.tsx`.
+  50 Playwright specs in Chromium, ~2 min, starts the dev server itself.
+  **No declared failures remain**: the empty-text CSV export that phase 0
+  pinned as expected-to-fail was fixed in 3D.6. `ai.spec.ts` "removing the
+  key…" timed out once and was not reproduced in seven more runs; if CI
+  shows it again, treat it as a real race. `npm run audit:a11y` runs axe on
+  eighteen screens and **fails on any critical or serious violation**
+  (3C.5); today it finds nothing at any level. `node
+  tests/audit/reachability.mjs --check` fails on any unreachable file that
+  is not the parked module or in its `PARKED` list, and
+  `tests/unit/reachability.test.ts` runs it, so it is part of `npm test`.
+  `.github/workflows/test.yml` runs build, unit, e2e and the audit on every
+  push and PR; it has not run yet because nothing has been pushed since it
+  was added.
 - **Three data-loss bugs fixed 22 Sep 2026**: backup restore emptied the
   store and the localStorage→IndexedDB migration failed on every launch
   (both from awaiting `crypto.subtle.encrypt()` inside an open IndexedDB
@@ -177,15 +192,34 @@ Deferred indefinitely: module runtime, manifests, entitlement, specialities.
   from `idb://`, which it never was before), answers in order, and Delete.
   `tests/e2e/first-ninety-seconds.spec.ts` walks a new person through all of
   it and fails on professional, clinical, commercial or false-promise words.
-- Roughly a third of the source files are unreachable from `main.tsx`
-  (inventory in `docs/PHASE-1-SCOPE.md` §4; four of them were deleted in
-  phase 2). `services/subscriptionService.ts` still advertises "All
-  reflection models (Gibbs, SBAR, ERA, etc.)" in a paywall nobody can reach —
-  decision 6 territory, untouched. Of the six views the February refactor
-  dropped from `App.tsx`, Library and RewardsStore are in the module;
-  **decided 22 Sep 2026:** GamificationHub and CanvasBoardBasic are deleted in
-  3D.5, DriveMode is parked (a rebuild on frameworks later, 6–8 h),
-  MentalAtlas is kept for a later "Patterns" screen.
+- **Learning, not scoring (3D.1–3D.4):** see decision 4. Also gone from
+  Profile: "Switch User / Logout", which promised a login screen and
+  accounts that do not exist. Stored `reflexia.stats.v1`,
+  `profile.gamificationEnabled` and the old tutorial's progress stay on
+  devices, unread; `tests/unit/learning.test.ts` proves none of them ticks
+  anything.
+- **Exports and Archive (3D.6):** `utils/entryText.ts` is the one
+  definition of what an entry says (a capture's note; a reflection's
+  answers in framework order under their questions), used by the entry
+  modal, Archive's row preview, both CSV exports and the Reports text
+  export. `utils/csv.ts` writes RFC 4180 with a UTF-8 BOM and neutralises
+  formula cells. **Security fix:** Archive used to inject `entry.content` as
+  HTML, so an imported backup file could run code in the app; entry text is
+  now only ever React text, and `tests/unit/search.test.ts` fails if a raw
+  HTML sink appears anywhere in `src/` outside the parked module. Archive
+  search no longer builds a RegExp from what is typed (it crashed the app).
+- **Dead code (3D.5):** what `main.tsx` cannot reach is the parked module
+  (20 files) plus seven files parked on purpose, each with its reason in
+  `PARKED` in `tests/audit/reachability.mjs`: DriveMode (a rebuild on
+  frameworks later, 6–8 h), the MentalAtlas trio (a later "Patterns"
+  screen), VideoCapture and MediaAttachmentPanel (video: not planned), and
+  the points engine. Commerce, the old grounding screens, CanvasBoardBasic,
+  GamificationHub and two unused stylesheets are deleted. `@google/genai` is
+  in `package.json` and imported by nothing; left for now.
+- **Known, not fixed:** each Archive row is a `<button>` with audio play
+  buttons and a slider inside it (interactive controls nested in a button).
+  The entry modal plays audio since 3B.4, so the row player could become a
+  count badge. The audit does not seed audio, so it does not see this.
 - Most files under `src/` still have CRLF endings in the working tree from
   before the `6bc0967` normalisation; the index holds LF. Cosmetic.
 

@@ -1,6 +1,6 @@
 # Phase 3 scope — make the core good for anyone
 
-**Branch:** `phase-1a/professional-module` at `b8426a9` · **Written:** 22 September 2026 · **Status:** scoped; **3E, 3A, 3C and 3B done** the same day (§3), all eight §4 decisions made; 3D not started.
+**Branch:** `phase-1a/professional-module` at `b8426a9` · **Written:** 22 September 2026 · **Status:** **all five parts done** — 3E, 3A, 3C and 3B on 22 September, 3D on 23 September 2026 (§3); all eight §4 decisions made. One success criterion (§6) stays open: open question 3 needs a real first-time user watched.
 
 `CLAUDE.md` lists phase 3 as *first-run experience, persistent storage, accessibility, XP rework to learning tracks, Quick Capture data model — to be scoped*. It also carries open question 1 (the AI gate) and open question 3 (*what does a first-time user with no background actually do in their first 90 seconds?* — "still the most important question in the project"). This document traces all of it against the code as it stands after phase 2, says what each piece costs, and splits the phase into five parts that can land one at a time.
 
@@ -287,7 +287,17 @@ Numbers: 121 unit (was 115), 44 e2e (was 38). Main chunk 318.3 KB. One intermitt
 | 3D.3 | Profile "What you've tried"; the single dashboard nudge with its rule (after ≥3 entries, at most one line, dismissable, never in the composer) | 2.0 | e2e: nudge absent on a fresh profile; present after three captures and no space |
 | 3D.4 | `Tutorial.tsx` + `tutorialService.ts` deleted; "Start Tutorial" becomes "Show me around" → the checklist | 1.5 | grep: no "professional excellence", no "AI-powered" |
 | 3D.5 | Dead code from §1.7 removed: commerce files, old grounding screens, `CanvasBoardBasic`, `DifficultConversation`, `App.css` | 1.0 | reachability script: unreachable count ≤ module + parked (`DriveMode`, `MentalAtlas` trio, video, `MediaAttachmentPanel`) |
-| | **Sum** | **10.0** → **10–14 h** | |
+| 3D.6 | *Added 23 Sep 2026 at Andrew's request:* the CSV export (phase 0 §0.3's declared failure) | 1.0–1.5 | the `it.fails` unit test and the `test.fail` e2e spec pass as ordinary tests |
+| | **Sum** | **11.0–11.5** → **11–15.5 h** | |
+
+**3D landed (23 Sep 2026), four commits.** Hashes are this repository's.
+
+- **3D.1 + 3D.4** `2ed510b` — one commit, because the tutorial was the only thing awarding XP. `gamificationService.ts` (713 lines), `GamificationHub.tsx`, `AchievementUnlock.tsx`, `Tutorial.tsx` and `tutorialService.ts` deleted, with the three-second dwell timer in `AppContext` and Profile's "Progress & Growth" card, Gamification switch and "Reset Stats Only". What stays: `services/pointsEngine.ts` (the level table and bonus-points store, because decision 4 says "the points engine itself stays"; nothing imports it; level 9 "Professional" renamed "Seasoned"); stored `reflexia.stats.v1`, now an opaque `UserStats` that a backup carries through untouched (tested). *Found on the way:* Profile's "Switch User / Logout — Return to the login screen to switch accounts" — there is no login and there are no accounts; it jumped to the welcome screen with nothing changed and no question asked. Removed. "Return to Onboarding" became "Show the welcome screen again".
+- **3D.2 + 3D.3** `fc0d935` — `services/learningService.ts`: eleven tracks (the nine of §2.6, with attachments split into sketch, voice note and photo), each from entries, the profile or two flags in `reflexia.learning.v1` (a search of 2+ characters that returned something; `exportBackup()` ran). Not in the profile as §2.6 suggested: `UserContext` rebuilds the profile from named fields on load, so a new field would need threading through it, and neither flag needs to survive a restore. Profile → "What you've tried" (`components/WhatYouveTried.tsx`), no numbers; "Show me around" moves focus to it. The dashboard suggestion: none before three entries; Reflect first when there are only captures, then spaces, then backup; × puts it away for good and the next waits three more entries; rendered by the dashboard only. The done-when in the table ("present after three captures and no space") changed with the order: three captures now suggest Reflect, and spaces come after that is put away or done.
+- **3D.5** `524d23d` — 13 files deleted (commerce, the old grounding screens and `groundingService.ts`, `CanvasBoardBasic.tsx`, `App.css`, `guide.css`; `DifficultConversation.tsx` had already gone in 3A.4), and the `stripe` and `@stripe/stripe-js` packages. Unreachable now: the module's 20 files and 7 parked on purpose, each named with its reason in `PARKED` in `tests/audit/reachability.mjs`; `--check` fails on anything else and `tests/unit/reachability.test.ts` runs it. *Found on the way:* the script compared `'src/main.tsx'` against `path.join` paths, so on Windows `main.tsx` itself counted as unreachable. Not changed: `@google/genai` is a dependency nothing imports.
+- **3D.6** `c664de8` — the CSV bug had three siblings in the same code, all from reading `entry.title`/`entry.content`, which nothing writes: the Archive CSV held only the page on screen and said "INCIDENT"; Archive rows never previewed what was written; Reports' CSV and text export carried almost nothing. And two worse ones, both reproduced by a failing test before the fix: **the Archive preview was injected as HTML**, so an imported backup file could run code in the app, next to the decrypted entries and the AI key; and **searching for `(again` with "Most Relevant" crashed the app** (a RegExp built from the query). Now `utils/entryText.ts` is the one definition of what an entry says (modal, preview, both CSVs, Reports text); `utils/csv.ts` writes RFC 4180 with a BOM and neutralises formula cells; the preview is React text with `<mark>` from `highlightParts()`; no RegExp is built from a query; Archive exports every match, not the page. `tests/unit/search.test.ts` fails if a raw-HTML sink appears in `src/` outside the parked module.
+
+Numbers: 148 unit (was 121), 50 e2e (was 44), **no declared failures left**; the audit scans 18 screens and finds nothing at any level. Main chunk 316.7 KB (was 318.3). *Found, not fixed:* each Archive row is a `<button>` containing audio play buttons and a slider — nested interactive controls. Listed in §5.
 
 ### Total
 
@@ -297,8 +307,8 @@ Numbers: 121 unit (was 115), 44 e2e (was 38). Main chunk 318.3 KB. One intermitt
 | 3A Data | 11–15 | — |
 | 3C Accessibility | 8–11 | — (3C.4's confirm component is reused by 3B.4) |
 | 3B Front door | 12–16 | 3A.4 (spaces as entries), §4.1 |
-| 3D Learning | 10–14 | 3B.2 (the door the nudge points at) |
-| **Phase 3** | **46–63 h** | |
+| 3D Learning (+ 3D.6 CSV) | 11–15.5 | 3B.2 (the door the nudge points at) |
+| **Phase 3** | **47–64.5 h** | |
 
 The `CLAUDE.md` row said "to be scoped". This is two and a half to three times phase 2, because phase 2 reshaped one component and this touches every screen a person sees. Splitting it into five landable parts is the mitigation; none of them is a big-bang.
 
@@ -332,6 +342,8 @@ The `CLAUDE.md` row said "to be scoped". This is two and a half to three times p
 | Light theme | `themeMode: 'LIGHT'` exists in the profile and changes one class name (`App.tsx:475`); every component hard-codes dark | later — 8–12 h, no one has asked |
 | Android (Capacitor) | `@capacitor/*` are dependencies; nothing here has been run as an APK; `fileStorageService` has a native path that is untested | later |
 | Mental Atlas revival | §1.7 | after 3D, as "Patterns" |
+| Archive row audio player | found in 3D.6: play buttons and a slider nested inside each row's `<button>`; the entry modal already plays audio, so the row could show a count badge | small (1–2 h); next accessibility pass |
+| `@google/genai` dependency | found in 3D.5: in `package.json`, imported by nothing | remove when convenient |
 | DriveMode rebuild on frameworks | §1.7 | phase 4 |
 | User-defined frameworks | phase 2 §5 | later, if ever |
 | Encrypting media blobs | photos and audio in IndexedDB are plaintext; entries are not | phase 4; needs a streaming approach for audio |
@@ -348,9 +360,9 @@ The `CLAUDE.md` row said "to be scoped". This is two and a half to three times p
 - [x] After the first save, persistence has been requested and Profile says whether it was granted; no plaintext entry copy exists in `localStorage` (3A.1, 3A.2)
 - [x] AI can only be reached with the person's own key and their toggle, through one gate; the consent screen names what is sent; no `VITE_GEMINI` in the build (3E)
 - [x] `npm run audit:a11y` reports 0 critical and 0 serious nodes and runs in CI; no text under 12 px in live components; every interactive element has a visible focus state; no native `alert()`/`confirm()` (3C)
-- [ ] No levels, XP totals, achievements or streaks anywhere; "What you've tried" reflects real actions only; the nudge follows its rule
-- [ ] `CLAUDE.md` decision 3 reworded per §4.1, decision 4 marked done, open questions 1 and 3 closed
-- [ ] Unreachable core files reduced to the parked set; unit and e2e counts recorded in `CLAUDE.md`
+- [x] No levels, XP totals, achievements or streaks anywhere; "What you've tried" reflects real actions only; the nudge follows its rule (3D.1–3D.4)
+- [ ] `CLAUDE.md` decision 3 reworded per §4.1, decision 4 marked done, open questions 1 and 3 closed — all done except open question 3, which is answered by watching a first-time user, not by code
+- [x] Unreachable core files reduced to the parked set; unit and e2e counts recorded in `CLAUDE.md` (3D.5, and a check that fails if it grows)
 
 ---
 
