@@ -107,19 +107,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [currentView, showTutorial]);
 
-  // Close entry modal on Escape key
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && openEntry) {
-        setOpenEntry(null);
-      }
-    };
-
-    if (openEntry) {
-      document.addEventListener('keydown', handleEscape);
-      return () => document.removeEventListener('keydown', handleEscape);
-    }
-  }, [openEntry]);
+  // Escape on the entry modal is handled by EntryModal itself (phase 3B.4),
+  // so it can leave Escape to a confirmation dialog open on top of it.
 
   const navigate = (view: ViewState) => {
     setCurrentView(view);

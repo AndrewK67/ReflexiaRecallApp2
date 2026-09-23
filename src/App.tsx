@@ -1,12 +1,9 @@
 import { lazy, Suspense, useEffect, useRef } from "react";
-import type { Entry, CaptureEntry, ReflectionEntry } from "./types";
-import { isCapture } from "./utils/entryKind";
+import type { Entry } from "./types";
 import { newestDate } from "./utils/lastWritten";
 import { UserProvider, EntriesProvider, AppProvider, useApp, useUser, useEntries } from "./contexts";
-import { saveAudioToDownloads } from './services/audioExport';
-import { notify } from './services/noticeService';
 import Notices from './components/Notices';
-import { frameworkName, stageLabel } from "./frameworks";
+import EntryModal from './components/EntryModal';
 
 // Eager load critical components
 import SimplifiedOnboarding from "./components/SimplifiedOnboarding";
@@ -34,49 +31,6 @@ const PermissionsHelp = lazy(() => import("./components/PermissionsHelp"));
 // Eager load update notification (needs to be available immediately)
 import UpdateNotification from "./components/UpdateNotification";
 
-function formatReflection(entry: ReflectionEntry) {
-  const lines: string[] = [];
-  lines.push(`Framework: ${frameworkName(entry.model)}`);
-  if (typeof entry.mood === "number") lines.push(`Mood: ${entry.mood}/5`);
-  lines.push("");
-
-  const answers = entry.answers || {};
-  const keys = Object.keys(answers);
-  if (keys.length === 0) lines.push("(No text saved)");
-  else {
-    for (const k of keys) {
-      const v = (answers[k] || "").trim();
-      if (!v) continue;
-      lines.push(stageLabel(entry.model, k));
-      lines.push(v);
-      lines.push("");
-    }
-  }
-  return lines.join("\n").trim();
-}
-
-function formatCapture(entry: CaptureEntry) {
-  const lines: string[] = [];
-  lines.push("Capture");
-  lines.push("");
-  lines.push((entry.notes || "").trim() || "(No notes)");
-
-  const badge = (entry as any)?.guardianBadge;
-  if (badge) {
-    lines.push("");
-    if (badge?.riskLevel) lines.push(`Guardian: ${badge.riskLevel}`);
-    if (badge?.summary) lines.push(String(badge.summary));
-
-    if (Array.isArray(badge?.suggestedActions) && badge.suggestedActions.length) {
-      lines.push("");
-      lines.push("Suggested actions:");
-      for (const a of badge.suggestedActions) lines.push(`• ${a}`);
-    }
-  }
-
-  return lines.join("\n").trim();
-}
-
 function AppContent() {
   const {
     currentView, navigate, navigateWithGating,
@@ -86,7 +40,7 @@ function AppContent() {
     refreshPackState, showPackGate, setShowPackGate,
   } = useApp();
   const { profile, updateProfile, completeOnboarding } = useUser();
-  const { entries, addEntry, awardXP } = useEntries();
+  const { entries, addEntry, deleteEntry, awardXP } = useEntries();
 
   // Keyboard: when the screen changes, start the tab order at the top of the
   // new screen. Without this, focus stays wherever the removed button was and
@@ -250,110 +204,8 @@ function AppContent() {
     }
   };
 
-  const renderEntryModal = () => {
-    if (!openEntry) return null;
-
-    const title = isCapture(openEntry) ? "Capture" : `Reflection • ${frameworkName((openEntry as ReflectionEntry).model)}`;
-    const body = isCapture(openEntry) ? formatCapture(openEntry) : formatReflection(openEntry as ReflectionEntry);
-
-    const media = (isCapture(openEntry) ? openEntry.media : undefined) || [];
-    const hasMedia = media.length > 0;
-
-    return (
-      <div
-        className="fixed inset-0 z-[80] bg-black/40 backdrop-blur-sm flex items-end justify-center"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="entry-modal-title"
-      >
-        <div className="w-full max-w-md bg-white rounded-t-3xl border border-slate-200 shadow-2xl p-5 max-h-[90vh] flex flex-col">
-          <div className="flex items-start justify-between gap-3 mb-2">
-            <div>
-              <div className="text-xs text-slate-500 font-bold">{new Date(openEntry.date).toLocaleString()}</div>
-              <div id="entry-modal-title" className="text-base font-extrabold text-slate-800">{title}</div>
-            </div>
-            <button
-              autoFocus
-              onClick={() => setOpenEntry(null)}
-              className="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200"
-              aria-label="Close entry details"
-            >
-              Close
-            </button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto custom-scrollbar">
-            {hasMedia && (
-              <div className="mb-4 space-y-3">
-                {media.map((item) => (
-                  <div key={item.id} className="rounded-xl border border-slate-200 overflow-hidden bg-slate-50">
-                    {item.type === 'PHOTO' && (
-                      <img
-                        src={item.url}
-                        alt="Captured photo"
-                        className="w-full h-auto max-h-96 object-contain"
-                      />
-                    )}
-
-                    {item.type === 'VIDEO' && (
-                      <div className="relative bg-black">
-                        <video
-                          src={item.url}
-                          controls
-                          playsInline
-                          className="w-full h-auto max-h-96"
-                          preload="metadata"
-                        >
-                          Your browser does not support video playback.
-                        </video>
-                      </div>
-                    )}
-
-                    {item.type === 'AUDIO' && (
-                      <div className="p-4 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 flex flex-col items-center gap-3">
-                        <div className="text-4xl">🎵</div>
-                        <div className="text-center">
-                          <p className="text-sm font-semibold text-slate-700 mb-1">Audio Recording</p>
-                          <p className="text-xs text-slate-500">Click to save to your Documents folder</p>
-                        </div>
-                        <button
-                          onClick={() => {
-                            if (item.url) {
-                              saveAudioToDownloads(item.url);
-                            } else {
-                              notify('This attachment has no audio file.', 'error');
-                            }
-                          }}
-                          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold flex items-center gap-2 transition shadow-lg"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                          </svg>
-                          Save to Documents
-                        </button>
-                      </div>
-                    )}
-
-                    {item.type === 'DRAWING' && (
-                      <img
-                        src={item.url}
-                        alt="Drawing"
-                        className="w-full h-auto max-h-96 object-contain"
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div className="whitespace-pre-line text-sm text-slate-700 leading-relaxed border border-slate-200 rounded-2xl p-4 bg-slate-50">
-              {body}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
+  const renderEntryModal = () =>
+    openEntry ? <EntryModal entry={openEntry} onClose={() => setOpenEntry(null)} onDelete={deleteEntry} /> : null;
 
   const bgMode = profile.themeMode === "LIGHT" ? "bg-anim light" : "bg-anim";
   const showNav = isLoaded && !isLocked && currentView !== "ONBOARDING";
