@@ -3,23 +3,21 @@ import { expect, type Page } from '@playwright/test';
 /** A brand-new visitor: fresh origin storage, first screen is onboarding. */
 export async function openFresh(page: Page) {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Capture Anything' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Welcome to Reflexia' })).toBeVisible();
 }
 
-/** Skip through onboarding to the dashboard (no-op if already on the dashboard). */
+/** Get past onboarding without giving a name (no-op if already on the dashboard). */
 export async function skipOnboarding(page: Page) {
-  const skip = page.getByRole('button', { name: /Skip/ });
-  if (await skip.count()) await skip.click();
+  const start = page.getByRole('button', { name: 'Start', exact: true });
+  if (await start.count()) await start.click();
   await expect(page.getByRole('button', { name: /Capture$/ })).toBeVisible();
 }
 
-/** Complete onboarding with a name (and, while it exists, the profession picker). */
+/** Complete onboarding with a name. */
 export async function completeOnboarding(page: Page, name: string) {
-  await page.getByRole('button', { name: /^Next/ }).click();
-  await page.getByRole('button', { name: /^Next/ }).click();
-  await page.getByPlaceholder('Your name').fill(name);
+  await page.getByLabel(/What should we call you/).fill(name);
   await expect(page.locator('select')).toHaveCount(0); // the profession picker left in phase 1B
-  await page.getByRole('button', { name: /Start Capturing/ }).click();
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
   await expect(page.getByRole('button', { name: /Capture$/ })).toBeVisible();
 }
 
@@ -54,11 +52,9 @@ export function rawEntryRecords(page: Page): Promise<Array<Record<string, unknow
   }));
 }
 
-/** Count shown in the dashboard's REFLECTIONS tile (0 when the tile is hidden). */
-export async function dashboardCount(page: Page): Promise<number> {
-  const text = await page.locator('body').innerText();
-  const m = text.replace(/\s+/g, ' ').match(/(\d+) REFLECTIONS/);
-  return m ? Number(m[1]) : 0;
+/** How many entries are stored (the dashboard no longer shows a count, phase 3B.2). */
+export async function entryCount(page: Page): Promise<number> {
+  return (await rawEntryRecords(page)).length;
 }
 
 /** Turn packs on by writing the stored state the app reads at boot, then reload. */
@@ -66,8 +62,8 @@ export async function setPacks(page: Page, state: Record<string, { enabled: bool
   await page.evaluate((s) => localStorage.setItem('reflexia.packs.v2', JSON.stringify({ core: { enabled: true, isPermanent: true }, ...s })), state);
   await page.reload();
   // Wait for the app to get past its loading screen; skipOnboarding() counts the
-  // Skip button without waiting, so calling it during the loading screen misses.
-  await expect(page.getByRole('button', { name: /^Skip|Capture$/ }).first()).toBeVisible();
+  // Start button without waiting, so calling it during the loading screen misses.
+  await expect(page.getByRole('button', { name: /^Start$|Capture$/ }).first()).toBeVisible();
 }
 
 /**

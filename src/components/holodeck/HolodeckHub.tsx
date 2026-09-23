@@ -12,7 +12,9 @@ export default function HolodeckHub({ onSelectSpace, onClose }: HolodeckHubProps
   const spaces = getAllSpaces();
 
   return (
-    <div className="h-full bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col overflow-y-auto custom-scrollbar nav-safe">
+    // One scrolling page (phase 3B.5): the grid used to scroll inside its own
+    // box under a fixed footer, so a phone showed one and a half rows of twenty.
+    <div className="min-h-full bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col nav-safe">
       {/* Header */}
       <div className="flex-shrink-0 p-6 flex items-center gap-3 border-b border-white/10">
         <button aria-label="Back to dashboard"
@@ -26,8 +28,8 @@ export default function HolodeckHub({ onSelectSpace, onClose }: HolodeckHubProps
             <Box size={24} className="text-indigo-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">Holodeck</h1>
-            <p className="text-white/60 text-xs uppercase tracking-widest font-mono">Inner Simulation</p>
+            <h1 className="text-2xl font-bold">Spaces</h1>
+            <p className="text-white/60 text-xs uppercase tracking-widest font-mono">For specific moments</p>
           </div>
         </div>
       </div>
@@ -35,12 +37,13 @@ export default function HolodeckHub({ onSelectSpace, onClose }: HolodeckHubProps
       {/* Description */}
       <div className="flex-shrink-0 px-6 pt-4 pb-2">
         <p className="text-white/70 text-sm leading-relaxed">
-          Choose a guided space to explore a situation, emotion, or decision. Each space is designed to help you think clearly without judgment.
+          Each space is a few questions for one kind of moment. Pick the one that fits what you're dealing with. You can
+          leave at any time, and what you write is kept with your other entries.
         </p>
       </div>
 
       {/* Spaces grid */}
-      <div className="flex-1 overflow-y-auto p-6 pb-32 custom-scrollbar">
+      <div className="p-6 pb-4">
         <div className="grid grid-cols-2 gap-3">
           {spaces.map((space) => {
             const Icon = space.icon;
@@ -71,7 +74,7 @@ export default function HolodeckHub({ onSelectSpace, onClose }: HolodeckHubProps
                   </div>
 
                   <h3 className="text-sm font-bold mb-1">{space.name}</h3>
-                  <p className="text-xs text-white/50 line-clamp-2">{space.purpose}</p>
+                  <p className="text-xs text-white/50 leading-snug">{space.purpose}</p>
 
                   {space.isSafetyCritical && (
                     <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30">
@@ -86,12 +89,9 @@ export default function HolodeckHub({ onSelectSpace, onClose }: HolodeckHubProps
         </div>
       </div>
 
-      {/* Footer info */}
-      <div className="flex-shrink-0 p-6 border-t border-white/10 bg-slate-950/80 backdrop-blur">
-        <p className="text-xs text-white/60 text-center">
-          All spaces work offline • Exit anytime • No judgment
-        </p>
-      </div>
+      <p className="px-6 pb-32 text-xs text-white/60 text-center">
+        All spaces work offline • Leave any time • No judgement
+      </p>
     </div>
   );
 }

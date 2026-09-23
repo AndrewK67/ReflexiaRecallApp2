@@ -1,14 +1,19 @@
 /**
- * Pack System - Feature gating for Reflexia
- * Allows users to opt-in to advanced features beyond core capture/reflect/retrieve
+ * Packs: optional features a person can switch on (phase 3B.3).
+ *
+ * A pack is a plain on/off switch. There used to be a fourth pack,
+ * `scenario`, gating the Holodeck; the spaces are the differentiator and
+ * are core now. There also used to be 7-day trials with expiry dates; they
+ * were commercial plumbing for packs nobody pays for (CLAUDE.md, decision 6)
+ * and are gone. Stored state from those builds still loads: see
+ * normaliseStoredState() in packService.ts.
  */
 
 export type PackId =
-  | 'core'                    // Always enabled (Capture, Reflect, Archive, Export, Settings)
-  | 'wellbeing'               // BioRhythm + Grounding exercises
-  | 'aiReflectionCoach'       // Oracle AI assistant
-  | 'scenario'                // Holodeck scenario practice
-  | 'reports';                // Analytics and Reports
+  | 'core'                    // Always on: Capture, Reflect, Spaces, Archive, backup, settings
+  | 'wellbeing'               // BioRhythm breathing + Grounding
+  | 'aiReflectionCoach'       // The Oracle
+  | 'reports';                // Reports
 
 export interface PackDefinition {
   id: PackId;
@@ -17,19 +22,12 @@ export interface PackDefinition {
   icon: string;
   category: 'core' | 'wellbeing' | 'productivity' | 'advanced';
   isCore: boolean;            // If true, cannot be disabled
-  features: string[];         // List of features included
+  features: string[];         // What switching it on adds
 }
 
-export type TrialDuration = 7 | 'forever';
-
-export interface PackTrialInfo {
+export interface PackInfo {
   enabled: boolean;
-  isPermanent: boolean;       // True if enabled forever, false if on trial
-  trialStartDate?: string;    // ISO date when trial started
-  trialEndDate?: string;      // ISO date when trial expires
-  trialDuration?: TrialDuration; // Duration chosen (7 days or 'forever')
 }
 
-export interface PackState {
-  [key: string]: PackTrialInfo; // PackId -> trial info
-}
+/** PackId -> on/off. Only known pack ids are kept. */
+export type PackState = Partial<Record<PackId, PackInfo>>;

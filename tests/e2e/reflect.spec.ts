@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { openFresh, skipOnboarding, goHome, rawEntryRecords, dashboardCount } from './helpers';
+import { openFresh, skipOnboarding, goHome, rawEntryRecords, entryCount } from './helpers';
 
 /** The one text box on a step; its placeholder changes with the step. */
 const writeBox = (page: import('@playwright/test').Page) => page.locator('textarea');
@@ -23,7 +23,7 @@ test.describe('reflection composer', () => {
     await page.getByRole('button', { name: /Save Reflection/ }).click();
     await expect(page.getByRole('button', { name: /Capture$/ })).toBeVisible();
 
-    expect(await dashboardCount(page)).toBe(1);
+    expect(await entryCount(page)).toBe(1);
     expect(await rawEntryRecords(page)).toHaveLength(1);
     await page.getByRole('button', { name: 'View archive of past reflections' }).click();
     await expect(page.getByText(/1 of 1 entries/)).toBeVisible();

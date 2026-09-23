@@ -27,10 +27,7 @@ test('axe audit of the live screens', async ({ page }) => {
   };
 
   await openFresh(page);
-  await scan('onboarding-1');
-  await page.getByRole('button', { name: /^Next/ }).click();
-  await page.getByRole('button', { name: /^Next/ }).click();
-  await scan('onboarding-3');
+  await scan('onboarding');
   await skipOnboarding(page);
   await scan('dashboard-empty');
   await page.getByRole('button', { name: 'View archive of past reflections' }).click();
@@ -70,11 +67,12 @@ test('axe audit of the live screens', async ({ page }) => {
   await page.getByRole('button', { name: /Explore Optional Packs/ }).click();
   await scan('pack-browser');
 
-  await setPacks(page, { scenario: { enabled: true, isPermanent: true }, wellbeing: { enabled: true, isPermanent: true } });
-  await page.getByRole('button', { name: /Holodeck/ }).click();
-  await scan('holodeck-hub');
+  await setPacks(page, { wellbeing: { enabled: true, isPermanent: true }, reports: { enabled: true, isPermanent: true }, aiReflectionCoach: { enabled: true, isPermanent: true } });
+  await scan('dashboard-all-packs');
+  await page.getByRole('button', { name: 'Spaces', exact: true }).click();
+  await scan('spaces-hub');
   await page.getByRole('button', { name: /Difficult Conversation/ }).click();
-  await scan('holodeck-space');
+  await scan('space');
 
   await fs.mkdir('test-results', { recursive: true });
   await fs.writeFile('test-results/a11y-audit.json', JSON.stringify(rows, null, 2));

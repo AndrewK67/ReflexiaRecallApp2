@@ -1,12 +1,12 @@
 import { test, expect } from '@playwright/test';
-import { openFresh, skipOnboarding, quickCapture, rawEntryRecords, dashboardCount } from './helpers';
+import { openFresh, skipOnboarding, quickCapture, rawEntryRecords, entryCount } from './helpers';
 
 test.describe('quick capture', () => {
   test('saves an entry encrypted in IndexedDB, and it survives a reload', async ({ page }) => {
     await openFresh(page);
     await skipOnboarding(page);
     await quickCapture(page, 'Smoke test entry - saved from Playwright.');
-    expect(await dashboardCount(page)).toBe(1);
+    expect(await entryCount(page)).toBe(1);
 
     const raw = await rawEntryRecords(page);
     expect(raw).toHaveLength(1);

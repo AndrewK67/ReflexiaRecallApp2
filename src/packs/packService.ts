@@ -1,300 +1,134 @@
 /**
- * Pack Service - Manages pack state with trial system
- * Local-first storage using localStorage
+ * Pack Service - which optional packs are on. Local-first, localStorage.
+ *
+ * The storage key is still reflexia.packs.v2, and state written by older
+ * builds loads unchanged in meaning (phase 3B.3):
+ *   - v1 ({ wellbeing: true }) is migrated once and the old key removed;
+ *   - v2 entries with trial fields: a pack whose trial had ended is off, a
+ *     pack enabled any other way stays on;
+ *   - keys for packs that no longer exist (professional, scenario) are
+ *     ignored, and dropped the next time state is saved.
  */
 
-import type { PackId, PackState, PackTrialInfo, TrialDuration } from './packTypes';
+import type { PackId, PackInfo, PackState } from './packTypes';
 import { PACK_REGISTRY } from './packRegistry';
 
 const STORAGE_KEY = 'reflexia.packs.v2';
 const OLD_STORAGE_KEY = 'reflexia.packs.v1';
 
-/**
- * Migrate old boolean pack state to new trial info structure
- */
-function migrateOldPackState(): PackState | null {
-  try {
-    const oldStored = localStorage.getItem(OLD_STORAGE_KEY);
-    if (!oldStored) return null;
+const KNOWN: PackId[] = Object.keys(PACK_REGISTRY) as PackId[];
 
-    const oldParsed = JSON.parse(oldStored);
-    const newState: PackState = {};
-
-    Object.keys(oldParsed).forEach(packId => {
-      const wasEnabled = oldParsed[packId] === true;
-      const pack = PACK_REGISTRY[packId as PackId];
-
-      newState[packId] = {
-        enabled: wasEnabled,
-        isPermanent: wasEnabled || pack?.isCore || false,
-      };
-    });
-
-    // Save migrated state and remove old key
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
-    localStorage.removeItem(OLD_STORAGE_KEY);
-
-    return newState;
-  } catch (error) {
-    console.error('[PackService] Error migrating old pack state:', error);
-    return null;
-  }
+function isKnown(id: string): id is PackId {
+  return (KNOWN as string[]).includes(id);
 }
 
-/**
- * Get default pack state
- * Core is always enabled permanently, all others disabled
- */
-function getDefaultPackState(): PackState {
+function defaults(): PackState {
   const state: PackState = {};
-
-  Object.keys(PACK_REGISTRY).forEach(packId => {
-    const pack = PACK_REGISTRY[packId as PackId];
-    state[packId] = {
-      enabled: pack.isCore,
-      isPermanent: pack.isCore,
-    };
-  });
-
+  for (const id of KNOWN) state[id] = { enabled: PACK_REGISTRY[id].isCore };
   return state;
 }
 
-/**
- * Load pack state from localStorage
- */
-export function loadPackState(): PackState {
-  try {
-    // Try to load from new storage key
-    let stored = localStorage.getItem(STORAGE_KEY);
-
-    // If not found, try to migrate from old key
-    if (!stored) {
-      const migrated = migrateOldPackState();
-      if (migrated) {
-        return migrated;
-      }
-      return getDefaultPackState();
-    }
-
-    const parsed = JSON.parse(stored) as PackState;
-
-    // Ensure core is always enabled permanently (safety)
-    parsed.core = {
-      enabled: true,
-      isPermanent: true,
-    };
-
-    // Merge with defaults to handle new packs
-    const defaults = getDefaultPackState();
-    return { ...defaults, ...parsed };
-  } catch (error) {
-    console.error('[PackService] Error loading pack state:', error);
-    return getDefaultPackState();
-  }
+/** What an older build's stored entry means today. */
+function wasOn(raw: unknown, now = new Date()): boolean {
+  if (raw === true) return true; // v1
+  if (!raw || typeof raw !== 'object') return false;
+  const r = raw as { enabled?: unknown; isPermanent?: unknown; trialEndDate?: unknown };
+  if (r.enabled !== true) return false;
+  const trialEnded =
+    r.isPermanent === false && typeof r.trialEndDate === 'string' && now > new Date(r.trialEndDate);
+  return !trialEnded;
 }
 
-/**
- * Save pack state to localStorage
- */
+export function normaliseStoredState(raw: unknown, now = new Date()): PackState {
+  const state = defaults();
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    for (const [id, value] of Object.entries(raw as Record<string, unknown>)) {
+      if (isKnown(id) && !PACK_REGISTRY[id].isCore) state[id] = { enabled: wasOn(value, now) };
+    }
+  }
+  state.core = { enabled: true };
+  return state;
+}
+
+export function loadPackState(): PackState {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) return normaliseStoredState(JSON.parse(stored));
+
+    const old = localStorage.getItem(OLD_STORAGE_KEY);
+    if (old) {
+      const migrated = normaliseStoredState(JSON.parse(old));
+      savePackState(migrated);
+      localStorage.removeItem(OLD_STORAGE_KEY);
+      return migrated;
+    }
+  } catch (error) {
+    console.error('[PackService] Error loading pack state:', error);
+  }
+  return defaults();
+}
+
 export function savePackState(state: PackState): void {
   try {
-    // Ensure core is always enabled permanently
-    state.core = {
-      enabled: true,
-      isPermanent: true,
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    const clean: PackState = {};
+    for (const id of KNOWN) clean[id] = { enabled: id === 'core' ? true : state[id]?.enabled === true };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(clean));
   } catch (error) {
     console.error('[PackService] Error saving pack state:', error);
   }
 }
 
-/**
- * Check if a trial has expired
- */
-export function isTrialExpired(info: PackTrialInfo): boolean {
-  if (info.isPermanent) return false;
-  if (!info.trialEndDate) return false;
-
-  const now = new Date();
-  const endDate = new Date(info.trialEndDate);
-  return now > endDate;
-}
-
-/**
- * Get remaining trial time in days
- */
-export function getRemainingTrialDays(info: PackTrialInfo): number {
-  if (info.isPermanent || !info.trialEndDate) return Infinity;
-
-  const now = new Date();
-  const endDate = new Date(info.trialEndDate);
-  const diffMs = endDate.getTime() - now.getTime();
-  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-
-  return Math.max(0, diffDays);
-}
-
-/**
- * Check if a pack is enabled (and trial hasn't expired)
- */
 export function isPackEnabled(packId: PackId): boolean {
-  const state = loadPackState();
-  const info = state[packId];
-
-  if (!info) return false;
-  if (!info.enabled) return false;
-  if (info.isPermanent) return true;
-
-  // Check if trial has expired
-  return !isTrialExpired(info);
+  return loadPackState()[packId]?.enabled === true;
 }
 
-/**
- * Get pack trial info
- */
-export function getPackInfo(packId: PackId): PackTrialInfo {
-  const state = loadPackState();
-  return state[packId] || {
-    enabled: false,
-    isPermanent: false,
-  };
+export function getPackInfo(packId: PackId): PackInfo {
+  return { enabled: isPackEnabled(packId) };
 }
 
-/**
- * Enable a pack with trial duration
- */
-export function enablePack(packId: PackId, duration: TrialDuration = 'forever'): void {
+export function enablePack(packId: PackId): void {
   const state = loadPackState();
-  const now = new Date();
-
-  if (duration === 'forever') {
-    state[packId] = {
-      enabled: true,
-      isPermanent: true,
-    };
-  } else {
-    // Calculate trial end date
-    const endDate = new Date(now);
-    endDate.setDate(endDate.getDate() + duration);
-
-    state[packId] = {
-      enabled: true,
-      isPermanent: false,
-      trialStartDate: now.toISOString(),
-      trialEndDate: endDate.toISOString(),
-      trialDuration: duration,
-    };
-  }
-
+  state[packId] = { enabled: true };
   savePackState(state);
 }
 
-/**
- * Disable a pack (if not core)
- */
 export function disablePack(packId: PackId): void {
-  const pack = PACK_REGISTRY[packId];
-  if (pack?.isCore) {
+  if (PACK_REGISTRY[packId]?.isCore) {
     console.warn('[PackService] Cannot disable core pack:', packId);
     return;
   }
-
   const state = loadPackState();
-  state[packId] = {
-    enabled: false,
-    isPermanent: false,
-  };
+  state[packId] = { enabled: false };
   savePackState(state);
 }
 
-/**
- * Toggle a pack on/off (defaults to forever)
- */
-export function togglePack(packId: PackId, duration: TrialDuration = 'forever'): boolean {
-  const pack = PACK_REGISTRY[packId];
-  if (pack?.isCore) {
-    console.warn('[PackService] Cannot toggle core pack:', packId);
-    return true;
-  }
-
-  const info = getPackInfo(packId);
-  const isCurrentlyEnabled = info.enabled && !isTrialExpired(info);
-
-  if (isCurrentlyEnabled) {
+/** Flip a pack; returns whether it is now on. Core is always on. */
+export function togglePack(packId: PackId): boolean {
+  if (PACK_REGISTRY[packId]?.isCore) return true;
+  if (isPackEnabled(packId)) {
     disablePack(packId);
     return false;
-  } else {
-    enablePack(packId, duration);
-    return true;
   }
+  enablePack(packId);
+  return true;
 }
 
-/**
- * Get all enabled packs (excluding expired trials)
- */
 export function getEnabledPacks(): PackId[] {
   const state = loadPackState();
-  return Object.keys(state).filter(packId => {
-    const info = state[packId];
-    return info.enabled && (info.isPermanent || !isTrialExpired(info));
-  }) as PackId[];
+  return KNOWN.filter((id) => state[id]?.enabled === true);
 }
 
-/**
- * Reset all packs to default (core only)
- */
 export function resetPacksToDefault(): void {
-  savePackState(getDefaultPackState());
+  savePackState(defaults());
 }
 
-/**
- * Clean up expired trials
- */
-export function cleanupExpiredTrials(): void {
-  const state = loadPackState();
-  let hasChanges = false;
-
-  Object.keys(state).forEach(packId => {
-    const info = state[packId];
-    if (info.enabled && !info.isPermanent && isTrialExpired(info)) {
-      // Disable expired trial
-      state[packId] = {
-        enabled: false,
-        isPermanent: false,
-        trialStartDate: info.trialStartDate,
-        trialEndDate: info.trialEndDate,
-        trialDuration: info.trialDuration,
-      };
-      hasChanges = true;
-    }
-  });
-
-  if (hasChanges) {
-    savePackState(state);
-  }
-}
-
-/**
- * Check if any feature is gated by a pack that's not enabled
- * Used to show "Enable Pack" messages
- */
+/** Which pack a view needs, or null for core views (Spaces is core since 3B.3). */
 export function getRequiredPack(featureId: string): PackId | null {
-  // Map features to required packs
   const featurePackMap: Record<string, PackId> = {
-    // Wellbeing
-    'BIO_RHYTHM': 'wellbeing',
-    'GROUNDING': 'wellbeing',
-
-    // AI
-    'ORACLE': 'aiReflectionCoach',
-
-    // Scenario
-    'HOLODECK': 'scenario',
-
-    // Reports
-    'REPORTS': 'reports',
+    BIO_RHYTHM: 'wellbeing',
+    GROUNDING: 'wellbeing',
+    ORACLE: 'aiReflectionCoach',
+    REPORTS: 'reports',
   };
-
   return featurePackMap[featureId] || null;
 }

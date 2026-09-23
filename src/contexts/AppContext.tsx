@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { Entry, ViewState } from '../types';
 import type { PackId } from '../packs/packTypes';
-import { loadPackState, cleanupExpiredTrials, isPackEnabled, getRequiredPack } from '../packs';
+import { loadPackState, isPackEnabled, getRequiredPack } from '../packs';
 import { generateDailyPrompt, initAI } from '../services/aiService';
 import { completeStep, type TutorialStep } from '../services/tutorialService';
 import { useUser } from './UserContext';
@@ -47,11 +47,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const isLoaded = isProfileLoaded && isEntriesLoaded && isInitDone;
 
-  // Init: cleanup trials, choose the first screen, check privacy lock, generate daily prompt
+  // Init: choose the first screen, check privacy lock, generate daily prompt
   useEffect(() => {
     if (!isProfileLoaded || !isEntriesLoaded) return;
-
-    cleanupExpiredTrials();
 
     // A returning user goes straight to the dashboard. Only a first-time user
     // (or one who chose "Return to onboarding" on the profile screen) sees

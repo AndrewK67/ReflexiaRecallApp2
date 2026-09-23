@@ -1,5 +1,6 @@
 /**
- * Pack Registry - Defines all available packs and their features
+ * Pack Registry - the packs and what each one adds. Every line here is
+ * shown to people in the pack browser; keep it true of the build.
  */
 
 import type { PackDefinition, PackId } from './packTypes';
@@ -7,94 +8,74 @@ import type { PackDefinition, PackId } from './packTypes';
 export const PACK_REGISTRY: Record<PackId, PackDefinition> = {
   core: {
     id: 'core',
-    name: 'Core Features',
-    description: 'Essential capture, reflection, and retrieval tools',
+    name: 'Core',
+    description: 'Capture, reflect, spaces, archive and backup. Always on.',
     icon: '⚡',
     category: 'core',
     isCore: true,
     features: [
-      'Quick Capture (text, audio, photo)',
-      'Reflection prompts',
-      'Archive & Search',
-      'Export (PDF/ZIP)',
-      'Settings & Privacy Screen'
-    ]
+      'Quick Capture (text, photo, voice)',
+      'Reflect: three questions, Just write, or a framework',
+      'Spaces for specific situations',
+      'Archive and search',
+      'Backup and restore',
+    ],
   },
 
   wellbeing: {
     id: 'wellbeing',
     name: 'Wellbeing Tools',
-    description: 'Breathing exercises, grounding techniques, and stress management',
+    description: 'Breathing and grounding exercises, for when you need to settle before you write.',
     icon: '🫁',
     category: 'wellbeing',
     isCore: false,
     features: [
-      'BioRhythm breathing exercises',
-      'Grounding techniques (5-4-3-2-1)',
-      'Stress management tools'
-    ]
+      'BioRhythm: paced breathing',
+      'Grounding: the 5-4-3-2-1 exercise',
+    ],
   },
 
   aiReflectionCoach: {
     id: 'aiReflectionCoach',
     name: 'AI Reflection Coach',
-    description: 'AI-powered reflection guidance and insights (Oracle)',
+    description:
+      'The Oracle: ask questions about what you have written. It uses AI only if you add your own key and turn AI on in Profile; otherwise it answers from built-in prompts.',
     icon: '🤖',
     category: 'productivity',
     isCore: false,
     features: [
-      'Oracle AI chat assistant',
-      'AI-generated reflection prompts',
-      'Contextual guidance'
-    ]
-  },
-
-  scenario: {
-    id: 'scenario',
-    name: 'Scenario Practice',
-    description: 'Interactive scenario-based learning (Holodeck)',
-    icon: '🎭',
-    category: 'advanced',
-    isCore: false,
-    features: [
-      'Holodeck scenarios',
-      'Decision-tree practice',
-      'Skill development'
-    ]
+      'The Oracle',
+    ],
   },
 
   reports: {
     id: 'reports',
     name: 'Analytics & Reports',
-    description: 'Data visualization, trends, and insights',
+    description: 'Mood over time, how often you write, which frameworks you use, and a text or CSV export.',
     icon: '📊',
     category: 'advanced',
     isCore: false,
     features: [
-      'Reflection analytics',
-      'Mood trends',
-      'Activity reports',
-      'Data visualization'
-    ]
+      'Mood and activity over time',
+      'Frameworks used',
+      'Text and CSV export',
+    ],
   },
 };
 
-// Helper to get pack definition
 export function getPack(id: PackId): PackDefinition | undefined {
   return PACK_REGISTRY[id];
 }
 
-// Helper to get all packs
 export function getAllPacks(): PackDefinition[] {
   return Object.values(PACK_REGISTRY);
 }
 
-// Helper to get non-core packs (user can enable/disable)
+/** The packs a person can switch on and off. */
 export function getOptionalPacks(): PackDefinition[] {
-  return getAllPacks().filter(pack => !pack.isCore);
+  return getAllPacks().filter((pack) => !pack.isCore);
 }
 
-// Helper to get packs by category
 export function getPacksByCategory(category: PackDefinition['category']): PackDefinition[] {
-  return getAllPacks().filter(pack => pack.category === category);
+  return getAllPacks().filter((pack) => pack.category === category);
 }

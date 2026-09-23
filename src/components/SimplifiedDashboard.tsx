@@ -1,47 +1,74 @@
 /**
- * Simplified Dashboard - Core MVP experience
- * Focus: Capture → Reflect → Retrieve
+ * Dashboard: four doors (phase 3B.2).
+ *
+ * Capture, Reflect, Spaces, Archive — each with one line saying what it is
+ * for, because a first-time user has no reason to know. Spaces were behind
+ * an optional pack called "Scenario Practice"; they are the differentiator
+ * (CLAUDE.md, decision 3) and live here now. Instead of an entry count the
+ * dashboard says when you last wrote (decision 4: nothing rewards volume).
  */
 
+import { PenLine, Compass, Archive as ArchiveIcon, ChevronRight } from 'lucide-react';
 import { isPackEnabled } from '../packs';
+import { lastWrittenLabel } from '../utils/lastWritten';
 
 interface SimplifiedDashboardProps {
   userName: string;
   dailyPrompt: string;
   onNavigate: (view: string) => void;
   onShowPackSettings?: () => void;
-  totalEntries?: number;
+  /** ISO date of the newest entry; undefined before the first one. */
+  lastEntryDate?: string;
 }
+
+function greeting(now = new Date()): string {
+  const hour = now.getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+}
+
+const DOORS = [
+  {
+    view: 'REFLECTION',
+    name: 'Reflect',
+    hint: 'Three short questions to make sense of something',
+    icon: PenLine,
+    tint: 'text-indigo-300 bg-indigo-500/15 border-indigo-400/30',
+  },
+  {
+    view: 'HOLODECK', // the view id is internal; people see "Spaces"
+    name: 'Spaces',
+    hint: 'For a hard conversation, a decision, a loss',
+    icon: Compass,
+    tint: 'text-fuchsia-300 bg-fuchsia-500/15 border-fuchsia-400/30',
+  },
+  {
+    view: 'ARCHIVE',
+    name: 'Archive',
+    hint: 'Everything you have written, searchable',
+    icon: ArchiveIcon,
+    tint: 'text-cyan-300 bg-cyan-500/15 border-cyan-400/30',
+  },
+] as const;
 
 export default function SimplifiedDashboard({
   userName,
   dailyPrompt,
   onNavigate,
   onShowPackSettings,
-  totalEntries = 0,
+  lastEntryDate,
 }: SimplifiedDashboardProps) {
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 18) return "Good afternoon";
-    return "Good evening";
-  };
+  const firstName = userName.trim().split(' ')[0];
+  const lastWritten = lastWrittenLabel(lastEntryDate);
 
-  const getFirstName = () => {
-    return userName.trim().split(" ")[0] || "friend";
-  };
-
-  // Check which optional packs are enabled
   const hasWellbeing = isPackEnabled('wellbeing');
   const hasAI = isPackEnabled('aiReflectionCoach');
-  const hasScenario = isPackEnabled('scenario');
   const hasReports = isPackEnabled('reports');
-
-  const hasAnyPacks = hasWellbeing || hasAI || hasScenario || hasReports;
+  const hasAnyPacks = hasWellbeing || hasAI || hasReports;
 
   return (
     <div className="h-full overflow-y-auto flex flex-col items-center p-4 pt-6 nav-safe relative">
-      {/* Animated Background */}
       <div className="animated-backdrop-dark overflow-hidden">
         <div className="orb one" />
         <div className="orb two" />
@@ -50,130 +77,110 @@ export default function SimplifiedDashboard({
       </div>
 
       {/* Greeting */}
-      <div className="text-center mb-6 max-w-xs mx-auto relative z-10">
+      <div className="text-center mb-5 max-w-xs mx-auto relative z-10">
         <h1 className="text-xl font-light text-white tracking-tight mb-1">
-          {getGreeting()}, {getFirstName()}.
+          {firstName ? `${greeting()}, ${firstName}.` : `${greeting()}.`}
         </h1>
-        {dailyPrompt && (
-          <p className="text-white/70 font-medium text-xs leading-relaxed mt-2">
-            "{dailyPrompt}"
-          </p>
-        )}
+        {dailyPrompt && <p className="text-white/80 font-medium text-sm leading-relaxed mt-2">"{dailyPrompt}"</p>}
+        <p className="mt-3 text-xs text-white/60">
+          {lastWritten ?? 'Try capturing one thing. It can be a sentence.'}
+        </p>
       </div>
 
-      {/* Quick Stats */}
-      {totalEntries > 0 && (
-        <div className="flex items-center justify-center gap-4 mb-4 relative z-10">
-          <div className="text-center px-3 py-1.5 bg-white/5 rounded-lg border border-white/10">
-            <div className="text-sm font-bold text-white">{totalEntries}</div>
-            <div className="text-xs text-white/50 uppercase tracking-wider">Reflections</div>
-          </div>
-        </div>
-      )}
-
-      {/* Core Actions */}
-      <div className="w-full max-w-xs space-y-2.5 relative z-10">
-        {/* Primary CTA: Capture */}
+      <div className="w-full max-w-sm space-y-2.5 relative z-10">
+        {/* The first door: Capture */}
         <button
-          onClick={() => onNavigate("QUICK_CAPTURE")}
+          onClick={() => onNavigate('QUICK_CAPTURE')}
           className="w-full bg-gradient-to-r from-cyan-600 to-indigo-600 text-white h-14 rounded-xl font-bold text-base shadow-xl hover:shadow-2xl hover:from-cyan-500 hover:to-indigo-500 active:scale-95 transition-all"
         >
           📸 Capture
         </button>
 
-        {/* Secondary CTAs */}
-        <div className="grid grid-cols-2 gap-2.5">
-          <button
-            onClick={() => onNavigate("REFLECTION")}
-            className="bg-white/10 text-white h-12 rounded-xl font-semibold text-xs border border-white/20 shadow-lg hover:bg-white/15 active:scale-95 transition-all flex items-center justify-center gap-1.5"
-          >
-            <span className="text-base">💭</span>
-            <span>Reflect</span>
-          </button>
-          <button
-            onClick={() => onNavigate("ARCHIVE")}
-            className="bg-white/10 text-white h-12 rounded-xl font-semibold text-xs border border-white/20 shadow-lg hover:bg-white/15 active:scale-95 transition-all flex items-center justify-center gap-1.5"
-          >
-            <span className="text-base">📚</span>
-            <span>Archive</span>
-          </button>
-        </div>
+        {/* The other three, each saying what it is for */}
+        <ul className="space-y-2">
+          {DOORS.map((d) => {
+            const Icon = d.icon;
+            const hintId = `door-hint-${d.name.toLowerCase()}`;
+            return (
+              <li key={d.view}>
+                <button
+                  onClick={() => onNavigate(d.view)}
+                  aria-label={d.name}
+                  aria-describedby={hintId}
+                  className="w-full flex items-center gap-3 text-left px-4 py-3 rounded-xl bg-white/10 border border-white/15 hover:bg-white/15 active:scale-[0.98] transition"
+                >
+                  <span className={`w-10 h-10 flex-shrink-0 rounded-xl border flex items-center justify-center ${d.tint}`}>
+                    <Icon size={20} aria-hidden="true" />
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-sm font-bold text-white">{d.name}</span>
+                    <span id={hintId} className="block text-xs text-white/70 leading-snug">
+                      {d.hint}
+                    </span>
+                  </span>
+                  <ChevronRight size={18} className="text-white/50 flex-shrink-0" aria-hidden="true" />
+                </button>
+              </li>
+            );
+          })}
+        </ul>
 
-        {/* Optional: Quick access to enabled pack features */}
+        {/* Optional packs the person switched on */}
         {hasAnyPacks && (
           <div className="bg-white/5 backdrop-blur-xl rounded-xl border border-white/10 p-2.5 mt-3">
             <div className="text-xs font-bold text-white/60 mb-1.5">ENABLED PACKS</div>
-            <div className="grid grid-cols-3 gap-1.5">
-              {/* Wellbeing */}
+            <div className="grid grid-cols-2 gap-1.5">
               {hasWellbeing && (
                 <>
                   <button
-                    onClick={() => onNavigate("BIO_RHYTHM")}
-                    className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg p-1.5 transition flex flex-col items-center gap-0.5"
+                    onClick={() => onNavigate('BIO_RHYTHM')}
+                    className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg p-2 transition flex items-center gap-2"
                   >
-                    <span className="text-base">🫁</span>
-                    <span className="text-xs font-semibold text-white/80">BioRhythm</span>
+                    <span className="text-base" aria-hidden="true">🫁</span>
+                    <span className="text-xs font-semibold text-white/90">BioRhythm</span>
                   </button>
                   <button
-                    onClick={() => onNavigate("GROUNDING")}
-                    className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg p-1.5 transition flex flex-col items-center gap-0.5"
+                    onClick={() => onNavigate('GROUNDING')}
+                    className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg p-2 transition flex items-center gap-2"
                   >
-                    <span className="text-base">🌊</span>
-                    <span className="text-xs font-semibold text-white/80">Grounding</span>
+                    <span className="text-base" aria-hidden="true">🌊</span>
+                    <span className="text-xs font-semibold text-white/90">Grounding</span>
                   </button>
                 </>
               )}
-
-              {/* AI Coach */}
               {hasAI && (
                 <button
-                  onClick={() => onNavigate("ORACLE")}
-                  className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg p-1.5 transition flex flex-col items-center gap-0.5"
+                  onClick={() => onNavigate('ORACLE')}
+                  className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg p-2 transition flex items-center gap-2"
                 >
-                  <span className="text-base">💬</span>
-                  <span className="text-xs font-semibold text-white/80">Oracle</span>
+                  <span className="text-base" aria-hidden="true">💬</span>
+                  <span className="text-xs font-semibold text-white/90">Oracle</span>
                 </button>
               )}
-
-              {/* Scenario Practice */}
-              {hasScenario && (
-                <button
-                  onClick={() => onNavigate("HOLODECK")}
-                  className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg p-1.5 transition flex flex-col items-center gap-0.5"
-                >
-                  <span className="text-base">🎭</span>
-                  <span className="text-xs font-semibold text-white/80">Holodeck</span>
-                </button>
-              )}
-
-              {/* Reports */}
               {hasReports && (
                 <button
-                  onClick={() => onNavigate("REPORTS")}
-                  className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg p-1.5 transition flex flex-col items-center gap-0.5"
+                  onClick={() => onNavigate('REPORTS')}
+                  className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg p-2 transition flex items-center gap-2"
                 >
-                  <span className="text-base">📊</span>
-                  <span className="text-xs font-semibold text-white/80">Reports</span>
+                  <span className="text-base" aria-hidden="true">📊</span>
+                  <span className="text-xs font-semibold text-white/90">Reports</span>
                 </button>
               )}
-
             </div>
           </div>
         )}
 
-        {/* Explore More Packs */}
         <button
           onClick={() => onShowPackSettings?.()}
-          className="w-full mt-3 text-white/60 hover:text-white/90 text-xs font-medium py-1.5 transition"
+          className="w-full mt-2 text-white/70 hover:text-white text-xs font-medium py-2 transition"
         >
           ✨ Explore Optional Packs
         </button>
       </div>
 
-      {/* Data Notice */}
-      <div className="mt-4 max-w-xs text-center text-white/60 text-xs relative z-10 leading-tight">
-        <p>All data stored securely on this device</p>
-        <p className="mt-0.5">Export regularly to back up</p>
+      <div className="mt-3 max-w-xs text-center text-white/60 text-xs relative z-10 leading-snug">
+        <p>Everything is stored on this device.</p>
+        <p className="mt-0.5">Make a backup from Profile now and then.</p>
       </div>
     </div>
   );

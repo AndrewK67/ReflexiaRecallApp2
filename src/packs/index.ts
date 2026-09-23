@@ -2,7 +2,7 @@
  * Pack System - Exports
  */
 
-export type { PackId, PackDefinition, PackState, PackTrialInfo, TrialDuration } from './packTypes';
+export type { PackId, PackDefinition, PackState, PackInfo } from './packTypes';
 export {
   PACK_REGISTRY,
   getPack,
@@ -13,6 +13,7 @@ export {
 export {
   loadPackState,
   savePackState,
+  normaliseStoredState,
   isPackEnabled,
   enablePack,
   disablePack,
@@ -20,8 +21,5 @@ export {
   getEnabledPacks,
   resetPacksToDefault,
   getRequiredPack,
-  getPackInfo,
-  isTrialExpired,
-  getRemainingTrialDays,
-  cleanupExpiredTrials
+  getPackInfo
 } from './packService';

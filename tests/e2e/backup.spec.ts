@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import path from 'node:path';
 import fs from 'node:fs/promises';
-import { openFresh, skipOnboarding, quickCapture, goHome, captureBackup, rawEntryRecords, dashboardCount } from './helpers';
+import { openFresh, skipOnboarding, quickCapture, goHome, captureBackup, rawEntryRecords, entryCount } from './helpers';
 
 test.describe('backup and restore', () => {
   // Would have caught the saveAllEntries transaction bug at the UI (PHASE-0-SCOPE §0.1).
@@ -20,7 +20,7 @@ test.describe('backup and restore', () => {
 
     await goHome(page);
     await quickCapture(page, 'entry three, saved after the backup');
-    expect(await dashboardCount(page)).toBe(3);
+    expect(await entryCount(page)).toBe(3);
 
     await fs.mkdir(testInfo.outputDir, { recursive: true });
     const file = path.join(testInfo.outputDir, 'backup.json');
@@ -30,7 +30,7 @@ test.describe('backup and restore', () => {
     // importBackup() then window.location.reload(); the restored profile is onboarded, so we land on the dashboard
     await expect(page.getByRole('button', { name: /Capture$/ })).toBeVisible();
 
-    expect(await dashboardCount(page)).toBe(2);
+    expect(await entryCount(page)).toBe(2);
     expect(await rawEntryRecords(page)).toHaveLength(2);
     await page.getByRole('button', { name: 'View archive of past reflections' }).click();
     await expect(page.getByText(/2 of 2 entries/)).toBeVisible();

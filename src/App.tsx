@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef } from "react";
 import type { Entry, CaptureEntry, ReflectionEntry } from "./types";
 import { isCapture } from "./utils/entryKind";
+import { newestDate } from "./utils/lastWritten";
 import { UserProvider, EntriesProvider, AppProvider, useApp, useUser, useEntries } from "./contexts";
 import { saveAudioToDownloads } from './services/audioExport';
 import { notify } from './services/noticeService';
@@ -133,7 +134,7 @@ function AppContent() {
   const renderScreen = () => {
     switch (currentView) {
       case "ONBOARDING":
-        return <SimplifiedOnboarding onComplete={handleOnboardingComplete} />;
+        return <SimplifiedOnboarding onComplete={handleOnboardingComplete} initialName={profile.name || ''} />;
 
       case "REFLECTION":
         return (
@@ -243,7 +244,7 @@ function AppContent() {
             dailyPrompt={dailyPrompt}
             onNavigate={(viewName) => navigateWithGating(viewName)}
             onShowPackSettings={() => navigate("PACK_BROWSER")}
-            totalEntries={entries.length}
+            lastEntryDate={newestDate(entries)}
           />
         );
     }

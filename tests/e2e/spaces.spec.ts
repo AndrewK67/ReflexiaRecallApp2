@@ -1,15 +1,14 @@
 import { test, expect } from '@playwright/test';
-import { openFresh, skipOnboarding, setPacks, rawEntryRecords } from './helpers';
+import { openFresh, skipOnboarding, rawEntryRecords } from './helpers';
 
-// Spaces (Holodeck) are still behind the `scenario` pack until 3B moves them
-// to the front door; these specs enable the pack the way a person would have.
+// Spaces are one of the four doors on the dashboard since phase 3B.2 (the
+// view id inside the code is still HOLODECK; nobody sees that name).
 
 test.describe('spaces', () => {
   test('a finished space is an encrypted entry that opens with its questions as labels', async ({ page }) => {
     await openFresh(page);
     await skipOnboarding(page);
-    await setPacks(page, { scenario: { enabled: true, isPermanent: true } });
-    await page.getByRole('button', { name: /Holodeck/ }).click();
+    await page.getByRole('button', { name: 'Spaces', exact: true }).click();
     await page.getByRole('button', { name: /Difficult Conversation/ }).click();
 
     await expect(page.getByText(/Difficult Conversation/)).toBeVisible();
@@ -48,12 +47,11 @@ test.describe('spaces', () => {
   test('a gentle space says you can leave, and Back returns to the hub', async ({ page }) => {
     await openFresh(page);
     await skipOnboarding(page);
-    await setPacks(page, { scenario: { enabled: true, isPermanent: true } });
-    await page.getByRole('button', { name: /Holodeck/ }).click();
+    await page.getByRole('button', { name: 'Spaces', exact: true }).click();
     await page.getByRole('button', { name: /Crisis Rewind/ }).click();
     await expect(page.getByText(/Gentle space/)).toBeVisible();
     await page.getByRole('button', { name: 'Back' }).click();
-    await expect(page.getByRole('heading', { name: 'Holodeck' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Spaces' })).toBeVisible();
     expect(await rawEntryRecords(page)).toHaveLength(0);
   });
 
